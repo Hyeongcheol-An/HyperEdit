@@ -555,7 +555,7 @@ final class AppModel: ObservableObject {
 
     /// `--theme <id>` `--follow-system-theme` `--ribbon <home|edit|layout|advanced|window>` `--left <files|outline|timeline>`
     /// `--bottom <find|bookmarks|output>` `--hide-left` `--hide-bottom` `--search <q>` `--replace [--replace-with <s>]` `--find-in-files`
-    /// `--column` `--goto <line>` `--preview` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
+    /// `--column` `--goto <line>` `--preview` `--show-macro-recording` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
     /// `--fold <line>` `--fold-all` (접기 — 영역 스캔이 끝난 뒤 적용, 스크린샷용) `--no-fold` (접기 delegate 설치 안 함)
     private func applyLaunchOptions() {
         if let t = LaunchOptions.value("--theme") { themes.select(id: t) }
@@ -573,6 +573,9 @@ final class AppModel: ObservableObject {
         }
         if LaunchOptions.has("--column") { columnMode = true }
         if LaunchOptions.has("--preview") { showMarkdownPreview = true }
+        if LaunchOptions.has("--show-macro-recording") {   // 스크린샷용: 매크로 기록 상태(리본 빨간 기록 버튼 · 상태바 ● REC). 편집기가 기록기를 연결한 뒤에
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.toggleMacroRecording() }
+        }
         if let g = LaunchOptions.value("--goto"), let n = Int(g) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.jump(toLine: n) }
         }

@@ -620,7 +620,8 @@ struct EditorView: NSViewRepresentable {
             case .formatJSON: formatJSON(tv, sel, minify: false)
             case .minifyJSON: formatJSON(tv, sel, minify: true)
             }
-            document.textDidChange()
+            // dirty·자동 저장·줄 인덱스는 MemoDocument.textStorage(_:didProcessEditing:) 가 실제 문자 변경에서만 건다 —
+            // 여기서 무조건 걸면 아무것도 바꾸지 못한 도구(JSON 문법 오류, 수식 아님)도 문서를 dirty 로 만들어 같은 내용을 다시 저장한다
             gutter?.needsDisplay = true
         }
 

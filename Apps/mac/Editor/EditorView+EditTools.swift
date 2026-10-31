@@ -13,11 +13,12 @@ extension EditorView.Coordinator {
         let hadNewline = text.hasSuffix("\n")
         if hadNewline { text.removeLast() }
         let lines = text.components(separatedBy: "\n")
-        let out = TextTools.toggleLineComment(lines: lines, syntax: syntax)
+        let out = Perf.measure("toggleComment.core lines=\(lines.count)") { TextTools.toggleLineComment(lines: lines, syntax: syntax) }
         guard out != lines else { return }
         var result = out.joined(separator: "\n")
         if hadNewline { result += "\n" }
-        tv.insertText(result, replacementRange: lineRange)
+        // 문서 전체(1.3 MB) 교체는 여기(TextKit 2 재배치·구문 색)가 거의 전부다 — --debug-perf 로 core 와 따로 본다
+        Perf.measure("toggleComment.insertText len=\((result as NSString).length)") { tv.insertText(result, replacementRange: lineRange) }
         if sel.length > 0 {
             tv.setSelectedRange(NSRange(location: lineRange.location, length: (result as NSString).length))
         } else {
@@ -49,9 +50,9 @@ extension EditorView.Coordinator {
         let range = sel.length > 0 ? sel : NSRange(location: 0, length: ns.length)
         let input = ns.substring(with: range)
         do {
-            let result = minify ? try JSONFormatter.minify(input) : try JSONFormatter.format(input)
+            let result = try Perf.measure("formatJSON.core len=\(range.length)") { minify ? try JSONFormatter.minify(input) : try JSONFormatter.format(input) }
             let len = (result as NSString).length
-            if result != input { tv.insertText(result, replacementRange: range) }
+            if result != input { Perf.measure("formatJSON.insertText len=\(len)") { tv.insertText(result, replacementRange: range) } }
             if sel.length > 0 {
                 tv.setSelectedRange(NSRange(location: range.location, length: len))
             } else {

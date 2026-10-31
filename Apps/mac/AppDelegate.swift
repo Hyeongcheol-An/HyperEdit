@@ -55,6 +55,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     if let panel = NSApp.windows.first(where: { $0 is QuickAppendPanel && $0.isVisible }) { await Self.capture(window: panel, to: p) }
                     else { try? "snapshot: no panel".write(toFile: p + ".txt", atomically: true, encoding: .utf8) }
                 }
+                // 시트(스니펫 선택창 ⇧⌘I 등)는 별도 창이라 첫 창 캡처에 들어가지 않는다 — `--snapshot-sheet <png>` 로 첫 창에 붙은 시트를 따로 찍는다
+                if let p = LaunchOptions.value("--snapshot-sheet") {
+                    // ScreenCaptureKit 은 시트 창을 고르면 부모 창까지 합성한 그림을 시트 크기에 맞춰 돌려준다 → 부모 창 크기로 받아야 읽을 수 있다
+                    if let main = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil && !($0 is NSPanel) }), let sheet = main.attachedSheet {
+                        await Self.capture(window: sheet, to: p, size: main.frame.size)
+                    } else { try? "snapshot: no sheet".write(toFile: p + ".txt", atomically: true, encoding: .utf8) }
+                }
                 if quit { NSApp.terminate(nil) }
             }
         }
@@ -69,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
-    static func capture(window: NSWindow, to path: String) async {
+    static func capture(window: NSWindow, to path: String, size: CGSize? = nil) async {
         let wid = CGWindowID(window.windowNumber)
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -79,7 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let filter = SCContentFilter(desktopIndependentWindow: w)
             let cfg = SCStreamConfiguration()
             let scale = window.backingScaleFactor
-            cfg.width = Int(w.frame.width * scale); cfg.height = Int(w.frame.height * scale); cfg.showsCursor = false
+            let size = size ?? w.frame.size
+            cfg.width = Int(size.width * scale); cfg.height = Int(size.height * scale); cfg.showsCursor = false
             let img = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: cfg)
             try NSBitmapImageRep(cgImage: img).representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
             try? "snapshot: ok \(cfg.width)x\(cfg.height)".write(toFile: path + ".txt", atomically: true, encoding: .utf8)

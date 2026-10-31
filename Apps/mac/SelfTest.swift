@@ -326,6 +326,7 @@ enum SelfTest {
         await runMacro(model: model, check: check, log: log)   // macro
         await runFold(model: model, check: check, log: log)
         await runQAFold(model: model, check: check, log: log)   // QA: 접기·마커·undo 추적 경계 사례
+        await runQAEditTools(model: model, check: check, log: log)   // qa: 편집 도구 경계 상황
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
