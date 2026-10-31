@@ -2,6 +2,27 @@
 
 모든 변경은 [Conventional Commits](https://www.conventionalcommits.org/ko/) 기반으로 semantic-release가 자동 생성합니다.
 
+## [0.5.0](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.4.0...v0.5.0) (2026-10-31)
+
+### ✨ 기능
+
+* **editor:** 구문 하이라이트 — 노트/마크다운 라이트 규칙 + 코드 20종, TextKit 2 렌더링 속성 (⌃⌘H) ([03dc5fe](https://github.com/Hyeongcheol-An/HyperEdit/commit/03dc5fec40339995b114850c21b50b7b6d8577b5))
+* **editor:** 구문 하이라이트 병합 — 메모/마크다운 라이트 규칙 + 코드 21종, TextKit 2 렌더링 속성 (⌃⌘H) ([6c13db7](https://github.com/Hyeongcheol-An/HyperEdit/commit/6c13db77ed1a74affcaaf3005809452b47e15805))
+* **editor:** 북마크 줄 추적, 즉석 계산(⌃⌘=), 열 맞춤(⌃⌘T) ([c5ba3c6](https://github.com/Hyeongcheol-An/HyperEdit/commit/c5ba3c6715ac1d94f1bceca819e590ec1b73eb31))
+* **editor:** 북마크 줄 추적, 즉석 계산(⌃⌘=), 열 맞춤(⌃⌘T) 병합 ([4783b90](https://github.com/Hyeongcheol-An/HyperEdit/commit/4783b90fa0546e564a3ecd241f99d99cc4fac567))
+* **markdown:** 분할 미리보기 — swift-markdown 렌더, 테마 CSS, 스크롤 동기화 (⇧⌘P) ([a1ed999](https://github.com/Hyeongcheol-An/HyperEdit/commit/a1ed99943f9e14f8357b453826f1c2feb6496044))
+* **markdown:** 분할 미리보기 병합 — swift-markdown 0.9 렌더, 테마 CSS, 편집기→미리보기 스크롤 동기화 (⇧⌘P) ([b9fef2a](https://github.com/Hyeongcheol-An/HyperEdit/commit/b9fef2a6a374b6ac420cab9aa711b13087998a1e))
+* **ribbon:** 좁은 창에서 리본 접힘 — 작은 버튼을 아이콘만 표시, 제목은 툴팁으로 ([1ef6800](https://github.com/Hyeongcheol-An/HyperEdit/commit/1ef6800f9fdcb45027a437b7e4147f2f96ae587d))
+
+### 🐛 수정
+
+* **ribbon:** 탭별 필요 폭을 실측값으로 갱신 (편집 1520 · 레이아웃 920) ([b71c73c](https://github.com/Hyeongcheol-An/HyperEdit/commit/b71c73cad8966e75cef3d094aa7a162dfbb09b33))
+
+### 📝 문서
+
+* **contributing:** 로컬라이즈 절차와 scripts/l10n-add.py(한국어 번역 카탈로그 추가 도우미) ([05e0f07](https://github.com/Hyeongcheol-An/HyperEdit/commit/05e0f07a7349dd857e44d75655b20cabbdca0b42))
+* **screenshots:** v0.5 UI 로 교체 — 구문 색, 마크다운 미리보기, 타임라인 ([a205a96](https://github.com/Hyeongcheol-An/HyperEdit/commit/a205a96b08c792635610d02a5f26d85ce1659ff4))
+
 ## [0.4.0](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.3.1...v0.4.0) (2026-10-31)
 
 ### ✨ 기능
