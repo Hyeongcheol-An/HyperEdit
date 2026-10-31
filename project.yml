@@ -2,6 +2,8 @@
 name: HyperEdit
 options:
   bundleIdPrefix: io.github.hyeongcheol-an
+  # UI 문자열의 개발(소스) 언어는 영어, 한국어는 Apps/mac/Localizable.xcstrings 의 번역
+  developmentLanguage: en
   deploymentTarget:
     macOS: "15.0"
   createIntermediateGroups: true

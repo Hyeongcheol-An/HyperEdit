@@ -13,29 +13,30 @@ struct SearchPanel: View {
             // 1행: 범위 · 검색어 · 옵션 · 동작
             HStack(spacing: 6) {
                 Picker("", selection: $model.findScope) {
-                    ForEach(FindScope.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(FindScope.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 150)
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.foregroundMuted.color)
-                TextField("찾을 내용 (Enter)", text: $model.searchQuery)
+                // 320 → 240: 영어 버튼 제목(Next/Prev/Select All)이 기본 창 폭에서 눌려 잘리지 않도록
+                TextField("Find (Enter)", text: $model.searchQuery)
                     .textFieldStyle(.plain).font(.system(size: 12, design: .monospaced))
                     .focused($focused)
                     .onSubmit { model.runCurrentSearch() }
-                    .frame(width: 320)
-                optionToggle(".*", $model.searchOptions.regex, "정규식 (^ $ 는 줄 단위, 바꾸기에 $1 사용 가능)")
-                optionToggle("Aa", $model.searchOptions.caseSensitive, "대소문자 구분")
-                optionToggle("W", $model.searchOptions.wholeWord, "단어 단위")
+                    .frame(width: 240)
+                optionToggle(".*", $model.searchOptions.regex, "Regular expression (^ $ match per line; $1 works in Replace)")
+                optionToggle("Aa", $model.searchOptions.caseSensitive, "Match case")
+                optionToggle("W", $model.searchOptions.wholeWord, "Whole word")
                 if model.findScope == .document {
-                    smallButton("다음", "F3") { model.findNext() }
-                    smallButton("이전", "⇧F3") { model.findPrevious() }
-                    smallButton("모두 선택", "⌥⌘A — 매치를 멀티 커서로") { model.selectAllMatches() }.disabled(model.searchHits.isEmpty)
+                    smallButton("Next", "F3") { model.findNext() }
+                    smallButton("Prev", "⇧F3") { model.findPrevious() }
+                    smallButton("Select All", "⌥⌘A — turn the matches into carets") { model.selectAllMatches() }.disabled(model.searchHits.isEmpty)
                     Toggle(isOn: $model.replaceVisible) { Image(systemName: "arrow.left.arrow.right") }
-                        .toggleStyle(.button).controlSize(.small).help("바꾸기 (⌘R)")
+                        .toggleStyle(.button).controlSize(.small).help("Replace (⌘R)")
                 } else {
-                    smallButton("찾기", "폴더 전체 검색") { model.runFindInFiles() }
+                    smallButton("Find", "Search the whole folder") { model.runFindInFiles() }
                 }
                 if model.isSearching || model.isFileSearching { ProgressView().controlSize(.small) }
-                Text(model.findScope == .document ? (model.searchHits.isEmpty ? "" : "\(model.searchHits.count)건") : model.fileSearchSummary)
+                Text(model.findScope == .document ? (model.searchHits.isEmpty ? "" : String(localized: "\(model.searchHits.count) hits")) : model.fileSearchSummary)
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(theme.foregroundMuted.color).lineLimit(1)
                 if let e = model.searchError { Text(e).font(.system(size: 11)).foregroundStyle(theme.errorColor.color).lineLimit(1) }
                 Spacer(minLength: 0)
@@ -47,28 +48,29 @@ struct SearchPanel: View {
                 HStack(spacing: 6) {
                     Color.clear.frame(width: 150)
                     Image(systemName: "arrow.left.arrow.right").foregroundStyle(theme.foregroundMuted.color)
-                    TextField("바꿀 내용", text: $model.replaceText)
+                    TextField("Replace with", text: $model.replaceText)
                         .textFieldStyle(.plain).font(.system(size: 12, design: .monospaced))
                         .onSubmit { model.replaceCurrent() }
-                        .frame(width: 320)
-                    smallButton("바꾸기", "선택된 매치를 바꾸고 다음으로") { model.replaceCurrent() }
-                    smallButton("모두 바꾸기", "문서 전체 (⌘Z 한 번으로 되돌림)") { model.replaceAll() }
+                        .frame(width: 240)
+                    smallButton("Replace", "Replace the selected match and move to the next") { model.replaceCurrent() }
+                    smallButton("Replace All", "Whole document (a single ⌘Z undoes it)") { model.replaceAll() }
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 8).frame(height: 26)
             } else if model.findScope == .files {
                 HStack(spacing: 6) {
                     Color.clear.frame(width: 150)
-                    Button { model.chooseFileSearchDirectory() } label: { Label("폴더 선택…", systemImage: "folder") }
-                        .controlSize(.small).font(.system(size: 11)).help("검색할 폴더를 고릅니다 (하위 폴더 포함)")
+                    Button { model.chooseFileSearchDirectory() } label: { Label("Choose Folder…", systemImage: "folder") }
+                        .controlSize(.small).font(.system(size: 11)).help("Choose the folder to search (subfolders included)")
                     Text(shortPath(model.fileSearchDirectory))
                         .font(.system(size: 11)).lineLimit(1).truncationMode(.middle).frame(maxWidth: 260, alignment: .leading)
                         .help(model.fileSearchDirectory.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
-                    smallButton("현재 문서 폴더", "검색 폴더를 현재 문서가 있는 폴더로") { model.fileSearchDirectory = model.rootDirectory }
-                    TextField("마스크: *.md;*.txt (비우면 전체)", text: $model.fileMask)
+                    smallButton("Current Folder", "Search the folder of the current document") { model.fileSearchDirectory = model.rootDirectory }
+                    // 자리표시자는 prompt(Text(String)) 로 — LocalizedStringKey 는 마크다운으로 해석돼 `*.md;*.txt` 의 * 가 사라진다
+                    TextField("", text: $model.fileMask, prompt: Text(String(localized: "Mask: *.md;*.txt (empty = all)")))
                         .textFieldStyle(.plain).font(.system(size: 11, design: .monospaced)).frame(width: 200)
                         .onSubmit { model.runFindInFiles() }
-                        .help("파일 이름 패턴, ; 로 여러 개 (대소문자 무시)")
+                        .help("File name patterns separated by ; (case-insensitive)")
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 8).frame(height: 26)
@@ -108,12 +110,13 @@ struct SearchPanel: View {
         return "…/" + parts.suffix(2).joined(separator: "/")
     }
 
-    private func optionToggle(_ label: String, _ binding: Binding<Bool>, _ help: String) -> some View {
+    /// label 은 기호(.* Aa W)라 번역하지 않는다 — help 만 현지화
+    private func optionToggle(_ label: String, _ binding: Binding<Bool>, _ help: LocalizedStringKey) -> some View {
         Toggle(label, isOn: binding).toggleStyle(.button).controlSize(.small)
             .font(.system(size: 10, design: .monospaced)).help(help)
     }
 
-    private func smallButton(_ title: String, _ help: String, action: @escaping () -> Void) -> some View {
+    private func smallButton(_ title: LocalizedStringKey, _ help: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(title, action: action).controlSize(.small).font(.system(size: 11)).help(help)
     }
 }
@@ -132,7 +135,7 @@ struct SearchHitRow: View {
                 Text(file).font(.system(size: 11, design: .monospaced)).foregroundStyle(theme.accent.color)
                     .frame(width: 140, alignment: .leading).lineLimit(1).truncationMode(.middle)
             }
-            Text("\(line)")
+            Text(verbatim: "\(line)")
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundStyle(isCurrent ? theme.accent.color : theme.foregroundDim.color)
                 .frame(width: 56, alignment: .trailing)

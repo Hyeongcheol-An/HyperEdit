@@ -54,7 +54,7 @@ struct FileViewPanel: View {
                     .font(.system(size: 10)).foregroundStyle(theme.foregroundDim.color).lineLimit(1).truncationMode(.middle)
                 Spacer()
                 Button { reload() } label: { Image(systemName: "arrow.clockwise").font(.system(size: 10)) }
-                    .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).help("새로 고침")
+                    .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).help("Refresh")
             }
             .padding(.horizontal, 8).frame(height: 24)
 

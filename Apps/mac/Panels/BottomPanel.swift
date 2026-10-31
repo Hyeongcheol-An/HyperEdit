@@ -13,9 +13,9 @@ struct BottomPanel: View {
                     Button { model.bottomTab = tab } label: {
                         HStack(spacing: 5) {
                             Image(systemName: tab.systemImage).font(.system(size: 10))
-                            Text(tab.rawValue).font(.system(size: 11, weight: model.bottomTab == tab ? .semibold : .regular))
+                            Text(tab.label).font(.system(size: 11, weight: model.bottomTab == tab ? .semibold : .regular))
                             if tab == .findResults, !model.searchHits.isEmpty {
-                                Text("\(model.searchHits.count)").font(.system(size: 9, weight: .bold))
+                                Text(verbatim: "\(model.searchHits.count)").font(.system(size: 9, weight: .bold))
                                     .padding(.horizontal, 4).background(theme.accent.color.opacity(0.25)).clipShape(Capsule())
                             }
                         }
@@ -28,7 +28,7 @@ struct BottomPanel: View {
                 }
                 Spacer()
                 Button { model.showBottomPanel = false } label: { Image(systemName: "xmark").font(.system(size: 10)) }
-                    .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 8).help("닫기 (⌘2)")
+                    .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 8).help("Close (⌘2)")
             }
             .frame(height: 24)
             .background(theme.backgroundAlt.color)
@@ -54,7 +54,7 @@ struct OutputPanel: View {
             List(model.output) { line in
                 HStack(alignment: .top, spacing: 8) {
                     Text(Self.time.string(from: line.time)).foregroundStyle(theme.foregroundDim.color)
-                    Text(line.text).foregroundStyle(line.text.hasPrefix("오류") ? theme.errorColor.color : theme.foreground.color)
+                    Text(line.text).foregroundStyle(line.isError ? theme.errorColor.color : theme.foreground.color)
                 }
                 .font(.system(size: 11, design: .monospaced))
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
