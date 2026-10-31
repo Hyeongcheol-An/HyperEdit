@@ -161,6 +161,16 @@
         }
       }
     },
+    "An emergency copy of the unsaved text was written to %@. Quit anyway, or cancel to keep editing?": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "저장되지 않은 내용의 비상 사본을 %@ 에 남겼습니다. 그래도 종료할까요, 아니면 취소하고 계속 편집할까요?"
+          }
+        }
+      }
+    },
     "Ascending": {
       "localizations": {
         "ko": {
@@ -2131,6 +2141,16 @@
         }
       }
     },
+    "No emergency copy could be written. Quit anyway, or cancel to keep editing?": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비상 사본도 쓰지 못했습니다. 그래도 종료할까요, 아니면 취소하고 계속 편집할까요?"
+          }
+        }
+      }
+    },
     "No macro recorded yet (⇧⌘M to record)": {
       "localizations": {
         "ko": {
@@ -2601,6 +2621,16 @@
         }
       }
     },
+    "Quit Anyway": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "그래도 종료"
+          }
+        }
+      }
+    },
     "Re-read the file — unsaved changes are discarded": {
       "localizations": {
         "ko": {
@@ -3007,6 +3037,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "매크로 저장"
+          }
+        }
+      }
+    },
+    "Save failed on quit — emergency copy written to %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "종료 시 저장 실패 — 비상 사본을 %@ 에 남겼습니다"
+          }
+        }
+      }
+    },
+    "Save failed on quit — no emergency copy could be written": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "종료 시 저장 실패 — 비상 사본도 쓰지 못했습니다"
           }
         }
       }
@@ -3627,6 +3677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "탭 → 공백"
+          }
+        }
+      }
+    },
+    "The document could not be saved": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문서를 저장하지 못했습니다"
           }
         }
       }

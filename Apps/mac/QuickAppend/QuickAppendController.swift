@@ -81,7 +81,8 @@ final class QuickAppendController: ObservableObject {
 
     /// 전역 단축키: 떠 있고 키 창이면 닫고, 아니면 연다
     func toggle() {
-        if let p = panel, p.isVisible, p.isKeyWindow { hide() } else { show() }
+        // nonactivating 패널은 앱이 비활성일 때 isKeyWindow 가 false 이므로, 보이는 패널은 비활성 상태에서도 닫는다
+        if let p = panel, p.isVisible, p.isKeyWindow || !NSApp.isActive { hide() } else { show() }
     }
 
     /// ⌘↩: 덧붙이고 닫는다. 빈 글이면 아무것도 하지 않는다.
@@ -141,10 +142,11 @@ extension AppModel {
             return false
         }
         let ns = document.textStorage.string as NSString
-        let insertion = QuickAppendComposer.insertion(trailingNewlines: QuickAppendComposer.trailingNewlineCount(of: ns),
+        var insertion = QuickAppendComposer.insertion(trailingNewlines: QuickAppendComposer.trailingNewlineCount(of: ns),
                                                       isEmptyDocument: ns.length == 0, note: text,
                                                       heading: withTimestamp ? Timestamp.heading() : nil)
         guard !insertion.isEmpty else { return false }
+        if document.lineEnding == "DOS" { insertion = insertion.replacingOccurrences(of: "\n", with: "\r\n") }   // CRLF 문서는 줄바꿈을 맞춘다
         let end = ns.length
         let range = NSRange(location: end, length: 0)
         if let tv = (session.active ?? session.primary)?.textView, tv.isEditable {

@@ -295,6 +295,18 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     // MARK: - Snapshots
 
+    /// 종료 직전 저장이 실패했을 때 메모리의 내용을 스냅샷 폴더에 비상 사본으로 남긴다 (`<파일명>-<시각>-unsaved.txt`, 문서와 같은 인코딩).
+    /// 성공하면 사본 URL, 쓰지 못하면 nil.
+    @discardableResult
+    public func writeEmergencyCopy() -> URL? {
+        let dir = Self.snapshotDirectory
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss"
+        let target = dir.appendingPathComponent("\(url.lastPathComponent)-\(f.string(from: Date()))-unsaved.txt")
+        let built = Self.encode(textStorage.string, encoding: encoding, bom: hasBOM)
+        do { try built.data.write(to: target, options: [.atomic]); return target } catch { return nil }
+    }
+
     public static var snapshotDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appendingPathComponent("HyperEdit/snapshots", isDirectory: true)

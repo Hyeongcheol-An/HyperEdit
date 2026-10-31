@@ -90,9 +90,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
-    /// ⌘Q·창 닫기: 2초 자동 저장을 기다리지 못한 편집을 동기로 저장하고 종료 (비동기 저장 Task 는 종료 전에 실행될 기회가 없다)
+    /// ⌘Q·창 닫기: 2초 자동 저장을 기다리지 못한 편집을 동기로 저장하고 종료 (비동기 저장 Task 는 종료 전에 실행될 기회가 없다).
+    /// 저장이 실패해 편집이 남아 있으면(쓰기 불가 폴더, 빈 내용 저장 차단 등) 메모리 내용을 스냅샷 폴더에 비상 사본으로 남기고 종료할지 묻는다 —
+    /// Quick Append 는 패널이 바로 닫히고 앱이 비활성이라 상태바의 저장 오류를 볼 기회가 없기 때문이다.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        AppModel.current?.document.saveSynchronously()
-        return .terminateNow
+        guard let doc = AppModel.current?.document else { return .terminateNow }
+        if doc.saveSynchronously() || !doc.isDirty { return .terminateNow }
+        let copy = doc.writeEmergencyCopy()
+        AppModel.current?.log(copy.map { String(localized: "Save failed on quit — emergency copy written to \($0.path)") }
+                              ?? String(localized: "Save failed on quit — no emergency copy could be written"), isError: true)
+        // 자동화 실행(셀프테스트·벤치·스크린샷)은 묻지 않고 종료한다
+        if SelfTest.enabled || Bench.enabled || LaunchOptions.has("--snapshot") { return .terminateNow }
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = String(localized: "The document could not be saved")
+        alert.informativeText = copy.map { String(localized: "An emergency copy of the unsaved text was written to \($0.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")). Quit anyway, or cancel to keep editing?") }
+            ?? String(localized: "No emergency copy could be written. Quit anyway, or cancel to keep editing?")
+        alert.addButton(withTitle: String(localized: "Quit Anyway"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        return alert.runModal() == .alertFirstButtonReturn ? .terminateNow : .terminateCancel
     }
 }

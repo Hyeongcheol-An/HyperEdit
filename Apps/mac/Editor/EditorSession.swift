@@ -93,7 +93,7 @@ final class EditorSession: ObservableObject {
 
     /// 보조 편집기가 사라질 때. 그 뷰에서 한 편집의 undo 항목이 공유 스택에 남아 있을 수 있으므로 텍스트 뷰·레이아웃 매니저를 바로 버리지 않고
     /// 다음 `clearUndo()`(파일 전환·다시 읽기)까지 보관한다 — AppKit 의 undo 항목은 편집한 뷰를 통해 되돌리기 때문.
-    /// undo 스택이 비어 있으면 바로 놓아 주고, 보관이 `maxRetired` 를 넘으면(파일 전환 없이 분할을 여러 번 여닫음) 스택을 비우고 전부 놓아 준다.
+    /// undo 스택이 비어 있으면 바로 놓아 주고, 보관이 `maxRetired`(20) 를 넘으면(파일 전환 없이 분할을 아주 여러 번 여닫음) 스택을 비우고 전부 놓아 준다.
     func retire(_ c: EditorView.Coordinator) {
         entries.removeAll { $0.coordinator == nil || $0.coordinator === c }
         if activeEditorID == c.id { activeEditorID = primary?.id }
@@ -108,7 +108,7 @@ final class EditorSession: ObservableObject {
         }
         if let p = primary?.textView, p.window?.firstResponder !== p { p.window?.makeFirstResponder(p) }
     }
-    private static let maxRetired = 3
+    private static let maxRetired = 20   // 보관 뷰 하나는 수백 KB — 분할을 자주 여닫아도 undo 스택을 지우지 않도록 넉넉히
 
     /// 공유 undo 스택 비우기 (파일 전환·디스크에서 다시 읽기). 이때 보관하던 옛 보조 뷰도 놓아 준다.
     func clearUndo() {
