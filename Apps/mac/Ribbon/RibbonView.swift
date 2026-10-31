@@ -88,6 +88,8 @@ private struct HomeTab: View {
             }
             RibbonStack {
                 RibbonSmallButton(title: "Snippet…", systemImage: "text.insert", help: "Insert a snippet — or type a trigger such as todo and press Tab (⇧⌘I)", theme: theme) { model.showSnippetPicker = true }
+            RibbonStack {   // quick append
+                RibbonSmallButton(title: "Quick Append…", systemImage: "note.text.badge.plus", help: "Floating note panel — ⌘↩ appends to the end of the document (⇧⌘N, global ⌃⌥N)", theme: theme) { model.quickAppend.show() }
             }
         }
         RibbonGroup(title: "Mode", theme: theme) {
@@ -229,6 +231,9 @@ private struct LayoutTab: View {
             }
             RibbonStack {
                 RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
+                // split: 토글 + 방향 전환 (같은 스택이라 그룹 폭은 그대로)
+                RibbonSmallToggle(title: "Split Editor", systemImage: "rectangle.split.2x1", help: "Show the document in two editors (⌘\\)", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() }), theme: theme)
+                RibbonSmallButton(title: "Split Direction", systemImage: "rectangle.split.1x2", help: "Switch between side-by-side and stacked split", theme: theme) { model.cycleSplitOrientation() }
             }
         }
         RibbonGroup(title: "Markdown", theme: theme) {
@@ -430,7 +435,7 @@ extension RibbonTab {
     /// 탭 내용이 접히지 않고 다 보이는 데 필요한 폭(pt). 그룹을 추가하면 갱신할 것 (스크린샷에서 마지막 그룹 오른쪽 끝 + 여유 20).
     var requiredWidth: CGFloat {
         switch self {
-        case .home: 1190      // 파일 그룹 끝 ≈ 1166 (삽입 그룹에 "스니펫…" 스택 추가 후 1600pt 스크린샷 실측)
+        case .home: 1320      // 파일 그룹 끝 ≈ 1295 (삽입 그룹에 '스니펫…'·'빠른 추가…' 스택 2개 추가 — 통합 후 1600pt 스크린샷으로 재측정할 것)
         case .edit: 1660      // 도구 그룹 끝 ≈ 1637 (주석 토글·JSON 스택 추가 후 1800pt 스크린샷 실측)
         case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
         case .advanced: 260

@@ -49,6 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             Task { @MainActor in
                 await Self.captureFirstWindow(to: path)
+                // quick append: `--snapshot-panel <png>` 는 떠 있는 Quick Append 창(`--quick-append` 로 열림)을 따로 찍는다
+                if let p = LaunchOptions.value("--snapshot-panel") {
+                    if let panel = NSApp.windows.first(where: { $0 is QuickAppendPanel && $0.isVisible }) { await Self.capture(window: panel, to: p) }
+                    else { try? "snapshot: no panel".write(toFile: p + ".txt", atomically: true, encoding: .utf8) }
+                }
                 if quit { NSApp.terminate(nil) }
             }
         }
@@ -56,9 +61,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     static func captureFirstWindow(to path: String) async {
-        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil }) else {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil && !($0 is NSPanel) }) else {
             try? "snapshot: no window".write(toFile: path + ".txt", atomically: true, encoding: .utf8); return
         }
+        await capture(window: window, to: path)
+    }
+
+    @MainActor
+    static func capture(window: NSWindow, to path: String) async {
         let wid = CGWindowID(window.windowNumber)
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)

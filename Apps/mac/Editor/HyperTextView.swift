@@ -19,6 +19,8 @@ final class HyperTextView: NSTextView {
     var onLinesWillChange: ((_ atLine: Int, _ delta: Int) -> Void)?
     /// false 를 돌려주면(북마크 없음) 줄 번호 계산을 건너뛴다
     var needsLineTracking: (() -> Bool)?
+    /// 분할 보기: 이 뷰가 포커스를 받거나 클릭되면 알린다 — 명령·상태바가 이 뷰 기준이 된다
+    var onBecomeActive: (() -> Void)?   // split
     private var lineChangeDepth = 0
 
     /// 열 모드 (UltraEdit Alt+C): 켜져 있으면 드래그와 ⇧방향키가 사각형 블록을 만든다
@@ -40,6 +42,12 @@ final class HyperTextView: NSTextView {
     var snippetSession: SnippetSession?
 
     override var acceptsFirstResponder: Bool { true }
+
+    override func becomeFirstResponder() -> Bool {   // split
+        let ok = super.becomeFirstResponder()
+        if ok { onBecomeActive?() }
+        return ok
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -329,6 +337,7 @@ final class HyperTextView: NSTextView {
     // MARK: - 마우스: ⌘클릭 캐럿 추가, 열 모드/⌥ 드래그 블록 선택
 
     override func mouseDown(with event: NSEvent) {
+        onBecomeActive?()   // split
         endSnippetSession()   // 클릭은 탭스톱 세션을 끝낸다
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let point = convert(event.locationInWindow, from: nil)

@@ -7,20 +7,22 @@ import HyperCore
 enum DebugFlags {
     static let args = CommandLine.arguments
     static let noApply = args.contains("--debug-no-apply")     // 테마/폰트 속성 적용 안 함
-    static let noSwap = args.contains("--debug-no-swap")       // 문서 스토리지 교체 대신 텍스트 복사
 }
 
 /// NSScrollView + HyperTextView(TextKit 2) 를 SwiftUI 에 올린다. 문서의 NSTextStorage 를 직접 공유.
+/// 분할 보기(split): 뷰마다 레이아웃 매니저를 만들고 `EditorSession.contentStorage` 하나에 붙인다 — 두 뷰가 같은 스토리지·undo 스택을 쓴다.
 struct EditorView: NSViewRepresentable {
     @EnvironmentObject var model: AppModel
     @ObservedObject var document: MemoDocument
     let theme: Theme
     let font: FontSettings
+    var role: EditorRole = .primary   // split
 
-    func makeCoordinator() -> Coordinator { Coordinator(model: model) }
+    func makeCoordinator() -> Coordinator { Coordinator(model: model, role: role) }
 
     func makeNSView(context: Context) -> EditorContainerView {
         let c = context.coordinator
+        Perf.log("EditorView.makeNSView role=\(role)")   // split: 분할 토글이 주 편집기를 다시 만들지 않는지 --debug-perf 로 확인
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true
         scroll.hasHorizontalScroller = false
@@ -45,15 +47,24 @@ struct EditorView: NSViewRepresentable {
             c.handleReload(generation: document.reloadGeneration)
             Perf.measure("  restoreViewState") { c.restoreViewStateIfNeeded() }
             c.textView?.isEditable = document.isLoaded          // 읽지 못한 파일은 편집해도 저장되지 않으므로 편집 자체를 막는다
-            c.updateMatchHighlights(model.searchHits, color: theme.selection.nsColor.withAlphaComponent(0.45))
-            c.updateWindowTitle()
+            if c.role == .primary {   // split: 스토리지 속성(검색 강조)과 창 제목은 주 편집기만
+                c.updateMatchHighlights(model.searchHits, color: theme.selection.nsColor.withAlphaComponent(0.45))
+                c.updateWindowTitle()
+            }
             c.gutter?.needsDisplay = true
         }
+    }
+
+    static func dismantleNSView(_ container: EditorContainerView, coordinator: Coordinator) {
+        coordinator.tearDown()   // split: 보조 편집기 닫힘
     }
 
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         let model: AppModel
+        let id = UUID()                  // split: 활성 편집기 식별
+        let role: EditorRole             // split
+        var session: EditorSession { model.session }
         private(set) var document: MemoDocument
         weak var scrollView: NSScrollView?
         weak var textView: HyperTextView?
@@ -75,24 +86,32 @@ struct EditorView: NSViewRepresentable {
         private var syntaxColors: [TokenKind: NSColor] = [:]
         private(set) var highlightEnabled: Bool
 
-        init(model: AppModel) {
+        init(model: AppModel, role: EditorRole = .primary) {
             self.model = model
+            self.role = role
             self.document = model.document
             self.grammar = GrammarRegistry.grammar(for: model.document.url)
             self.highlightEnabled = model.syntaxHighlighting
             super.init()
+            model.session.register(self)
+        }
+
+        /// 보조 편집기가 사라질 때 (SwiftUI dismantle). 세션에서 빼고 구독을 끊는다 — 텍스트 뷰는 공유 undo 항목이 참조할 수 있어 세션이 보관한다.
+        func tearDown() {
+            saveStateTask?.cancel()
+            cancellables.removeAll()
+            docCancellables.removeAll()
+            session.retire(self)
         }
 
         // MARK: 구성
 
         func makeTextView(for doc: MemoDocument, width: CGFloat) -> HyperTextView {
-            // NSTextView 가 자체 TextKit 2 스택(뷰포트 레이아웃 delegate 포함)을 구성하게 한 뒤, 문서의 NSTextStorage 로 교체한다.
+            // NSTextView 가 자체 TextKit 2 스택(뷰포트 레이아웃 delegate 포함)을 구성하게 한 뒤, 레이아웃 매니저를 세션의 공유 콘텐츠 스토리지로 옮긴다.
+            // 문서의 NSTextStorage 에는 콘텐츠 스토리지가 하나만 붙을 수 있으므로(TextKit 2 관찰자 1개) 분할된 두 뷰는 레이아웃 매니저만 따로 가진다.
             let tv = HyperTextView(usingTextLayoutManager: true)
-            if DebugFlags.noSwap {
-                tv.textStorage?.setAttributedString(NSAttributedString(string: doc.textStorage.string))
-            } else {
-                tv.textContentStorage?.textStorage = doc.textStorage
-            }
+            session.bind(textStorage: doc.textStorage)
+            tv.textLayoutManager?.replace(session.contentStorage)
             tv.frame = NSRect(x: 0, y: 0, width: width, height: 100)
             if let container = tv.textContainer {
                 container.widthTracksTextView = true
@@ -123,9 +142,13 @@ struct EditorView: NSViewRepresentable {
             tv.textContainerInset = NSSize(width: 10, height: 12)
             tv.delegate = self
             tv.onDidMoveToWindow = { [weak self] in self?.restoreViewStateIfNeeded() }
+            tv.onBecomeActive = { [weak self] in guard let self else { return }; self.session.activate(self) }   // split
             installHighlighter(on: tv)
             return tv
         }
+
+        /// 공유 undo 스택 (NSTextViewDelegate) — 분할된 두 뷰가 같은 NSUndoManager 를 쓴다
+        func undoManager(for view: NSTextView) -> UndoManager? { session.undoManager }
 
         // MARK: 구문 하이라이트 — TextKit 2 렌더링 속성
         // 색을 NSTextStorage 에 쓰지 않는다 (테마 전체 적용·undo·한글 폰트 런·검색 강조와 충돌). 대신 레이아웃 매니저의
@@ -218,7 +241,8 @@ struct EditorView: NSViewRepresentable {
             textView.needsLineTracking = { [weak self] in !(self?.model.bookmarks.bookmarks.isEmpty ?? true) }
             textView.onLinesWillChange = { [weak self] line, delta in self?.model.bookmarks.shift(fromLine: line, delta: delta) }
             textView.onMultiChange = { [weak self] m in
-                guard let c = self?.model.caret else { return }
+                guard let self, self.session.isActive(self) else { return }   // split: 상태바 커서 수는 활성 편집기 기준
+                let c = self.model.caret
                 let n = m?.ranges.count ?? 0
                 if c.multiCaretCount != n { c.multiCaretCount = n }
                 let b = m?.block != nil
@@ -245,7 +269,7 @@ struct EditorView: NSViewRepresentable {
                 .sink { [weak self] newURL in
                     guard let self else { return }
                     self.saveStateTask?.cancel()
-                    self.textView?.undoManager?.removeAllActions()
+                    self.session.clearUndo()
                     self.textView?.endSnippetSession()
                     self.restored = false
                     self.lastCaretRect = nil
@@ -258,8 +282,8 @@ struct EditorView: NSViewRepresentable {
         func rebind(document newDoc: MemoDocument) {
             saveViewStateNow()
             document = newDoc
-            Perf.measure("  rebind.swapStorage") { textView?.textContentStorage?.textStorage = newDoc.textStorage }
-            textView?.undoManager?.removeAllActions()
+            Perf.measure("  rebind.swapStorage") { session.bind(textStorage: newDoc.textStorage) }   // 두 번째 편집기는 이미 연결돼 있어 건너뛴다
+            session.clearUndo()
             lastReloadGeneration = newDoc.reloadGeneration
             restored = false
             appliedThemeID = nil
@@ -281,7 +305,6 @@ struct EditorView: NSViewRepresentable {
 
             let base = FontCascade.baseFont(font)
             let hangul = FontCascade.hangulFont(font)
-            document.hangulFont = hangul
 
             let para = NSMutableParagraphStyle()
             let lh = FontCascade.lineHeight(for: base, multiple: font.lineHeightMultiple)
@@ -299,33 +322,40 @@ struct EditorView: NSViewRepresentable {
             tv.typingAttributes = attrs
             tv.defaultParagraphStyle = para
 
-            let ts = tv.textStorage ?? document.textStorage
-            let full = NSRange(location: 0, length: ts.length)
             rebuildSyntaxColors(theme)   // 아래 전체 속성 적용이 프래그먼트를 다시 만들며 validator 를 부르므로 색 표를 먼저 바꾼다
-            ts.beginEditing()
-            Perf.measure("  apply.setAttributes len=\(full.length)") { ts.setAttributes(attrs, range: full) }
-            if let h = hangul { Perf.measure("  apply.hangul") { HangulFontFixer.apply(font: h, to: ts, in: full) } }
-            Perf.measure("  apply.endEditing") { ts.endEditing() }
+            if role == .primary {
+                // 스토리지 속성(폰트·색·문단·한글 런)은 공유되므로 주 편집기가 테마 변경당 한 번만 입힌다 (1.3 MB 전체 setAttributes)
+                document.hangulFont = hangul
+                let ts = tv.textStorage ?? document.textStorage
+                let full = NSRange(location: 0, length: ts.length)
+                ts.beginEditing()
+                Perf.measure("  apply.setAttributes len=\(full.length)") { ts.setAttributes(attrs, range: full) }
+                if let h = hangul { Perf.measure("  apply.hangul") { HangulFontFixer.apply(font: h, to: ts, in: full) } }
+                Perf.measure("  apply.endEditing") { ts.endEditing() }
+                tv.textColor = theme.foreground.nsColor   // NSText.textColor 는 스토리지 전체에 색을 입힌다 — 주 편집기만
+                highlightKey = ""   // 전체 속성 재적용으로 매치 강조가 지워졌으니 다음 update 에서 다시 칠한다
+                highlightedRanges = []
+            } else {
+                // 보조 편집기: 이 뷰의 레이아웃 매니저만 새 색 표로 다시 칠하게 한다 (보이는 프래그먼트만 재생성 — 수 ms)
+                invalidateHighlight()
+            }
 
             tv.backgroundColor = theme.background.nsColor
             tv.drawsBackground = true
             tv.insertionPointColor = theme.cursor.nsColor
-            tv.textColor = theme.foreground.nsColor
             tv.selectedTextAttributes = [.backgroundColor: theme.selection.nsColor]
             tv.currentLineColor = theme.lineHighlight.nsColor
             scrollView?.backgroundColor = theme.background.nsColor
             gutter?.apply(theme: theme, baseFont: base)
             container?.layer?.backgroundColor = theme.background.nsColor.cgColor
             tv.needsDisplay = true
-            highlightKey = ""   // 전체 속성 재적용으로 매치 강조가 지워졌으니 다음 update 에서 다시 칠한다
-            highlightedRanges = []
             // 구문 색: 위 전체 setAttributes 가 프래그먼트를 다시 만들며 validator 가 새 색 표(rebuildSyntaxColors)로 칠한다 — 추가 무효화 불필요
         }
 
         func handleReload(generation: Int) {
             guard generation != lastReloadGeneration else { return }
             lastReloadGeneration = generation
-            textView?.undoManager?.removeAllActions()
+            session.clearUndo()
             // 디스크에서 다시 읽은 내용은 shouldChangeText 를 거치지 않으므로 줄 수만 맞춘다
             model.bookmarks.clamp(toLineCount: document.lineIndex.lineCount)
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) }
@@ -357,7 +387,7 @@ struct EditorView: NSViewRepresentable {
         }
 
         /// 편집으로 범위가 낡으면 전부 걷어낸다 (다음 검색에서 다시 칠한다)
-        private func clearMatchHighlights() {
+        func clearMatchHighlights() {
             guard !highlightedRanges.isEmpty, let ts = textView?.textStorage else { return }
             ts.beginEditing()
             ts.removeAttribute(.backgroundColor, range: NSRange(location: 0, length: ts.length))
@@ -368,6 +398,7 @@ struct EditorView: NSViewRepresentable {
 
         /// 보이는 영역의 첫 레이아웃 조각이 속한 줄(1-based)을 EditorCaret 에 발행한다 — 거터와 같은 TextKit 2 질의
         func publishFirstVisibleLine() {
+            guard session.isActive(self) else { return }   // split: 미리보기는 활성 편집기를 따라간다
             guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
             let visible = tv.visibleRect
             let origin = tv.textContainerOrigin
@@ -391,6 +422,12 @@ struct EditorView: NSViewRepresentable {
             guard !restored, let tv = textView, let sv = scrollView, sv.window != nil, sv.bounds.height > 0, document.isLoaded else { return }
             restored = true
             let len = document.textStorage.length
+            if role == .secondary {
+                // split: 보조 편집기는 저장된 위치를 쓰지 않고 주 편집기의 캐럿 줄에서 시작한다 (가운데, 포커스는 주 편집기에 둔다)
+                let loc = session.primary?.textView?.selectedRange().location ?? len
+                select(NSRange(location: min(loc, len), length: 0), center: true, indicator: false, focus: false)
+                return
+            }
             if let st = ViewStateStore.load(for: document.url) {
                 select(NSRange(location: min(st.cursor, len), length: 0), center: true, indicator: false)
             } else {
@@ -400,6 +437,7 @@ struct EditorView: NSViewRepresentable {
         }
 
         private func scheduleSaveViewState() {
+            guard role == .primary else { return }   // split: 보기 위치는 주 편집기만 저장
             saveStateTask?.cancel()
             saveStateTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 800_000_000)
@@ -409,13 +447,19 @@ struct EditorView: NSViewRepresentable {
         }
 
         private func saveViewStateNow() {
-            guard let tv = textView, document.isLoaded else { return }
+            guard role == .primary, let tv = textView, document.isLoaded else { return }
             ViewStateStore.save(EditorViewState(cursor: tv.selectedRange().location, scrollY: Double(tv.visibleRect.minY)), for: document.url)
         }
 
         // MARK: 명령
 
         func handle(_ cmd: EditorCommand) {
+            // split: 뷰 설정은 모든 편집기에, 위치 저장은 주 편집기에, 그 밖의 편집·이동 명령은 활성 편집기에만
+            switch cmd {
+            case .setWordWrap, .setLineNumbers, .setSyntaxHighlighting, .setColumnMode: break
+            case .saveViewState: guard role == .primary else { return }
+            default: guard session.isActive(self) else { return }
+            }
             guard let tv = textView else { return }
             switch cmd {
             case .selectRange(let r):
@@ -648,14 +692,14 @@ struct EditorView: NSViewRepresentable {
             tv.setSelectedRange(NSRange(location: r.location, length: (result as NSString).length))
         }
 
-        private func select(_ range: NSRange, center: Bool, indicator: Bool) {
+        private func select(_ range: NSRange, center: Bool, indicator: Bool, focus: Bool = true) {
             guard let tv = textView else { return }
             let len = document.textStorage.length
             let loc = min(range.location, len)
             let r = NSRange(location: loc, length: min(range.length, len - loc))
             Perf.measure("  select.setSelectedRange") { tv.setSelectedRange(r) }
             Perf.measure("  select.scrollRangeToVisible loc=\(loc)") { tv.scrollRangeToVisible(r) }
-            tv.window?.makeFirstResponder(tv)
+            if focus { tv.window?.makeFirstResponder(tv) }
             if center {
                 DispatchQueue.main.async { [weak self] in
                     self?.centerCaret()
@@ -715,6 +759,7 @@ struct EditorView: NSViewRepresentable {
             document.textDidChange()
             clearMatchHighlights()
             gutter?.needsDisplay = true
+            session.didEdit(from: self)   // split: 다른 편집기의 거터·강조 갱신
         }
 
         private var lastCaretLine = 0
@@ -729,15 +774,16 @@ struct EditorView: NSViewRepresentable {
             guard let tv = textView else { return }
             let sel = tv.selectedRange()
             lastSelection = sel
-            model.updateCaret(range: sel)
+            let isActive = session.isActive(self)   // split: 상태바·미리보기·위치 저장은 활성 편집기만
+            if isActive { model.updateCaret(range: sel) }
             // 현재 줄 하이라이트: 이전/현재 줄 영역만 다시 그림 (전체 needsDisplay 는 TextKit 2 서피스 재합성을 유발)
             let newRect = tv.caretRect(at: sel.location)
             if let r = newRect { tv.setNeedsDisplay(NSRect(x: 0, y: r.minY - 2, width: tv.bounds.width, height: r.height + 4)) }
             if let old = lastCaretRect { tv.setNeedsDisplay(NSRect(x: 0, y: old.minY - 2, width: tv.bounds.width, height: old.height + 4)) }
             lastCaretRect = newRect
-            let line = model.caretLine
+            let line = isActive ? model.caretLine : document.lineIndex.lineNumber(forUTF16Offset: sel.location)
             if line != lastCaretLine { lastCaretLine = line; gutter?.needsDisplay = true }
-            scheduleSaveViewState()
+            if isActive { scheduleSaveViewState() }
         }
     }
 }

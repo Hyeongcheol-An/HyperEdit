@@ -229,6 +229,7 @@ final class AppModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] dark in self?.themes.systemAppearanceChanged(isDark: dark) }
             .store(in: &cancellables)
+        session.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)   // split: 메뉴·상태바·리본 토글
         document.$status.removeDuplicates().filter { !$0.isEmpty }
             .sink { [weak self] s in self?.log(s) }.store(in: &cancellables)
         document.$errorMessage.compactMap { $0 }.removeDuplicates()
@@ -560,7 +561,14 @@ final class AppModel: ObservableObject {
         if let g = LaunchOptions.value("--goto"), let n = Int(g) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.jump(toLine: n) }
         }
+        applySplitLaunchOptions()         // split: `--split [vertical|horizontal]`
+        applyQuickAppendLaunchOptions()   // quick append: `--quick-append` + 전역 단축키 등록
     }
+
+    // split: 분할 보기 세션 (공유 콘텐츠 스토리지·undo 스택·활성 편집기). 명령은 Editor/EditorSession.swift 의 extension AppModel
+    let session = EditorSession()
+    // quick append: 떠 있는 입력 창 + 전역 단축키 — QuickAppend/QuickAppendController.swift
+    lazy var quickAppend = QuickAppendController(model: self)
 }
 
 /// 스레드 안전 취소 플래그 — 부모 Task 의 취소를 detached 작업에 전달할 때 사용
