@@ -156,6 +156,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | 찾기 창 미리 채우기 |
 | `--column` · `--goto <line>` · `--preview` | 열 모드 켜기 / 줄로 이동 / 마크다운 미리보기 표시 |
 | `--no-highlight` | 구문 색을 끈 채 시작 (스크린샷 비교용) |
+| `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 
 ## 저장소 구성
