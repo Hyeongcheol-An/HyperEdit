@@ -41,6 +41,10 @@ enum TextTool: String, CaseIterable {
     case trimTrailing, trimBoth, tabsToSpaces, spacesToTabs
     /// 즉석 계산(⌃⌘=) · 열 맞춤(⌃⌘T)
     case calculate, alignColumns
+    /// 주석 토글(⌘/)
+    case toggleComment   // comment
+    /// JSON 정리(⌃⌘J) · 한 줄로
+    case formatJSON, minifyJSON   // json
 }
 
 struct Replacement { let range: NSRange; let string: String }
@@ -188,6 +192,10 @@ final class AppModel: ObservableObject {
     let editorCommands = PassthroughSubject<EditorCommand, Never>()
     private var cancellables = Set<AnyCancellable>()
     private var searchTask: Task<Void, Never>?
+
+    // snippets
+    let snippets = SnippetStore(directory: SnippetStore.launchDirectory)
+    @Published var showSnippetPicker = false
 
     init() {
         let d = AppDefaults.store

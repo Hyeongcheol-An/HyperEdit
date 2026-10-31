@@ -80,6 +80,9 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 
 - **Calculate (⌃⌘=):** evaluates the selection, or the current line (the part after the last `=` if there is one), and appends ` ⇒ result` — `3+0.5+0.25` becomes `3+0.5+0.25 ⇒ 3.75`; running it again on an edited line replaces the old result. Plain arithmetic only: `+ - * / % ^`, parentheses, `1,234` / `1_000` numbers, `sqrt abs round floor ceil min max`, `pi` and `e`. Invalid expressions are reported in the Output panel and leave the text alone.
 - **Align Columns (⌃⌘T):** pads tab-separated columns (the selected lines, or the block of tab lines around the caret) so every column starts at the same display column, counting Hangul / CJK as two cells. Lines that all contain `|` are treated as a Markdown table instead: cells are padded inside ` | `, `---` rows are redrawn and `--:` columns right-aligned.
+- **Toggle Comment (⌘/):** comments or uncomments the selected lines (or the current line) with the file type's marker — `//`, `#`, `--`, … for code, `<!-- -->` for Markdown and HTML/XML, `/* */` for CSS, `//` for plain notes. VS Code semantics: if every non-blank line is already commented they are all uncommented, otherwise all are commented, with the markers aligned at the shallowest indentation; blank lines are skipped and tabs stay tabs.
+- **Format JSON (⌃⌘J) / Minify JSON:** pretty-prints (2-space indent) or collapses the selection, or the whole document when nothing is selected. Key order and number text (`1.0`, big integers) are preserved, strings are re-escaped minimally (Korean and emoji stay as-is). Input may contain a BOM, trailing commas and `//` / `/* */` comments (JSONC); the output is always strict JSON. On a syntax error the text is left alone, the Output panel shows `line:column` and the caret jumps there. A 5.6 MB document formats in about 30 ms.
+- **Snippets:** type a trigger such as `todo`, `date`, `time`, `now`, `meeting`, `table`, `link` or `code` and press Tab, or pick one from **Insert Snippet… (⇧⌘I)**. Bodies support `${date}`, `${time}`, `${datetime}`, `${selection}`, `${clipboard}`, `${filename}` and tabstops `$1` … `$9`, `${1:placeholder}` and `$0`; Tab / ⇧Tab move between tabstops (a number used twice becomes a multi-caret), Esc or a click ends the session. **Edit Snippets…** opens `~/Library/Application Support/HyperEdit/snippets.json` in HyperEdit itself; it is re-read after you save.
 
 ### Saving
 - Autosave 2 seconds after typing stops. On quit, window close and when switching files the document is saved synchronously, so there is no 2-second loss window. Every write is atomic.
@@ -104,6 +107,8 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⇧⌘K | Delete line | ⇧⌘D | Duplicate line |
 | ⌥↑ / ⌥↓ | Move line up / down | ⇧⌘J | Join lines |
 | ⌃⌘= | Calculate (append ⇒ result) | ⌃⌘T | Align columns |
+| ⌘/ | Toggle comment | ⌃⌘J | Format JSON |
+| ⇧⌘I | Insert snippet | Tab | Expand snippet trigger / next tabstop |
 | ⌘1 | Sidebar | ⌘2 | Bottom panel |
 | ⌘3 | Outline | ⌘4 | Timeline |
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
@@ -182,7 +187,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 - UI in English and Korean (follows the system language); no other languages yet.
 - Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
-- Planned editing tools — comment toggle, JSON tidy, macros, split view — are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math).
+- Planned editing tools — macros, split view — are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).
 

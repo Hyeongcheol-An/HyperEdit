@@ -34,6 +34,11 @@ final class HyperTextView: NSTextView {
     }
     private var settingSelectionProgrammatically = false
 
+    // 스니펫 (SnippetSession.swift): 트리거 단어 → 펼침 결과 (nil 이면 일반 Tab). 저장소는 뷰가 모른다 — Coordinator 가 공급자를 꽂는다
+    var snippetProvider: ((String) -> SnippetExpansion?)?
+    var onSnippetExpanded: ((String) -> Void)?
+    var snippetSession: SnippetSession?
+
     override var acceptsFirstResponder: Bool { true }
 
     override func viewDidMoveToWindow() {
@@ -163,7 +168,7 @@ final class HyperTextView: NSTextView {
         lineChangeDepth += 1
         defer { lineChangeDepth -= 1 }
         guard super.shouldChangeText(in: affectedCharRange, replacementString: replacementString) else { return false }
-        if lineChangeDepth == 1, let s = replacementString { notifyLineChanges([(affectedCharRange, s)]) }
+        if lineChangeDepth == 1, let s = replacementString { notifyLineChanges([(affectedCharRange, s)]); snippetTextWillChange([(affectedCharRange, s)]) }
         return true
     }
 
@@ -173,6 +178,7 @@ final class HyperTextView: NSTextView {
         guard super.shouldChangeText(inRanges: affectedRanges, replacementStrings: replacementStrings) else { return false }
         if lineChangeDepth == 1, let strs = replacementStrings, strs.count == affectedRanges.count {
             notifyLineChanges(Array(zip(affectedRanges.map(\.rangeValue), strs)))
+            snippetTextWillChange(Array(zip(affectedRanges.map(\.rangeValue), strs)))
         }
         return true
     }
@@ -281,6 +287,10 @@ final class HyperTextView: NSTextView {
         let hasMulti = multi != nil
         let columnish = columnModeEnabled || multi?.isColumn == true
         switch selector {
+        // 스니펫 탭스톱 세션 중에는 Tab/⇧Tab 이 탭스톱 이동, Esc 가 종료 (멀티 캐럿으로 펼친 같은 번호 탭스톱보다 먼저)
+        case #selector(NSResponder.insertTab(_:)) where snippetSession != nil: snippetTabForward(); return
+        case #selector(NSResponder.insertBacktab(_:)) where snippetSession != nil: snippetTabBackward(); return
+        case #selector(NSResponder.cancelOperation(_:)) where snippetSession != nil: endSnippetSession(); if hasMulti { collapseToHead() }; return
         case #selector(NSResponder.moveLeftAndModifySelection(_:)) where columnish: extendBlock(dx: -1, dy: 0); return
         case #selector(NSResponder.moveRightAndModifySelection(_:)) where columnish: extendBlock(dx: 1, dy: 0); return
         case #selector(NSResponder.moveUpAndModifySelection(_:)) where columnish: extendBlock(dx: 0, dy: -1); return
@@ -295,7 +305,10 @@ final class HyperTextView: NSTextView {
         if hasMulti, selector.description.hasPrefix("move") {
             if columnish { collapseToHead() } else { clearMulti() }
         }
+        // 단일 캐럿 Tab: 캐럿 앞 단어가 스니펫 트리거면 펼친다 (아니면 일반 Tab)
+        if selector == #selector(NSResponder.insertTab(_:)), !hasMulti, expandSnippetAtCaret() { return }
         super.doCommand(by: selector)
+        if snippetSession != nil, selector.description.hasPrefix("move") { snippetCaretMoved() }
     }
 
     /// ⇧방향키로 블록 확장 (블록이 없으면 현재 캐럿에서 시작)
@@ -316,6 +329,7 @@ final class HyperTextView: NSTextView {
     // MARK: - 마우스: ⌘클릭 캐럿 추가, 열 모드/⌥ 드래그 블록 선택
 
     override func mouseDown(with event: NSEvent) {
+        endSnippetSession()   // 클릭은 탭스톱 세션을 끝낸다
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let point = convert(event.locationInWindow, from: nil)
         if flags.contains(.command), !flags.contains(.shift) {

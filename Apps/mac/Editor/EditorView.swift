@@ -224,6 +224,7 @@ struct EditorView: NSViewRepresentable {
                 let b = m?.block != nil
                 if c.columnBlockActive != b { c.columnBlockActive = b }
             }
+            installSnippets(on: textView)   // EditorView+EditTools.swift
         }
 
         private func bindDocument() {
@@ -245,6 +246,7 @@ struct EditorView: NSViewRepresentable {
                     guard let self else { return }
                     self.saveStateTask?.cancel()
                     self.textView?.undoManager?.removeAllActions()
+                    self.textView?.endSnippetSession()
                     self.restored = false
                     self.lastCaretRect = nil
                     // 문법은 내용 교체(switchTo → load) 전에 바꿔 둔다 — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
@@ -546,6 +548,9 @@ struct EditorView: NSViewRepresentable {
             case .invertCase: applySelection(tv, sel, cur) { TextTools.invertCase($0) }
             case .calculate: calculate(tv, sel, cur)
             case .alignColumns: alignColumns(tv, sel, cur)
+            case .toggleComment: toggleComment(tv, sel, cur)                 // EditorView+EditTools.swift
+            case .formatJSON: formatJSON(tv, sel, minify: false)
+            case .minifyJSON: formatJSON(tv, sel, minify: true)
             }
             document.textDidChange()
             gutter?.needsDisplay = true

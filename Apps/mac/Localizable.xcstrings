@@ -381,6 +381,16 @@
         }
       }
     },
+    "Collapse the selection or the whole document to single-line JSON": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택 영역(없으면 문서 전체)을 한 줄 JSON 으로 줄입니다"
+          }
+        }
+      }
+    },
     "Column & Multi-Caret": {
       "localizations": {
         "ko": {
@@ -447,6 +457,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "열 모드 켜짐 (⌥C 로 끄기)"
+          }
+        }
+      }
+    },
+    "Comment or uncomment the selected lines with the file type's marker (⌘/)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택한 줄(없으면 현재 줄)에 파일 종류의 주석 기호를 넣거나 뺍니다 (⌘/)"
           }
         }
       }
@@ -641,6 +661,26 @@
         }
       }
     },
+    "Edit Snippets…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 편집…"
+          }
+        }
+      }
+    },
+    "Editing snippets — save, then type a trigger and press Tab": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 편집 중 — 저장한 뒤 편집기에서 트리거를 치고 Tab 을 누르세요"
+          }
+        }
+      }
+    },
     "Error: %@": {
       "localizations": {
         "ko": {
@@ -747,6 +787,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "채우기"
+          }
+        }
+      }
+    },
+    "Filter by trigger, title or text": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "트리거·제목·본문으로 거르기"
           }
         }
       }
@@ -947,6 +997,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "글꼴·한글 폭 보정 설정 (⌘,)"
+          }
+        }
+      }
+    },
+    "Format JSON": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 정리"
+          }
+        }
+      }
+    },
+    "Formatted JSON · %lld lines": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 정리 · %lld줄"
           }
         }
       }
@@ -1211,12 +1281,42 @@
         }
       }
     },
+    "Insert Snippet": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 삽입"
+          }
+        }
+      }
+    },
+    "Insert Snippet…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 삽입…"
+          }
+        }
+      }
+    },
     "Insert Timestamp": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "타임스탬프 삽입"
+          }
+        }
+      }
+    },
+    "Insert a snippet — or type a trigger such as todo and press Tab (⇧⌘I)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫을 삽입합니다 — 또는 편집기에서 todo 같은 트리거를 치고 Tab (⇧⌘I)"
           }
         }
       }
@@ -1257,6 +1357,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "대소문자 반전"
+          }
+        }
+      }
+    },
+    "JSON error · line %lld, column %lld · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 오류 · %lld줄 %lld열 · %@"
           }
         }
       }
@@ -1537,6 +1647,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "대소문자 구분"
+          }
+        }
+      }
+    },
+    "Minified JSON · %lld characters": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 한 줄로 · %lld자"
+          }
+        }
+      }
+    },
+    "Minify JSON": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 한 줄로"
           }
         }
       }
@@ -1917,6 +2047,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "선택 줄 앞에 1. 2. 3. 번호"
+          }
+        }
+      }
+    },
+    "Pretty-print the selection or the whole document as JSON — key order and numbers are kept (⌃⌘J)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택 영역(없으면 문서 전체)을 보기 좋은 JSON 으로 — 키 순서와 숫자 표기는 그대로 (⌃⌘J)"
           }
         }
       }
@@ -2571,6 +2711,26 @@
         }
       }
     },
+    "Snippet · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 · %@"
+          }
+        }
+      }
+    },
+    "Snippet…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫…"
+          }
+        }
+      }
+    },
     "Sort": {
       "localizations": {
         "ko": {
@@ -2781,12 +2941,32 @@
         }
       }
     },
+    "Tip: type a trigger such as todo in the editor and press Tab. Tab / ⇧Tab move between $1 … $9 placeholders, Esc ends.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "팁: 편집기에서 todo 같은 트리거를 치고 Tab 을 누르세요. Tab / ⇧Tab 으로 $1 … $9 자리를 오가고 Esc 로 끝냅니다."
+          }
+        }
+      }
+    },
     "Toggle Bookmark": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "북마크 토글"
+          }
+        }
+      }
+    },
+    "Toggle Comment": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "주석 토글"
           }
         }
       }
