@@ -10,6 +10,15 @@ public struct Snippet: Codable, Identifiable, Hashable, Sendable {
     public init(trigger: String, title: String, body: String) {
         self.trigger = trigger; self.title = title; self.body = body
     }
+
+    private enum CodingKeys: String, CodingKey { case trigger, title, body }
+    /// 손으로 쓴 snippets.json 은 `title` 을 생략할 수 있다 (선택창은 빈 제목이면 트리거를 보여 준다) — 없다고 파일 전체를 거부하지 않는다
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        trigger = try c.decode(String.self, forKey: .trigger)
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        body = try c.decode(String.self, forKey: .body)
+    }
 }
 
 /// 스니펫 본문을 펼친 결과. 범위는 모두 `text` 의 UTF-16 오프셋.
