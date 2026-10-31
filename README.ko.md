@@ -49,7 +49,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 ## 기능
 
 ### 편집기
-- 큰 파일에 맞춘 성능: 1.3 MB / 34,000줄 파일에서 키 입력당 약 3 ms, 뷰포트 기반 TextKit 2 레이아웃.
+- 큰 파일에 맞춘 성능: 1.3 MB / 34,000줄 파일에서 키 입력당 약 3 ms, 뷰포트 기반 TextKit 2 레이아웃. 벤치마크 하네스(`scripts/bench.sh`)가 타이핑·파일 열기·검색·스크롤·메모리·유휴 CPU·실행 시간을 고정 예산과 비교합니다 — [docs/performance.md](docs/performance.md) 참고. v0.6에서는 5,000건 모두 바꾸기의 ⌘Z 한 번을 1.7 s에서 0.25 s로 줄이고, 키 입력마다 일어나던 패널의 SwiftUI 재평가를 없애고, 설치된 폰트 목록을 캐시했습니다.
 - 줄 번호 거터, 현재 줄 강조, 자동 줄바꿈(⌥Z), 줄 번호 표시(⌥⌘L), 확대/축소(⌘= / ⌘- / ⌘0).
 - 파일별로 마지막 캐럿·스크롤 위치 복원. ⌃⌘E로 문서 끝으로, ⌘L로 줄 이동.
 - **접기(⌥⌘← / ⌥⌘→, 모두 접기·펼치기 ⌥⇧⌘← / ⌥⇧⌘→):** 어떤 줄은 그 아래 더 깊이 들여쓴 줄들을 접고(빈 줄 무시), 마크다운 `#` 헤딩은 같거나 높은 레벨의 다음 헤딩 직전까지 접으며(펜스 코드 블록도 접힘), 코드에서 `{`, `[`, `(` 로 끝나는 줄은 닫는 괄호 줄까지 접습니다. 거터의 화살표나 `⋯ N lines` 표식을 클릭해도 접고 펼칩니다. 캐럿이 접힌 줄로 들어가면(찾기, 줄 이동, 북마크, 실행 취소) 자동으로 펼쳐지고, ↑ / ↓ 는 접힌 구간을 건너뜁니다. 접힘은 편집을 따라갑니다 — 머리 줄 안의 입력, 위쪽 줄 삽입·삭제, 실행 취소 — 그리고 세션 동안 유지됩니다.
@@ -122,8 +122,8 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 | ⌃⌘H | 구문 색 | ⌘\\ | 편집기 분할 |
 | ⌥⌘\\ | 다른 분할로 포커스 | ⇧⌘N | 빠른 추가 |
 | ⌃⌥N | 다른 앱에서 빠른 추가(전역, 설정 가능) | ⇧⌘M | 매크로 기록 / 중지 |
-| ⌥⌘M | 매크로 재생 | | |
-| ⌥⌘← / ⌥⌘→ | 접기 / 펼치기 | ⌥⇧⌘← / ⌥⇧⌘→ | 모두 접기 / 모두 펼치기 |
+| ⌥⌘M | 매크로 재생 | ⌥⌘← / ⌥⌘→ | 접기 / 펼치기 |
+| ⌥⇧⌘← / ⌥⇧⌘→ | 모두 접기 / 모두 펼치기 | | |
 
 ## 테마
 
@@ -162,11 +162,11 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | 인자 | 효과 |
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
-| `--snapshot <png> [--snapshot-delay s] [--quit]` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요) |
-| `--selftest [--selftest-out <txt>] [--quit]` | 임시 파일에서 내장 셀프테스트 실행. 사용자 문서는 건드리지 않음 |
-| `--theme <id>` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` |
+| `--snapshot <png> [--snapshot-delay s] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` | 임시 파일에서 내장 셀프테스트(155개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만 |
+| `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
-| `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` | 사이드바 / 하단 패널 탭 표시 |
+| `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | 찾기 창 미리 채우기 |
 | `--column` · `--goto <line>` · `--preview` | 열 모드 켜기 / 줄로 이동 / 마크다운 미리보기 표시 |
 | `--split [vertical\|horizontal]` · `--quick-append` | 편집기를 분할한 채 시작(기본 좌우) / 빠른 추가 창 열기 |
@@ -174,17 +174,22 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--fold <line>` · `--fold-all` · `--no-fold` | 해당 줄이 머리인 영역 접기 / 영역 스캔 뒤 모두 접기 / 접기 기능 끄기 |
 | `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
-| `--bench [--bench-out <json>] [--bench-strict] [--quit]` | 생성한 말뭉치(2 KB~8 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. `scripts/bench.sh` 가 감싸서 실행 |
+| `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
+| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~8 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing replace save`. `scripts/bench.sh` 가 감싸서 실행 |
 | `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성
 
 ```
-Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, Editor/ 의 AppKit 편집기, Markdown/ 의 WKWebView 마크다운 미리보기
-Packages/HyperCore/  엔진(문서, 검색, 텍스트 도구, 열 블록 수학, 아웃라인/타임라인, 테마, 폰트, 마크다운 → HTML) + 테스트
+Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift), Bench.swift, SelfTest*.swift
+  Editor/            AppKit 편집기: HyperTextView(TextKit 2), GutterView, EditorSession(분할), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
+  QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
+  Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
+Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 테마, 폰트, 마크다운 → HTML) + 단위 테스트 137개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
-docs/                features.md · fonts.md · zed.md · design.ko.md · theme-preview.html · screenshots/ · sample/
-scripts/             bootstrap · build-mac · install-mac · make-dmg · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · install-hooks
+docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
+l10n/                <주제>.ko.json — 기능별로 추가한 한국어 번역, scripts/l10n-add.py 로 카탈로그에 반영
+scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-add · install-hooks
 Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xcconfig 기본값 · Local.xcconfig.example
 .github/workflows/   ci.yml(테마, 민감 정보 검사, commitlint, macOS 빌드+테스트) · release.yml(semantic-release → DMG → GitHub Release → Homebrew cask)
 ```
@@ -193,7 +198,7 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 
 ## 릴리스 과정
 
-커밋은 [Conventional Commits](https://www.conventionalcommits.org/ko/)를 따릅니다(제목은 한국어·영어 모두 가능). `main`에 push될 때마다 [semantic-release](https://semantic-release.gitbook.io)가 커밋으로 다음 버전을 계산하고 `CHANGELOG.md`·`VERSION`·`Config/Version.xcconfig`를 갱신한 뒤, DMG를 빌드·서명·공증하고, `SHA256SUMS`와 Zed 테마 파일을 첨부한 GitHub Release를 만들고, `Hyeongcheol-An/homebrew-tap`의 Homebrew cask를 갱신합니다. `feat:` → 마이너, `fix:` / `perf:` → 패치, `docs:` / `chore:` / `refactor:` → 릴리스 없음. 워크플로는 Developer ID·공증 시크릿이 없으면 릴리스를 만들지 않습니다(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 서명 없는 빌드를 허용할 수 있습니다). 로컬 커밋 메시지 훅은 `scripts/install-hooks.sh`로 설치합니다.
+커밋은 [Conventional Commits](https://www.conventionalcommits.org/ko/)를 따릅니다(제목은 한국어·영어 모두 가능). `main`에 push될 때마다 [semantic-release](https://semantic-release.gitbook.io)가 커밋으로 다음 버전을 계산하고 `CHANGELOG.md`·`VERSION`·`Config/Version.xcconfig`를 갱신한 뒤, DMG를 빌드·서명·공증하고, `SHA256SUMS`와 Zed 테마 파일을 첨부한 GitHub Release를 만들고, `Hyeongcheol-An/homebrew-tap`의 Homebrew cask를 갱신합니다. `feat:` → 마이너, `fix:` / `perf:` → 패치, `docs:` / `chore:` / `refactor:` → 릴리스 없음. 워크플로는 Developer ID·공증 시크릿이 없으면 릴리스를 만들지 않습니다(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 서명 없는 빌드를 허용할 수 있습니다). Release 빌드는 심볼과 미사용 코드를 제거하며(`project.yml`의 `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), v0.6에서 유니버설 바이너리가 13.5 MB에서 6.5 MB로 줄었습니다. 로컬 커밋 메시지 훅은 `scripts/install-hooks.sh`로 설치합니다.
 
 ## 로드맵과 제한
 
@@ -201,6 +206,9 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 - 구문 색은 줄 단위라 여러 줄에 걸친 주석·문자열은 시작한 줄만 칠해지고, 사용자 정의 문법은 없습니다. 마크다운 미리보기(⇧⌘P)는 현재 파일을 렌더링해 보여 주는 보기 전용 화면입니다.
 - 로컬 파일만 다룹니다. 클라우드 동기화 없음. 엔진은 iOS를 염두에 두고 만들었지만 iOS 앱은 아직 없습니다.
 - 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.
+- 스니펫과 매크로는 JSON 파일(Application Support의 `snippets.json`, `macros/macros.json`)로 편집합니다. GUI 편집기는 없습니다.
+- 접기는 세션 동안만 유지되고(파일별로 저장하지 않음), 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
+- 빠른 추가의 전역 단축키는 시스템 핫키 API를 쓰므로, 시스템 설정 › 키보드에서 입력 소스 전환이 켜져 있으면 ⌃Space / ⌃⌥Space 변형은 아무 알림 없이 시스템에 밀립니다. 대신 ⌃⌥N 이나 ⌃⌥⌘N 을 고르세요.
 
 설계 메모와 결정 이력은 [docs/design.ko.md](docs/design.ko.md)에, 상태가 표시된 기능 목록은 [docs/features.md](docs/features.md)에 있습니다.
 
