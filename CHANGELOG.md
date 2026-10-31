@@ -2,6 +2,12 @@
 
 모든 변경은 [Conventional Commits](https://www.conventionalcommits.org/ko/) 기반으로 semantic-release가 자동 생성합니다.
 
+## [0.7.0](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.6.0...v0.7.0) (2026-10-31)
+
+### ✨ 기능
+
+* **l10n:** 인터페이스 언어 설정과 11개 언어 번역·사용자 가이드·환영문 추가 ([9c71aee](https://github.com/Hyeongcheol-An/HyperEdit/commit/9c71aee3955597fe15238ad2c9e2c07573896ecd))
+
 ## [0.6.0](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.5.1...v0.6.0) (2026-10-31)
 
 ### ✨ 기능
