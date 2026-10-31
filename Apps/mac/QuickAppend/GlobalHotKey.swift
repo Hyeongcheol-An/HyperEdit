@@ -28,6 +28,8 @@ final class GlobalHotKey {
     nonisolated(unsafe) private static var nextID: UInt32 = 1
     nonisolated(unsafe) private static var eventHandler: EventHandlerRef?
     private static let signature: OSType = 0x4845_4B59   // 'HEKY'
+    /// 현재 Carbon 에 등록돼 있는 핫키 수 (셀프테스트: 설정을 바꿔도 하나를 넘지 않고, 끄면 0)
+    static var registeredCount: Int { handlers.count }
 
     init(_ shortcut: Shortcut, handler: @escaping () -> Void) throws {
         self.shortcut = shortcut

@@ -46,6 +46,8 @@ final class HyperTextView: NSTextView {
 
     override var acceptsFirstResponder: Bool { true }
 
+    deinit { Perf.log("HyperTextView deinit") }   // split: 닫힌 보조 뷰 해제 추적 (--debug-perf)
+
     override func becomeFirstResponder() -> Bool {   // split
         let ok = super.becomeFirstResponder()
         if ok { onBecomeActive?() }
