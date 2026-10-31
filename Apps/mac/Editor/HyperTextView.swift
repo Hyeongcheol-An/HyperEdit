@@ -33,6 +33,9 @@ final class HyperTextView: NSTextView {
         didSet { if multi != oldValue { onMultiChange?(multi); needsDisplay = true } }
     }
     private var settingSelectionProgrammatically = false
+    /// 매크로 기록 싱크(MacroRecorder.install). 재생·텍스트 도구·doCommand 내부 편집 중에는 depth > 0 으로 기록을 끈다 — 구현은 MacroRecorder.swift   // macro
+    var macroSink: ((MacroStep) -> Void)?   // macro
+    var macroSuppressDepth = 0   // macro
 
     override var acceptsFirstResponder: Bool { true }
 
@@ -254,6 +257,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func insertText(_ string: Any, replacementRange: NSRange) {
+        macroRecordInsert(string, replacementRange: replacementRange)   // macro
         guard let m = multi, m.ranges.count > 1 || m.isColumn else {
             super.insertText(string, replacementRange: replacementRange); return
         }
@@ -278,6 +282,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func doCommand(by selector: Selector) {
+        macroRecordCommand(selector); macroSuppressDepth += 1; defer { macroSuppressDepth -= 1 }   // macro
         let hasMulti = multi != nil
         let columnish = columnModeEnabled || multi?.isColumn == true
         switch selector {
@@ -396,6 +401,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func paste(_ sender: Any?) {
+        macroRecordPaste(); macroSuppressDepth += 1; defer { macroSuppressDepth -= 1 }   // macro
         guard let m = multi, let s = NSPasteboard.general.string(forType: .string) else { super.paste(sender); return }
         var lines = s.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n").components(separatedBy: "\n")
         if lines.last == "" { lines.removeLast() }

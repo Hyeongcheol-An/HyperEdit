@@ -224,6 +224,7 @@ struct EditorView: NSViewRepresentable {
                 let b = m?.block != nil
                 if c.columnBlockActive != b { c.columnBlockActive = b }
             }
+            model.macros.install(on: textView, model: model)   // macro
         }
 
         private func bindDocument() {
@@ -500,6 +501,7 @@ struct EditorView: NSViewRepresentable {
                 cur = NSUnionRange(cur, ns.lineRange(for: NSRange(location: NSMaxRange(cur), length: 0)))
             }
             tv.window?.makeFirstResponder(tv)
+            tv.macroWillApplyTool(tool.rawValue); defer { tv.macroDidApplyTool() }   // macro
             switch tool {
             case .deleteLine:
                 tv.insertText("", replacementRange: cur)

@@ -317,6 +317,8 @@ enum SelfTest {
               "align columns → \(table) starts \(col2.sorted()) / \(col3.sorted())")
         check(!(text() as String).contains("\tqty"), "tabs replaced by padding")
 
+        await runMacro(model: model, check: check, log: log)   // macro
+
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
         model.showTimeline()

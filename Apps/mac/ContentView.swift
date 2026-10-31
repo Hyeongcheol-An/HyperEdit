@@ -57,6 +57,7 @@ struct ContentView: View {
         } message: {
             Text("Inserts a sequence number on each line of the column selection (or at each caret). Numbers are zero-padded to the same width.")
         }
+        .modifier(MacroAlerts(model: model, recorder: model.macros))   // macro
         // 종료 시 저장은 AppDelegate.applicationShouldTerminate 가 동기로 처리한다 (willTerminate 시점의 비동기 저장은 실행될 기회가 없다)
         .task { if SelfTest.enabled { await SelfTest.run(model: model) } }
         .task { if SelfTest.openEnabled { await SelfTest.runOpen(model: model) } }
@@ -117,6 +118,7 @@ struct StatusBar: View {
             if model.showMarkdownPreview {
                 cell("MD", width: 40).foregroundStyle(theme.accent.color).help("Markdown preview on (⇧⌘P)")
             }
+            MacroStatusCell(recorder: model.macros, theme: theme)   // macro
             if caret.multiCaretCount > 1 {
                 cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")
             }

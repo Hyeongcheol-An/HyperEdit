@@ -166,6 +166,7 @@ private struct EditTab: View {
                 RibbonSmallButton(title: "Align Columns", systemImage: "tablecells", help: "Pad tab- or pipe-separated columns so they line up (⌃⌘T)", theme: theme) { model.textTool(.alignColumns) }
             }
         }
+        MacroRibbonGroup(theme: theme)   // macro
     }
 }
 
@@ -423,7 +424,7 @@ extension RibbonTab {
     var requiredWidth: CGFloat {
         switch self {
         case .home: 1060      // 파일 그룹 끝 ≈ 1035
-        case .edit: 1520      // 도구 그룹 끝 ≈ 1505 (1600pt 스크린샷 실측)
+        case .edit: 1735      // 매크로 그룹 끝 ≈ 1713 (1800pt 스크린샷 실측; 도구 그룹 끝 ≈ 1507)   // macro
         case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
         case .advanced: 260
         case .window: 260

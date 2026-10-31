@@ -188,6 +188,7 @@ final class AppModel: ObservableObject {
     let editorCommands = PassthroughSubject<EditorCommand, Never>()
     private var cancellables = Set<AnyCancellable>()
     private var searchTask: Task<Void, Never>?
+    let macros = MacroRecorder()   // macro
 
     init() {
         let d = AppDefaults.store
@@ -408,6 +409,7 @@ final class AppModel: ObservableObject {
     }
 
     func findNext() {
+        macros.recordFind(searchQuery)   // macro
         guard !searchHits.isEmpty else { runSearch(); return }
         let from = caretOffset + (selectionLength > 0 ? 1 : 0)
         if let h = searchHits.first(where: { $0.range.location >= from }) ?? searchHits.first { jump(to: h) }
