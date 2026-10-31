@@ -16,7 +16,7 @@
 | ✅ | **타임스탬프 삽입** — F7 → `## 2026-10-30 (금) 14:05`, 요일은 시스템 로케일 | 날짜 줄이 생기면 B의 타임라인이 따라온다 |
 | ✅ | **첫 실행 기본 문서** — `~/Documents/HyperEdit/notes.md`, 없으면 영·한 환영 문서 생성 | 사용자 파일은 덮어쓰지 않음 |
 | ✅ | **새 문서** ⌘N — 이름과 위치를 고르면 빈 텍스트 파일을 만들어 연다(문서 탭 줄의 + 버튼, 홈 탭 파일 그룹) | 기본 폴더는 현재 문서의 폴더 |
-| 🔜 | **Quick Append 창** — 전역 단축키·메뉴바 아이콘으로 한 줄 던져 넣기 | |
+| ✅ | **Quick Append 창** ⇧⌘N · 전역 ⌃⌥N — 앱을 활성화하지 않는 떠 있는 패널에 메모를 쓰고 ⌘↩ 로 문서 끝에 덧붙인다(타임스탬프 헤딩 옵션, 기본 켜짐). 바로 저장하고 undo 한 번으로 되돌릴 수 있으며, 닫으면 포커스가 이전 앱으로 돌아간다. Esc 로 닫으면 쓰던 글은 다음에 이어진다. 전역 단축키는 설정에서 끄기 / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N 중 선택(Carbon `RegisterEventHotKey`, 손쉬운 사용 권한 불필요). 홈 탭 삽입 그룹 · 파일 메뉴 | `QuickAppend/QuickAppendPanel.swift` · `QuickAppendController.swift` · `GlobalHotKey.swift` · `QuickAppendComposer`(HyperCore, 빈 줄·개행 규칙). 메뉴바 아이콘은 만들지 않음 |
 | 🔜 | **붙여넣기 정리** — 채팅 앱 이모지 코드 제거, 연속 공백·빈 줄 정리, 스마트 따옴표 → 일반 | |
 | 🔜 | **스니펫/템플릿** — 반복 입력 양식 | |
 | 🔜 | 드래그&드롭 파일 → 경로 삽입 | |
@@ -81,6 +81,7 @@
 | ✅ | **라이트 하이라이트(메모·마크다운)** ⌃⌘H — URL, ISO 날짜·시각, `#` 헤딩(메모 모드에서 코드 주석처럼 보이는 `# from x import` 는 주석색), `[제목]`, 목록 기호·`[ ]`/`[x]` 체크박스, `#태그`, `키:` 라벨, `**굵게**`, `` `코드` ``, `⇒ → ->` 화살표. `.txt`·`.md`·확장자 없는 파일의 기본 | `PlainNotesGrammar`. 보이는 줄만 계산(TextKit 2 `renderingAttributesValidator`), 스토리지 속성·undo·한글 폰트 런·검색 강조와 분리. 상태바에 언어 이름, 홈 탭 모드 그룹·보기 메뉴에 토글 |
 | ✅ | **코드 구문 색 20여 종** — Swift, Python, JS/TS, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI. 주석·문자열·숫자·키워드·함수·타입·속성(데코레이터)·구두점·연산자 | `CodeGrammar(language:)` + `GrammarRegistry`(확장자 → 문법). 줄 단위 토큰화라 여러 줄 블록 주석·문자열은 시작한 줄만. 색은 테마 `syntax` 팔레트 |
 | ✅ | **마크다운 분할 미리보기** ⇧⌘P — 좌 편집 / 우 렌더(GFM: 헤딩·목록·체크리스트·표·코드 블록·인용·링크·이미지), 현재 테마 색으로 스타일, 편집기 → 미리보기 스크롤 동기화(보이는 첫 줄 기준, `data-line`), 입력 멈춤 300 ms 뒤 다시 렌더(스크롤 위치 유지), 2 MB 초과 파일은 안내만. 링크는 기본 브라우저로, 원문 HTML은 이스케이프해 글자로(실행 안 함), 상대 경로 이미지는 문서 폴더 기준. 레이아웃 탭 "마크다운" 그룹 · 보기 메뉴 · 상태바 **MD** 표시 | swift-markdown 0.9.0(Apache-2.0) · `MarkdownHTML`(HyperCore) · `MarkdownPreviewView`(WKWebView). 미리보기 → 편집기 역방향 동기화는 없음 |
+| ✅ | **분할 보기** ⌘\ — 같은 문서를 두 편집기로(좌우 또는 상하, 보기 메뉴 "분할" 하위 메뉴·레이아웃 탭 패널 그룹). 두 뷰는 같은 텍스트·undo 스택을 공유하고(A 에서 입력, B 에서 ⌘Z) 따로 스크롤한다. 명령·상태바·미리보기 동기화는 마지막으로 클릭/포커스한 편집기 기준, ⌥⌘\ 로 다른 분할로 포커스. 상태바 **SPLIT** 표시, 마크다운 미리보기와 함께 켤 수 있음 | TextKit 2: `NSTextContentStorage` 하나에 뷰마다 `NSTextLayoutManager`(`EditorSession`). `Editor/EditorSession.swift` · `EditorView.swift`(role). 보조 편집기는 위치 저장·창 제목·검색 강조(스토리지 속성)를 맡지 않는다. `--split [vertical\|horizontal]` |
 | 🔜 | HTML/PDF 내보내기 | |
 | 🔜 | 여러 줄 블록 주석·문자열 상태 추적, 사용자 정의 문법·키워드 | |
 
@@ -109,7 +110,7 @@
 
 | 상태 | 기능 | 메모 |
 |---|---|---|
-| ✅ | 개발용 실행 인자 — `--file`, `--snapshot`, `--selftest`, `--theme`, `--ribbon`, `--left`, `--bottom`, `--search`, `--replace`, `--find-in-files`, `--column`, `--goto`, `--preview`, `--no-highlight`, `--debug-perf` | README 참고 |
+| ✅ | 개발용 실행 인자 — `--file`, `--snapshot`, `--selftest`, `--theme`, `--ribbon`, `--left`, `--bottom`, `--search`, `--replace`, `--find-in-files`, `--column`, `--goto`, `--preview`, `--split`, `--quick-append`, `--no-highlight`, `--ephemeral`, `--debug-perf` | README 참고 |
 | 🔜 | URL 스킴, App Intents(Shortcuts), macOS 서비스 메뉴 | |
 | 🔜 | CLI(`add`, `grep`, `tail`) | |
 | 🔜 | Spotlight 인덱싱 | |

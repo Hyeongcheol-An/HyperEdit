@@ -86,6 +86,9 @@ private struct HomeTab: View {
                 RibbonSmallButton(title: "Next Bookmark", systemImage: "bookmark.fill", help: "Go to the next bookmark (F2)", theme: theme) { model.nextBookmark() }
                 RibbonSmallButton(title: "Prev. Bookmark", systemImage: "bookmark.slash", help: "Go to the previous bookmark (⌥F2)", theme: theme) { model.previousBookmark() }
             }
+            RibbonStack {   // quick append
+                RibbonSmallButton(title: "Quick Append…", systemImage: "note.text.badge.plus", help: "Floating note panel — ⌘↩ appends to the end of the document (⇧⌘N, global ⌃⌥N)", theme: theme) { model.quickAppend.show() }
+            }
         }
         RibbonGroup(title: "Mode", theme: theme) {
             RibbonBigToggle(title: "Column Mode", systemImage: "rectangle.split.3x1", help: "⌥C — drag or ⇧arrows select a rectangle; typing applies to every line", isOn: $model.columnMode, theme: theme)
@@ -221,6 +224,9 @@ private struct LayoutTab: View {
             }
             RibbonStack {
                 RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
+                // split: 토글 + 방향 전환 (같은 스택이라 그룹 폭은 그대로)
+                RibbonSmallToggle(title: "Split Editor", systemImage: "rectangle.split.2x1", help: "Show the document in two editors (⌘\\)", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() }), theme: theme)
+                RibbonSmallButton(title: "Split Direction", systemImage: "rectangle.split.1x2", help: "Switch between side-by-side and stacked split", theme: theme) { model.cycleSplitOrientation() }
             }
         }
         RibbonGroup(title: "Markdown", theme: theme) {
@@ -422,7 +428,7 @@ extension RibbonTab {
     /// 탭 내용이 접히지 않고 다 보이는 데 필요한 폭(pt). 그룹을 추가하면 갱신할 것 (스크린샷에서 마지막 그룹 오른쪽 끝 + 여유 20).
     var requiredWidth: CGFloat {
         switch self {
-        case .home: 1060      // 파일 그룹 끝 ≈ 1035
+        case .home: 1190      // 파일 그룹 끝 ≈ 1165 (1600pt 스크린샷 실측 — 삽입 그룹에 '빠른 추가' 스택이 더해져 1035 → 1165)
         case .edit: 1520      // 도구 그룹 끝 ≈ 1505 (1600pt 스크린샷 실측)
         case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
         case .advanced: 260

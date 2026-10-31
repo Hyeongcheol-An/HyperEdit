@@ -49,6 +49,7 @@ struct EditorCommands: Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Document…") { model.newDocument() }.keyboardShortcut("n")
             Button("Open…") { model.presentOpenPanel() }.keyboardShortcut("o")
+            Button("Quick Append…") { model.quickAppend.show() }.keyboardShortcut("n", modifiers: [.command, .shift])   // quick append
             Button("Open Default Document (~/Documents/HyperEdit/notes.md)") { model.openDefaultDocument() }
             Button("Save") { model.saveNow() }.keyboardShortcut("s")
             Button("Reveal in Finder") { model.revealInFinder() }
@@ -118,6 +119,15 @@ struct EditorCommands: Commands {
             Toggle("Markdown Preview", isOn: $model.showMarkdownPreview).keyboardShortcut("p", modifiers: [.command, .shift])
             // ⌥⌘H 는 시스템 '기타 가리기(Hide Others)' 가 앱 메뉴에서 먼저 가로채므로 ⌃⌘H (⌃⌘E·⌃⌘F 와 같은 계열)
             Toggle("Syntax Colors", isOn: $model.syntaxHighlighting).keyboardShortcut("h", modifiers: [.command, .control])
+            // split: ⌘\ 토글 + 방향 하위 메뉴, ⌥⌘\ 다른 분할로 포커스
+            Toggle("Split Editor", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() })).keyboardShortcut("\\")
+            Menu("Split") {
+                Button("Split Side by Side") { model.setSplit(.vertical) }
+                Button("Split Stacked") { model.setSplit(.horizontal) }
+                Button("Single Editor") { model.setSplit(.none) }
+                Divider()
+                Button("Focus Other Split") { model.focusOtherSplit() }.keyboardShortcut("\\", modifiers: [.command, .option])
+            }
             Divider()
             ForEach(RibbonTab.allCases) { tab in
                 Button(tab.menuLabel) { model.ribbonTab = tab }

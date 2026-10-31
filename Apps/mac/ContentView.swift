@@ -20,7 +20,7 @@ struct ContentView: View {
                     // 편집기는 항상 HSplitView 안에 둔다 — 미리보기를 켜고 끌 때 EditorView 의 정체성이 유지되어 텍스트 뷰·undo 스택이 다시 만들어지지 않는다
                     GeometryReader { geo in
                         HSplitView {
-                            EditorView(document: model.document, theme: theme, font: model.font)
+                            SplitEditorArea(session: model.session, theme: theme, font: model.font)   // split: 주 편집기 + (분할 시) 보조 편집기
                                 .frame(minWidth: 320)
                             if model.showMarkdownPreview {
                                 MarkdownPreviewView(document: model.document, caret: model.caret, theme: theme)
@@ -116,6 +116,9 @@ struct StatusBar: View {
                 .help(model.columnMode ? "Column mode on (⌥C to turn off)" : "Column mode off (⌥C to turn on)")
             if model.showMarkdownPreview {
                 cell("MD", width: 40).foregroundStyle(theme.accent.color).help("Markdown preview on (⇧⌘P)")
+            }
+            if model.session.splitMode != .none {   // split
+                cell("SPLIT", width: 56).foregroundStyle(theme.accent.color).help("Split editor on (⌘\\)")
             }
             if caret.multiCaretCount > 1 {
                 cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")

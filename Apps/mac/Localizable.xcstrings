@@ -861,6 +861,26 @@
         }
       }
     },
+    "Floating note panel — ⌘↩ appends to the end of the document (⇧⌘N, global ⌃⌥N)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "떠 있는 메모 창 — ⌘↩ 로 문서 끝에 덧붙입니다 (⇧⌘N, 전역 ⌃⌥N)"
+          }
+        }
+      }
+    },
+    "Focus Other Split": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다른 분할로 포커스"
+          }
+        }
+      }
+    },
     "Folder to search": {
       "localizations": {
         "ko": {
@@ -957,6 +977,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "전체 화면"
+          }
+        }
+      }
+    },
+    "Global shortcut": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키"
+          }
+        }
+      }
+    },
+    "Global shortcut %@ could not be registered (in use by another app, error %lld)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키 %@ 을(를) 등록하지 못했습니다 (다른 앱이 사용 중, 오류 %lld)"
+          }
+        }
+      }
+    },
+    "Global shortcut off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키 끔"
+          }
+        }
+      }
+    },
+    "Global shortcut registered: %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키 등록됨: %@"
           }
         }
       }
@@ -1761,6 +1821,16 @@
         }
       }
     },
+    "Off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "끔"
+          }
+        }
+      }
+    },
     "Open Default Document": {
       "localizations": {
         "ko": {
@@ -1987,6 +2057,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "이전 테마 (⌥⌘[)"
+          }
+        }
+      }
+    },
+    "Quick Append": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가"
+          }
+        }
+      }
+    },
+    "Quick Append failed — no document is open": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가 실패 — 열린 문서가 없습니다"
+          }
+        }
+      }
+    },
+    "Quick Append · %lld chars": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가 · %lld자"
+          }
+        }
+      }
+    },
+    "Quick Append…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가…"
           }
         }
       }
@@ -2481,6 +2591,16 @@
         }
       }
     },
+    "Show the document in two editors (⌘\\)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "같은 문서를 두 편집기로 나란히 봅니다 (⌘\\)"
+          }
+        }
+      }
+    },
     "Sidebar": {
       "localizations": {
         "ko": {
@@ -2507,6 +2627,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "사이드바 — 파일·아웃라인·타임라인 (⌘1)"
+          }
+        }
+      }
+    },
+    "Single Editor": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 하나"
           }
         }
       }
@@ -2621,6 +2751,96 @@
         }
       }
     },
+    "Split": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분할"
+          }
+        }
+      }
+    },
+    "Split Direction": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분할 방향"
+          }
+        }
+      }
+    },
+    "Split Editor": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할"
+          }
+        }
+      }
+    },
+    "Split Side by Side": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "좌우로 분할"
+          }
+        }
+      }
+    },
+    "Split Stacked": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "상하로 분할"
+          }
+        }
+      }
+    },
+    "Split editor off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할 끔"
+          }
+        }
+      }
+    },
+    "Split editor on (⌘\\)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할 켜짐 (⌘\\)"
+          }
+        }
+      }
+    },
+    "Split editor: side by side": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할: 좌우"
+          }
+        }
+      }
+    },
+    "Split editor: stacked": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할: 상하"
+          }
+        }
+      }
+    },
     "Start value": {
       "localizations": {
         "ko": {
@@ -2647,6 +2867,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "대문자 ↔ 소문자 뒤집기"
+          }
+        }
+      }
+    },
+    "Switch between side-by-side and stacked split": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "좌우 분할 ↔ 상하 분할 전환"
           }
         }
       }
@@ -2767,6 +2997,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "타임스탬프·날짜 줄을 월별로 (⌘4)"
+          }
+        }
+      }
+    },
+    "Timestamp heading": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "타임스탬프 헤딩"
           }
         }
       }
@@ -3021,6 +3261,16 @@
         }
       }
     },
+    "⌃Space and ⌃⌥Space are often taken by input-source switching (System Settings › Keyboard › Shortcuts). In the app, ⇧⌘N opens the panel; ⌘↩ appends to the end of the current document and saves at once.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌃Space·⌃⌥Space 는 입력 소스 전환에 쓰이는 경우가 많습니다(시스템 설정 › 키보드 › 단축키). 앱 안에서는 ⇧⌘N 으로 창을 열고, ⌘↩ 로 현재 문서 끝에 덧붙인 뒤 바로 저장합니다."
+          }
+        }
+      }
+    },
     "⌘A": {
       "localizations": {
         "ko": {
@@ -3107,6 +3357,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "⌘X"
+          }
+        }
+      }
+    },
+    "⌘↩ append · esc close": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘↩ 추가 · esc 닫기"
           }
         }
       }
