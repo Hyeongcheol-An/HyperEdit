@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Questions and ideas · 질문·아이디어 (Discussions)"
+    url: https://github.com/Hyeongcheol-An/HyperEdit/discussions
+    about: "Ask how something works, share how you use HyperEdit, or float an idea before it becomes a feature request. · 사용법 질문, 활용 사례, 기능 제안 전 아이디어는 여기로."
+  - name: "Security vulnerability · 보안 취약점 (private)"
+    url: https://github.com/Hyeongcheol-An/HyperEdit/security/advisories/new
+    about: "Report security problems privately through GitHub Security Advisories, never in a public issue. See SECURITY.md. · 보안 문제는 공개 이슈 대신 비공개 보안 권고로 신고해 주세요."
+  - name: "Feature catalog and status · 기능 목록과 상태"
+    url: https://github.com/Hyeongcheol-An/HyperEdit/blob/main/docs/features.md
+    about: "Check whether a feature is already implemented, planned or deferred before filing. · 제안 전에 구현·예정·보류 상태를 확인하세요."

@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+# Swift PM
+.build/
+.swiftpm/
+# Node (release tooling only)
+node_modules/
+# Build outputs (uploaded to GitHub Releases, not committed)
+/dist/
+# Secrets
+*.p12
+*.mobileprovision
+.env
+# XcodeGen 생성물
+/HyperEdit.xcodeproj
+/Apps/mac/Info.plist
+/build/
+# 서명/공증 비밀 (절대 커밋 금지)
+*.p8
+*.p12
+AuthKey_*
+# 개인 서명 설정
+/Config/Local.xcconfig

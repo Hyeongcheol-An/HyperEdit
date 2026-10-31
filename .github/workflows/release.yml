@@ -1,0 +1,80 @@
+name: Release
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write   # 태그·릴리스·릴리스 커밋. 이슈/PR 쓰기는 .releaserc 에서 끈 기능이라 필요 없다.
+concurrency: { group: release, cancel-in-progress: false }
+defaults:
+  run:
+    shell: bash
+jobs:
+  release:
+    name: semantic-release (+ 서명·공증 DMG, Homebrew cask)
+    # DMG 를 빌드해야 하므로 macOS 러너. 릴리스가 없는 푸시(docs/chore)는 분석 후 바로 끝난다.
+    runs-on: macos-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: 22, cache: npm }
+      - name: 서명 자격 확인 (main 의 릴리스는 반드시 Developer ID 로 서명·공증)
+        env:
+          HAS_CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' }}
+          HAS_NOTARY: ${{ secrets.ASC_KEY_P8 != '' && secrets.ASC_KEY_ID != '' && secrets.ASC_ISSUER_ID != '' }}
+          ALLOW_UNSIGNED: ${{ vars.ALLOW_UNSIGNED_RELEASE }}
+        run: |
+          if [ "$HAS_CERT" != "true" ] || [ "$HAS_NOTARY" != "true" ]; then
+            if [ "$ALLOW_UNSIGNED" = "true" ]; then echo "::warning::서명/공증 시크릿 없음 — ALLOW_UNSIGNED_RELEASE 변수로 ad-hoc 릴리스 허용"; exit 0; fi
+            echo "::error::DEVELOPER_ID_CERT_P12 / P12_PASSWORD / ASC_KEY_P8 / ASC_KEY_ID / ASC_ISSUER_ID 시크릿이 필요합니다 (포크에서는 저장소 변수 ALLOW_UNSIGNED_RELEASE=true 로 서명 없는 릴리스를 허용할 수 있음)"; exit 1
+          fi
+      - name: XcodeGen
+        run: brew install xcodegen && xcodegen generate
+      - name: 릴리스 도구 설치 (락파일 고정, 설치 스크립트 실행 금지)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 테마 빌드
+        run: python3 themes/build_zed_theme.py && python3 themes/build_preview.py
+      - name: 개인정보·비밀 검사
+        run: bash scripts/check-sensitive.sh
+      - name: Developer ID 인증서 가져오기 (임시 키체인)
+        env:
+          P12_B64: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        run: |
+          if [ -z "$P12_B64" ]; then echo "no certificate secret → ad-hoc signing"; exit 0; fi
+          KC="$RUNNER_TEMP/signing.keychain-db"; KCPW="$(uuidgen)"
+          echo "$KCPW" > "$RUNNER_TEMP/kcpw"; chmod 600 "$RUNNER_TEMP/kcpw"
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          printf '%s' "$P12_B64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/productsign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" || { echo "::error::p12 에 Developer ID Application 인증서가 없음"; exit 1; }
+      - name: 릴리스 전 버전 기록
+        id: prev
+        run: echo "v=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+      - name: semantic-release (버전 결정 → xcconfig 갱신 → Release 빌드 → 서명·공증 → DMG → GitHub Release)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: ./node_modules/.bin/semantic-release
+      - name: Homebrew cask 갱신 (새 버전이 나왔을 때만; tap 쓰기용 deploy key 는 이 단계에만 노출)
+        env:
+          HOMEBREW_TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          PREV: ${{ steps.prev.outputs.v }}
+        run: |
+          NOW="$(cat VERSION)"
+          if [ "$NOW" = "$PREV" ]; then echo "릴리스 없음 ($NOW) — cask 건너뜀"; exit 0; fi
+          scripts/update-cask.sh "$NOW" Casks --push
+      - name: 정리 (임시 키체인·키 파일)
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/signing.keychain-db" ]; then security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true; fi
+          rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/kcpw" build/AuthKey_*.p8

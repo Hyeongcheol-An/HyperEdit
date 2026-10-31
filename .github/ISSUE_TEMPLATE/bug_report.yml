@@ -1,0 +1,103 @@
+name: "Bug report · 버그 신고"
+description: "Something in HyperEdit does not work as documented. · 문서와 다르게 동작하는 문제를 알려 주세요."
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Korean or English is fine. · 한국어·영어 모두 괜찮습니다.
+
+        **Security issues:** do not file them here — use the private [Security advisory form](https://github.com/Hyeongcheol-An/HyperEdit/security/advisories/new) instead (see SECURITY.md).
+        **Please remove personal data** (file contents, paths with your user name, account details) from logs and screenshots before posting.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: "What happened? · 무슨 일이 있었나요?"
+      description: "What you did, what you expected, what actually happened. · 한 일, 기대한 결과, 실제 결과."
+      placeholder: |
+        1. Open a 2 MB .txt file
+        2. Press ⌥C, then ⇧↓ three times
+        3. Type "x"
+        Expected: "x" inserted on four lines. Actual: only the first line changes.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: "HyperEdit version · 버전"
+      description: "HyperEdit → About, or `defaults read /Applications/HyperEdit.app/Contents/Info.plist CFBundleShortVersionString`. For source builds, the commit hash."
+      placeholder: "0.2.3 (Homebrew) / main @ abc1234"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: "How did you install it? · 설치 방법"
+      options:
+        - "Homebrew cask"
+        - "DMG from GitHub Releases"
+        - "Built from source"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: "macOS version and chip · macOS 버전과 칩"
+      placeholder: "macOS 15.1, Apple M2 / Intel"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Area · 영역"
+      multiple: true
+      options:
+        - "Editing / typing performance · 편집·성능"
+        - "Column mode / multi-caret · 열 모드·멀티 커서"
+        - "Find / Replace / Find in Files · 찾기·바꾸기"
+        - "Bookmarks / Outline / Timeline · 북마크·아웃라인·타임라인"
+        - "File View / opening files · File View·파일 열기"
+        - "Saving / snapshots / external changes · 저장·스냅샷·외부 변경"
+        - "Themes / fonts / CJK width · 테마·폰트·한글 폭"
+        - "Ribbon / panels / status bar · 리본·패널·상태바"
+        - "Install / Homebrew / DMG · 설치"
+        - "Zed theme export · Zed 테마"
+        - "Other · 기타"
+
+  - type: textarea
+    id: file
+    attributes:
+      label: "About the file · 파일 정보"
+      description: "Rough size and line count, encoding, line endings (status bar shows UNIX/DOS/MAC), whether it contains Korean/CJK text. Attach a small sample that reproduces the issue if you can — never your real notes."
+      placeholder: "~1.5 MB, 40,000 lines, UTF-8, UNIX, mixed Korean/English. Minimal sample attached."
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Output panel / logs · 출력 창·로그"
+      description: "The bottom panel's Output tab (⌘2 → 출력), Console.app messages, or a crash report. Paste as text."
+      render: text
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Screenshots or recording · 스크린샷·녹화"
+      description: "Drag images here. · 이미지를 끌어다 놓으세요."
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: "Checklist · 확인"
+      options:
+        - label: "I am on the latest release (or current main). · 최신 릴리스(또는 main)에서 재현했습니다."
+          required: true
+        - label: "I searched existing issues. · 기존 이슈를 검색했습니다."
+          required: true
+        - label: "I removed personal data from logs, paths and screenshots. · 로그·경로·스크린샷에서 개인 정보를 지웠습니다."
+          required: true

@@ -1,0 +1,44 @@
+{
+  "name": "Green Blue Contrast",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#001F3F",
+    "editor.foreground": "#00FF94",
+    "editor.selectionBackground": "#003366",
+    "editor.lineHighlightBackground": "#00354D",
+    "editorCursor.foreground": "#39FF14",
+    "editorWhitespace.foreground": "#008080",
+    "editorIndentGuide.background": "#004466",
+    "editorLineNumber.foreground": "#008B8B",
+    "editorLineNumber.activeForeground": "#00CED1",
+    "editor.selectionHighlightBackground": "#005F73",
+    "statusBar.background": "#001A33",
+    "statusBar.foreground": "#00FF94"
+  },
+  "tokenColors": [
+    {
+      "scope": ["comment"],
+      "settings": { "foreground": "#66FFB2", "fontStyle": "italic" }
+    },
+    {
+      "scope": ["keyword", "storage"],
+      "settings": { "foreground": "#00E6B8" }
+    },
+    {
+      "scope": ["string"],
+      "settings": { "foreground": "#00FFCC" }
+    },
+    {
+      "scope": ["variable", "identifier"],
+      "settings": { "foreground": "#7FFFD4" }
+    },
+    {
+      "scope": ["function", "method"],
+      "settings": { "foreground": "#00FF94", "fontStyle": "bold" }
+    },
+    {
+      "scope": ["number", "constant"],
+      "settings": { "foreground": "#00FFB2" }
+    }
+  ]
+}

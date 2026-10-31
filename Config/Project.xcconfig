@@ -1,0 +1,7 @@
+// 프로젝트 공통 xcconfig (project.yml 의 configFiles 가 가리킨다).
+// 1) 버전 — semantic-release 가 scripts/set-version.sh 로 갱신
+// 2) 서명 기본값 — 팀 없이 누구나 빌드·실행할 수 있는 "Sign to Run Locally"
+// 3) 개인 오버라이드 — Config/Local.xcconfig (git 제외, Local.xcconfig.example 참고)
+#include "Version.xcconfig"
+#include "Signing.xcconfig"
+#include? "Local.xcconfig"

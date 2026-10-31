@@ -1,0 +1,62 @@
+# XcodeGen 프로젝트 정의. `scripts/bootstrap.sh` 가 HyperEdit.xcodeproj 를 생성한다 (생성물은 git 에 넣지 않음).
+name: HyperEdit
+options:
+  bundleIdPrefix: io.github.hyeongcheol-an
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+# 버전(semantic-release 가 갱신) + 서명 기본값(팀 없이 로컬 실행용) + 개인 오버라이드(Config/Local.xcconfig, git 제외)
+configFiles:
+  Debug: Config/Project.xcconfig
+  Release: Config/Project.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+packages:
+  HyperCore:
+    path: Packages/HyperCore
+targets:
+  HyperEdit-mac:
+    type: application
+    platform: macOS
+    sources:
+      - path: Apps/mac
+        excludes:
+          - "Info.plist"
+    dependencies:
+      - package: HyperCore
+    info:
+      path: Apps/mac/Info.plist
+      properties:
+        CFBundleDisplayName: HyperEdit
+        CFBundleName: HyperEdit
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.productivity
+        LSMinimumSystemVersion: "15.0"
+        NSHumanReadableCopyright: "© 2026 Hyeongcheol An · MIT License"
+        NSPrincipalClass: NSApplication
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Text
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.plain-text, net.daringfireball.markdown]
+    settings:
+      base:
+        PRODUCT_NAME: HyperEdit
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.hyeongcheol-an.hyperedit
+        ENABLE_HARDENED_RUNTIME: YES
+        COMBINE_HIDPI_IMAGES: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # 서명 3종은 xcconfig(Config/Signing.xcconfig → Local.xcconfig) 에서 정한다. XcodeGen 프리셋이 타깃에 넣는 값이 xcconfig 를 덮지 않도록 상속만 지정.
+        CODE_SIGN_IDENTITY: $(inherited)
+        CODE_SIGN_STYLE: $(inherited)
+        DEVELOPMENT_TEAM: $(inherited)
+      configs:
+        Release:
+          # 배포 빌드에 get-task-allow(디버거 허용) 엔타이틀먼트가 주입되면 공증이 거절된다
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    scheme:
+      testTargets: []

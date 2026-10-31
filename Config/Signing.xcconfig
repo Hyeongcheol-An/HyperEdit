@@ -1,0 +1,6 @@
+// 서명 기본값: 개발 팀 없이 로컬에서 실행할 수 있는 ad-hoc 서명 (Xcode 의 "Sign to Run Locally").
+// 본인 Apple Developer 팀으로 서명하려면 Config/Local.xcconfig 를 만들어 아래 값을 덮어쓰세요 (Local.xcconfig.example 참고).
+// 배포(Developer ID 서명·공증)는 scripts/make-dmg.sh 가 명령줄 인자로 덮어쓴다.
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = -

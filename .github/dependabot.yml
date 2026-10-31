@@ -1,0 +1,27 @@
+# Dependabot keeps the release tooling (package.json: semantic-release, commitlint) and the
+# GitHub Actions used by ci.yml / release.yml up to date. The Swift app has no package
+# dependencies beyond the local HyperCore package, so there is nothing to track there.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+    groups:
+      release-tooling:
+        patterns:
+          - "semantic-release"
+          - "@semantic-release/*"
+          - "conventional-changelog-*"
+          - "@commitlint/*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    labels: ["dependencies", "ci"]

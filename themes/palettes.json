@@ -1,0 +1,210 @@
+{
+  "$comment": "HyperEdit 테마 팔레트 소스. 이 파일 하나에서 Zed 테마(build_zed_theme.py)와 Swift 앱 테마를 모두 생성한다. 색은 #RRGGBB 또는 #RRGGBBAA.",
+  "family": "HyperEdit Themes",
+  "author": "HyperEdit contributors",
+  "themes": [
+    {
+      "id": "hyper-light", "name": "Hyper Light", "appearance": "light",
+      "origin": "HyperEdit 기본 라이트 테마 — 흰 배경에 널리 쓰이는 에디터 라이트 톤 (시스템 외형이 라이트일 때 기본)",
+      "bg": "#FFFFFF", "bg_alt": "#F5F6F8", "bg_elev": "#E9EBEF", "fg": "#24292F", "fg_muted": "#57606A", "fg_dim": "#6E7781",
+      "border": "#D8DCE1", "selection": "#B4D5FE", "cursor": "#005FB8", "line_hl": "#EAF0F8", "accent": "#005FB8",
+      "ansi": {"black": "#000000", "red": "#CD3131", "green": "#107C10", "yellow": "#949800", "blue": "#0451A5", "magenta": "#BC05BC", "cyan": "#0598BC", "white": "#555555",
+               "bright_black": "#666666", "bright_red": "#CD3131", "bright_green": "#14CE14", "bright_yellow": "#B5BA00", "bright_blue": "#0451A5", "bright_magenta": "#BC05BC", "bright_cyan": "#0598BC", "bright_white": "#A5A5A5"},
+      "syntax": {"comment": "#6A737D", "keyword": "#0000FF", "string": "#A31515", "number": "#098658", "function": "#795E26", "type": "#267F99", "variable": "#001080", "constant": "#0070C1",
+                 "operator": "#24292F", "punctuation": "#24292F", "tag": "#800000", "attribute": "#E50000", "property": "#001080", "link": "#0969DA", "title": "#0000FF", "special": "#EE0000"}
+    },
+    {
+      "id": "hyper-dark", "name": "Hyper Dark", "appearance": "dark",
+      "origin": "HyperEdit 기본 다크 테마 — 널리 쓰이는 에디터 다크 톤 (시스템 외형이 다크일 때 기본)",
+      "bg": "#1F1F1F", "bg_alt": "#181818", "bg_elev": "#2A2A2A", "fg": "#CCCCCC", "fg_muted": "#9D9D9D", "fg_dim": "#848C96",
+      "border": "#333333", "selection": "#264F78", "cursor": "#AEAFAD", "line_hl": "#303030", "accent": "#0078D4",
+      "ansi": {"black": "#000000", "red": "#CD3131", "green": "#0DBC79", "yellow": "#E5E510", "blue": "#2472C8", "magenta": "#BC3FBC", "cyan": "#11A8CD", "white": "#E5E5E5",
+               "bright_black": "#666666", "bright_red": "#F14C4C", "bright_green": "#23D18B", "bright_yellow": "#F5F543", "bright_blue": "#3B8EEA", "bright_magenta": "#D670D6", "bright_cyan": "#29B8DB", "bright_white": "#E5E5E5"},
+      "syntax": {"comment": "#6A9955", "keyword": "#569CD6", "string": "#CE9178", "number": "#B5CEA8", "function": "#DCDCAA", "type": "#4EC9B0", "variable": "#9CDCFE", "constant": "#4FC1FF",
+                 "operator": "#D4D4D4", "punctuation": "#D4D4D4", "tag": "#569CD6", "attribute": "#9CDCFE", "property": "#9CDCFE", "link": "#3794FF", "title": "#569CD6", "special": "#D7BA7D"}
+    },
+    {
+      "id": "homebrew-terminal", "name": "Hyper Homebrew Terminal", "appearance": "dark",
+      "origin": "macOS Terminal.app 'Homebrew' 프로필 실측값 (bg #010F1E, text #00F900, cursor #38FE27, selection #0C2EEE@65%)",
+      "bg": "#010F1E", "bg_alt": "#010A15", "bg_elev": "#07192C", "fg": "#00F900", "fg_muted": "#00A600", "fg_dim": "#0F6B22",
+      "border": "#0B2A44", "selection": "#0C2EEEA6", "cursor": "#38FE27", "line_hl": "#04172B", "accent": "#2F6BFF",
+      "ansi": {"black": "#000000", "red": "#990000", "green": "#00A600", "yellow": "#999900", "blue": "#0000B2", "magenta": "#B200B2", "cyan": "#00A6B2", "white": "#BFBFBF",
+               "bright_black": "#666666", "bright_red": "#E50000", "bright_green": "#00D900", "bright_yellow": "#E5E500", "bright_blue": "#0000FF", "bright_magenta": "#E500E5", "bright_cyan": "#00E5E5", "bright_white": "#E5E5E5"},
+      "syntax": {"comment": "#1F9F2F", "keyword": "#00E5E5", "string": "#E5E57A", "number": "#E5E5E5", "function": "#38FE27", "type": "#5FD7FF", "variable": "#00F900", "constant": "#E500E5",
+                 "operator": "#BFBFBF", "punctuation": "#7FBF7F", "tag": "#00E5E5", "attribute": "#E5E500", "property": "#B3FFB3", "link": "#5F87FF", "title": "#38FE27", "special": "#E5E500"}
+    },
+    {
+      "id": "green-blue-contrast", "name": "Hyper Green Blue Contrast", "appearance": "dark",
+      "origin": "사용자가 직접 만든 green_blue_theme.json(VS Code 포맷)을 Zed/앱용으로 이식",
+      "bg": "#001F3F", "bg_alt": "#001A33", "bg_elev": "#002B4D", "fg": "#00FF94", "fg_muted": "#00B37A", "fg_dim": "#008B8B",
+      "border": "#004466", "selection": "#003366", "cursor": "#39FF14", "line_hl": "#00354D", "accent": "#00CED1",
+      "ansi": {"black": "#001A33", "red": "#FF5F5F", "green": "#00FF94", "yellow": "#FFE066", "blue": "#4DA6FF", "magenta": "#D18CFF", "cyan": "#00E6B8", "white": "#CFFFF0",
+               "bright_black": "#008080", "bright_red": "#FF8A8A", "bright_green": "#66FFB2", "bright_yellow": "#FFEB99", "bright_blue": "#80C1FF", "bright_magenta": "#E3B3FF", "bright_cyan": "#66FFD9", "bright_white": "#FFFFFF"},
+      "syntax": {"comment": "#66FFB2", "keyword": "#00E6B8", "string": "#00FFCC", "number": "#00CED1", "function": "#00FF94", "type": "#40E0D0", "variable": "#7FFFD4", "constant": "#00CED1",
+                 "operator": "#7FFFD4", "punctuation": "#66CDAA", "tag": "#00E6B8", "attribute": "#00FFCC", "property": "#7FFFD4", "link": "#00CED1", "title": "#00FF94", "special": "#AFFFE0"}
+    },
+    {
+      "id": "xcode-hc-dark", "name": "Hyper Xcode High Contrast Dark", "appearance": "dark",
+      "origin": "현재 Zed에서 쓰는 Xcode High Contrast Dark 계열 재현",
+      "bg": "#1F1F24", "bg_alt": "#19191D", "bg_elev": "#2A2A30", "fg": "#FFFFFF", "fg_muted": "#B5BCC9", "fg_dim": "#7F8C98",
+      "border": "#3A3A42", "selection": "#4A5168", "cursor": "#FFFFFF", "line_hl": "#2F3239", "accent": "#0A84FF",
+      "ansi": {"black": "#1F1F24", "red": "#FF453A", "green": "#32D74B", "yellow": "#FFD60A", "blue": "#0A84FF", "magenta": "#BF5AF2", "cyan": "#64D2FF", "white": "#E5E5EA",
+               "bright_black": "#636366", "bright_red": "#FF6961", "bright_green": "#5BE272", "bright_yellow": "#FFE24D", "bright_blue": "#409CFF", "bright_magenta": "#DA8FFF", "bright_cyan": "#8FE0FF", "bright_white": "#FFFFFF"},
+      "syntax": {"comment": "#8A99A8", "keyword": "#FF7AB2", "string": "#FF8170", "number": "#D9C97C", "function": "#67B7A4", "type": "#DABAFF", "variable": "#FFFFFF", "constant": "#D0A8FF",
+                 "operator": "#FFFFFF", "punctuation": "#FFFFFF", "tag": "#FF7AB2", "attribute": "#B281EB", "property": "#78C2B3", "link": "#5B9CF5", "title": "#FFFFFF", "special": "#FFA14F"}
+    },
+    {
+      "id": "one-dark", "name": "Hyper One Dark", "appearance": "dark", "origin": "Atom One Dark",
+      "bg": "#282C34", "bg_alt": "#21252B", "bg_elev": "#2C313A", "fg": "#ABB2BF", "fg_muted": "#7F848E", "fg_dim": "#5C6370",
+      "border": "#181A1F", "selection": "#3E4451", "cursor": "#528BFF", "line_hl": "#2C313C", "accent": "#61AFEF",
+      "ansi": {"black": "#282C34", "red": "#E06C75", "green": "#98C379", "yellow": "#E5C07B", "blue": "#61AFEF", "magenta": "#C678DD", "cyan": "#56B6C2", "white": "#ABB2BF",
+               "bright_black": "#5C6370", "bright_red": "#E06C75", "bright_green": "#98C379", "bright_yellow": "#E5C07B", "bright_blue": "#61AFEF", "bright_magenta": "#C678DD", "bright_cyan": "#56B6C2", "bright_white": "#FFFFFF"},
+      "syntax": {"comment": "#5C6370", "keyword": "#C678DD", "string": "#98C379", "number": "#D19A66", "function": "#61AFEF", "type": "#E5C07B", "variable": "#E06C75", "constant": "#D19A66",
+                 "operator": "#56B6C2", "punctuation": "#ABB2BF", "tag": "#E06C75", "attribute": "#D19A66", "property": "#E06C75", "link": "#61AFEF", "title": "#E06C75", "special": "#56B6C2"}
+    },
+    {
+      "id": "dracula", "name": "Hyper Dracula", "appearance": "dark", "origin": "Dracula",
+      "bg": "#282A36", "bg_alt": "#21222C", "bg_elev": "#343746", "fg": "#F8F8F2", "fg_muted": "#A8ABBE", "fg_dim": "#6272A4",
+      "border": "#191A21", "selection": "#44475A", "cursor": "#F8F8F2", "line_hl": "#30323F", "accent": "#BD93F9",
+      "ansi": {"black": "#21222C", "red": "#FF5555", "green": "#50FA7B", "yellow": "#F1FA8C", "blue": "#BD93F9", "magenta": "#FF79C6", "cyan": "#8BE9FD", "white": "#F8F8F2",
+               "bright_black": "#6272A4", "bright_red": "#FF6E6E", "bright_green": "#69FF94", "bright_yellow": "#FFFFA5", "bright_blue": "#D6ACFF", "bright_magenta": "#FF92DF", "bright_cyan": "#A4FFFF", "bright_white": "#FFFFFF"},
+      "syntax": {"comment": "#6272A4", "keyword": "#FF79C6", "string": "#F1FA8C", "number": "#BD93F9", "function": "#50FA7B", "type": "#8BE9FD", "variable": "#F8F8F2", "constant": "#BD93F9",
+                 "operator": "#FF79C6", "punctuation": "#F8F8F2", "tag": "#FF79C6", "attribute": "#50FA7B", "property": "#F8F8F2", "link": "#8BE9FD", "title": "#BD93F9", "special": "#FFB86C"}
+    },
+    {
+      "id": "gruvbox-dark", "name": "Hyper Gruvbox Dark", "appearance": "dark", "origin": "Gruvbox Dark (medium)",
+      "bg": "#282828", "bg_alt": "#1D2021", "bg_elev": "#3C3836", "fg": "#EBDBB2", "fg_muted": "#A89984", "fg_dim": "#7C6F64",
+      "border": "#3C3836", "selection": "#504945", "cursor": "#EBDBB2", "line_hl": "#32302F", "accent": "#83A598",
+      "ansi": {"black": "#282828", "red": "#CC241D", "green": "#98971A", "yellow": "#D79921", "blue": "#458588", "magenta": "#B16286", "cyan": "#689D6A", "white": "#A89984",
+               "bright_black": "#928374", "bright_red": "#FB4934", "bright_green": "#B8BB26", "bright_yellow": "#FABD2F", "bright_blue": "#83A598", "bright_magenta": "#D3869B", "bright_cyan": "#8EC07C", "bright_white": "#EBDBB2"},
+      "syntax": {"comment": "#928374", "keyword": "#FB4934", "string": "#B8BB26", "number": "#D3869B", "function": "#B8BB26", "type": "#FABD2F", "variable": "#83A598", "constant": "#D3869B",
+                 "operator": "#EBDBB2", "punctuation": "#A89984", "tag": "#8EC07C", "attribute": "#FABD2F", "property": "#83A598", "link": "#83A598", "title": "#B8BB26", "special": "#FE8019"}
+    },
+    {
+      "id": "gruvbox-light", "name": "Hyper Gruvbox Light", "appearance": "light", "origin": "Gruvbox Light (medium)",
+      "bg": "#FBF1C7", "bg_alt": "#F2E5BC", "bg_elev": "#EBDBB2", "fg": "#3C3836", "fg_muted": "#7C6F64", "fg_dim": "#A89984",
+      "border": "#D5C4A1", "selection": "#D5C4A1", "cursor": "#3C3836", "line_hl": "#F2E5BC", "accent": "#076678",
+      "ansi": {"black": "#FBF1C7", "red": "#CC241D", "green": "#98971A", "yellow": "#D79921", "blue": "#458588", "magenta": "#B16286", "cyan": "#689D6A", "white": "#7C6F64",
+               "bright_black": "#928374", "bright_red": "#9D0006", "bright_green": "#79740E", "bright_yellow": "#B57614", "bright_blue": "#076678", "bright_magenta": "#8F3F71", "bright_cyan": "#427B58", "bright_white": "#3C3836"},
+      "syntax": {"comment": "#928374", "keyword": "#9D0006", "string": "#79740E", "number": "#8F3F71", "function": "#79740E", "type": "#B57614", "variable": "#076678", "constant": "#8F3F71",
+                 "operator": "#3C3836", "punctuation": "#7C6F64", "tag": "#427B58", "attribute": "#B57614", "property": "#076678", "link": "#076678", "title": "#79740E", "special": "#AF3A03"}
+    },
+    {
+      "id": "solarized-dark", "name": "Hyper Solarized Dark", "appearance": "dark", "origin": "Solarized Dark",
+      "bg": "#002B36", "bg_alt": "#00252F", "bg_elev": "#073642", "fg": "#839496", "fg_muted": "#657B83", "fg_dim": "#586E75",
+      "border": "#0B3C4A", "selection": "#073642", "cursor": "#839496", "line_hl": "#073642", "accent": "#268BD2",
+      "ansi": {"black": "#073642", "red": "#DC322F", "green": "#859900", "yellow": "#B58900", "blue": "#268BD2", "magenta": "#D33682", "cyan": "#2AA198", "white": "#EEE8D5",
+               "bright_black": "#002B36", "bright_red": "#CB4B16", "bright_green": "#586E75", "bright_yellow": "#657B83", "bright_blue": "#839496", "bright_magenta": "#6C71C4", "bright_cyan": "#93A1A1", "bright_white": "#FDF6E3"},
+      "syntax": {"comment": "#586E75", "keyword": "#859900", "string": "#2AA198", "number": "#D33682", "function": "#268BD2", "type": "#B58900", "variable": "#839496", "constant": "#CB4B16",
+                 "operator": "#859900", "punctuation": "#839496", "tag": "#268BD2", "attribute": "#93A1A1", "property": "#839496", "link": "#268BD2", "title": "#CB4B16", "special": "#DC322F"}
+    },
+    {
+      "id": "solarized-light", "name": "Hyper Solarized Light", "appearance": "light", "origin": "Solarized Light",
+      "bg": "#FDF6E3", "bg_alt": "#EEE8D5", "bg_elev": "#EEE8D5", "fg": "#657B83", "fg_muted": "#586E75", "fg_dim": "#93A1A1",
+      "border": "#E3DCC8", "selection": "#EEE8D5", "cursor": "#657B83", "line_hl": "#EEE8D5", "accent": "#268BD2",
+      "ansi": {"black": "#073642", "red": "#DC322F", "green": "#859900", "yellow": "#B58900", "blue": "#268BD2", "magenta": "#D33682", "cyan": "#2AA198", "white": "#EEE8D5",
+               "bright_black": "#002B36", "bright_red": "#CB4B16", "bright_green": "#586E75", "bright_yellow": "#657B83", "bright_blue": "#839496", "bright_magenta": "#6C71C4", "bright_cyan": "#93A1A1", "bright_white": "#FDF6E3"},
+      "syntax": {"comment": "#93A1A1", "keyword": "#859900", "string": "#2AA198", "number": "#D33682", "function": "#268BD2", "type": "#B58900", "variable": "#657B83", "constant": "#CB4B16",
+                 "operator": "#859900", "punctuation": "#657B83", "tag": "#268BD2", "attribute": "#586E75", "property": "#657B83", "link": "#268BD2", "title": "#CB4B16", "special": "#DC322F"}
+    },
+    {
+      "id": "nord", "name": "Hyper Nord", "appearance": "dark", "origin": "Nord",
+      "bg": "#2E3440", "bg_alt": "#292E39", "bg_elev": "#3B4252", "fg": "#D8DEE9", "fg_muted": "#9DA5B8", "fg_dim": "#616E88",
+      "border": "#3B4252", "selection": "#434C5E", "cursor": "#D8DEE9", "line_hl": "#353B49", "accent": "#88C0D0",
+      "ansi": {"black": "#3B4252", "red": "#BF616A", "green": "#A3BE8C", "yellow": "#EBCB8B", "blue": "#81A1C1", "magenta": "#B48EAD", "cyan": "#88C0D0", "white": "#E5E9F0",
+               "bright_black": "#4C566A", "bright_red": "#BF616A", "bright_green": "#A3BE8C", "bright_yellow": "#EBCB8B", "bright_blue": "#81A1C1", "bright_magenta": "#B48EAD", "bright_cyan": "#8FBCBB", "bright_white": "#ECEFF4"},
+      "syntax": {"comment": "#616E88", "keyword": "#81A1C1", "string": "#A3BE8C", "number": "#B48EAD", "function": "#88C0D0", "type": "#8FBCBB", "variable": "#D8DEE9", "constant": "#D08770",
+                 "operator": "#81A1C1", "punctuation": "#ECEFF4", "tag": "#81A1C1", "attribute": "#8FBCBB", "property": "#D8DEE9", "link": "#88C0D0", "title": "#88C0D0", "special": "#EBCB8B"}
+    },
+    {
+      "id": "catppuccin-mocha", "name": "Hyper Catppuccin Mocha", "appearance": "dark", "origin": "Catppuccin Mocha",
+      "bg": "#1E1E2E", "bg_alt": "#181825", "bg_elev": "#313244", "fg": "#CDD6F4", "fg_muted": "#A6ADC8", "fg_dim": "#6C7086",
+      "border": "#313244", "selection": "#585B7080", "cursor": "#F5E0DC", "line_hl": "#2A2B3C", "accent": "#CBA6F7",
+      "ansi": {"black": "#45475A", "red": "#F38BA8", "green": "#A6E3A1", "yellow": "#F9E2AF", "blue": "#89B4FA", "magenta": "#F5C2E7", "cyan": "#94E2D5", "white": "#BAC2DE",
+               "bright_black": "#585B70", "bright_red": "#F38BA8", "bright_green": "#A6E3A1", "bright_yellow": "#F9E2AF", "bright_blue": "#89B4FA", "bright_magenta": "#F5C2E7", "bright_cyan": "#94E2D5", "bright_white": "#A6ADC8"},
+      "syntax": {"comment": "#9399B2", "keyword": "#CBA6F7", "string": "#A6E3A1", "number": "#FAB387", "function": "#89B4FA", "type": "#F9E2AF", "variable": "#CDD6F4", "constant": "#FAB387",
+                 "operator": "#89DCEB", "punctuation": "#9399B2", "tag": "#CBA6F7", "attribute": "#F9E2AF", "property": "#B4BEFE", "link": "#89B4FA", "title": "#CBA6F7", "special": "#F5C2E7"}
+    },
+    {
+      "id": "catppuccin-latte", "name": "Hyper Catppuccin Latte", "appearance": "light", "origin": "Catppuccin Latte",
+      "bg": "#EFF1F5", "bg_alt": "#E6E9EF", "bg_elev": "#CCD0DA", "fg": "#4C4F69", "fg_muted": "#6C6F85", "fg_dim": "#9CA0B0",
+      "border": "#CCD0DA", "selection": "#ACB0BE80", "cursor": "#DC8A78", "line_hl": "#E6E9EF", "accent": "#8839EF",
+      "ansi": {"black": "#5C5F77", "red": "#D20F39", "green": "#40A02B", "yellow": "#DF8E1D", "blue": "#1E66F5", "magenta": "#EA76CB", "cyan": "#179299", "white": "#ACB0BE",
+               "bright_black": "#6C6F85", "bright_red": "#D20F39", "bright_green": "#40A02B", "bright_yellow": "#DF8E1D", "bright_blue": "#1E66F5", "bright_magenta": "#EA76CB", "bright_cyan": "#179299", "bright_white": "#BCC0CC"},
+      "syntax": {"comment": "#7C7F93", "keyword": "#8839EF", "string": "#40A02B", "number": "#FE640B", "function": "#1E66F5", "type": "#DF8E1D", "variable": "#4C4F69", "constant": "#FE640B",
+                 "operator": "#04A5E5", "punctuation": "#7C7F93", "tag": "#8839EF", "attribute": "#DF8E1D", "property": "#7287FD", "link": "#1E66F5", "title": "#8839EF", "special": "#EA76CB"}
+    },
+    {
+      "id": "tokyo-night", "name": "Hyper Tokyo Night", "appearance": "dark", "origin": "Tokyo Night",
+      "bg": "#1A1B26", "bg_alt": "#16161E", "bg_elev": "#24283B", "fg": "#A9B1D6", "fg_muted": "#787C99", "fg_dim": "#565F89",
+      "border": "#292E42", "selection": "#33467C", "cursor": "#C0CAF5", "line_hl": "#1F2335", "accent": "#7AA2F7",
+      "ansi": {"black": "#15161E", "red": "#F7768E", "green": "#9ECE6A", "yellow": "#E0AF68", "blue": "#7AA2F7", "magenta": "#BB9AF7", "cyan": "#7DCFFF", "white": "#A9B1D6",
+               "bright_black": "#414868", "bright_red": "#F7768E", "bright_green": "#9ECE6A", "bright_yellow": "#E0AF68", "bright_blue": "#7AA2F7", "bright_magenta": "#BB9AF7", "bright_cyan": "#7DCFFF", "bright_white": "#C0CAF5"},
+      "syntax": {"comment": "#565F89", "keyword": "#BB9AF7", "string": "#9ECE6A", "number": "#FF9E64", "function": "#7AA2F7", "type": "#2AC3DE", "variable": "#C0CAF5", "constant": "#FF9E64",
+                 "operator": "#89DDFF", "punctuation": "#89DDFF", "tag": "#F7768E", "attribute": "#BB9AF7", "property": "#7DCFFF", "link": "#73DACA", "title": "#7AA2F7", "special": "#B4F9F8"}
+    },
+    {
+      "id": "github-dark", "name": "Hyper GitHub Dark", "appearance": "dark", "origin": "GitHub Dark",
+      "bg": "#0D1117", "bg_alt": "#010409", "bg_elev": "#161B22", "fg": "#C9D1D9", "fg_muted": "#8B949E", "fg_dim": "#6E7681",
+      "border": "#30363D", "selection": "#1F6FEB40", "cursor": "#58A6FF", "line_hl": "#161B22", "accent": "#58A6FF",
+      "ansi": {"black": "#484F58", "red": "#FF7B72", "green": "#3FB950", "yellow": "#D29922", "blue": "#58A6FF", "magenta": "#BC8CFF", "cyan": "#39C5CF", "white": "#B1BAC4",
+               "bright_black": "#6E7681", "bright_red": "#FFA198", "bright_green": "#56D364", "bright_yellow": "#E3B341", "bright_blue": "#79C0FF", "bright_magenta": "#D2A8FF", "bright_cyan": "#56D4DD", "bright_white": "#F0F6FC"},
+      "syntax": {"comment": "#8B949E", "keyword": "#FF7B72", "string": "#A5D6FF", "number": "#79C0FF", "function": "#D2A8FF", "type": "#FFA657", "variable": "#C9D1D9", "constant": "#79C0FF",
+                 "operator": "#FF7B72", "punctuation": "#C9D1D9", "tag": "#7EE787", "attribute": "#79C0FF", "property": "#79C0FF", "link": "#58A6FF", "title": "#79C0FF", "special": "#A5D6FF"}
+    },
+    {
+      "id": "github-light", "name": "Hyper GitHub Light", "appearance": "light", "origin": "GitHub Light",
+      "bg": "#FFFFFF", "bg_alt": "#F6F8FA", "bg_elev": "#F6F8FA", "fg": "#24292F", "fg_muted": "#57606A", "fg_dim": "#6E7781",
+      "border": "#D0D7DE", "selection": "#B6E3FF", "cursor": "#0969DA", "line_hl": "#F6F8FA", "accent": "#0969DA",
+      "ansi": {"black": "#24292F", "red": "#CF222E", "green": "#116329", "yellow": "#4D2D00", "blue": "#0969DA", "magenta": "#8250DF", "cyan": "#1B7C83", "white": "#6E7781",
+               "bright_black": "#57606A", "bright_red": "#A40E26", "bright_green": "#1A7F37", "bright_yellow": "#633C01", "bright_blue": "#218BFF", "bright_magenta": "#A475F9", "bright_cyan": "#3192AA", "bright_white": "#8C959F"},
+      "syntax": {"comment": "#6E7781", "keyword": "#CF222E", "string": "#0A3069", "number": "#0550AE", "function": "#8250DF", "type": "#953800", "variable": "#24292F", "constant": "#0550AE",
+                 "operator": "#CF222E", "punctuation": "#24292F", "tag": "#116329", "attribute": "#0550AE", "property": "#0550AE", "link": "#0969DA", "title": "#0550AE", "special": "#0A3069"}
+    },
+    {
+      "id": "monokai", "name": "Hyper Monokai", "appearance": "dark", "origin": "Monokai (Sublime/UltraEdit 사용자에게 친숙)",
+      "bg": "#272822", "bg_alt": "#1E1F1C", "bg_elev": "#3E3D32", "fg": "#F8F8F2", "fg_muted": "#CFCFC2", "fg_dim": "#75715E",
+      "border": "#3E3D32", "selection": "#49483E", "cursor": "#F8F8F0", "line_hl": "#3E3D32", "accent": "#66D9EF",
+      "ansi": {"black": "#272822", "red": "#F92672", "green": "#A6E22E", "yellow": "#F4BF75", "blue": "#66D9EF", "magenta": "#AE81FF", "cyan": "#A1EFE4", "white": "#F8F8F2",
+               "bright_black": "#75715E", "bright_red": "#F92672", "bright_green": "#A6E22E", "bright_yellow": "#F4BF75", "bright_blue": "#66D9EF", "bright_magenta": "#AE81FF", "bright_cyan": "#A1EFE4", "bright_white": "#F9F8F5"},
+      "syntax": {"comment": "#75715E", "keyword": "#F92672", "string": "#E6DB74", "number": "#AE81FF", "function": "#A6E22E", "type": "#66D9EF", "variable": "#F8F8F2", "constant": "#AE81FF",
+                 "operator": "#F92672", "punctuation": "#F8F8F2", "tag": "#F92672", "attribute": "#A6E22E", "property": "#F8F8F2", "link": "#66D9EF", "title": "#A6E22E", "special": "#FD971F"}
+    },
+    {
+      "id": "night-owl", "name": "Hyper Night Owl", "appearance": "dark", "origin": "Night Owl",
+      "bg": "#011627", "bg_alt": "#01111D", "bg_elev": "#0B2942", "fg": "#D6DEEB", "fg_muted": "#8FA6C2", "fg_dim": "#5F7E97",
+      "border": "#122D42", "selection": "#1D3B53", "cursor": "#80A4C2", "line_hl": "#0E2A3F", "accent": "#82AAFF",
+      "ansi": {"black": "#011627", "red": "#EF5350", "green": "#22DA6E", "yellow": "#ADDB67", "blue": "#82AAFF", "magenta": "#C792EA", "cyan": "#21C7A8", "white": "#FFFFFF",
+               "bright_black": "#575656", "bright_red": "#EF5350", "bright_green": "#22DA6E", "bright_yellow": "#FFEB95", "bright_blue": "#82AAFF", "bright_magenta": "#C792EA", "bright_cyan": "#7FDBCA", "bright_white": "#FFFFFF"},
+      "syntax": {"comment": "#637777", "keyword": "#C792EA", "string": "#ECC48D", "number": "#F78C6C", "function": "#82AAFF", "type": "#FFCB8B", "variable": "#D6DEEB", "constant": "#FF5874",
+                 "operator": "#C792EA", "punctuation": "#7FDBCA", "tag": "#CAECE6", "attribute": "#ADDB67", "property": "#7FDBCA", "link": "#80CBC4", "title": "#82AAFF", "special": "#7FDBCA"}
+    },
+    {
+      "id": "rose-pine", "name": "Hyper Rosé Pine", "appearance": "dark", "origin": "Rosé Pine",
+      "bg": "#191724", "bg_alt": "#1F1D2E", "bg_elev": "#26233A", "fg": "#E0DEF4", "fg_muted": "#908CAA", "fg_dim": "#6E6A86",
+      "border": "#26233A", "selection": "#403D52", "cursor": "#E0DEF4", "line_hl": "#21202E", "accent": "#C4A7E7",
+      "ansi": {"black": "#26233A", "red": "#EB6F92", "green": "#31748F", "yellow": "#F6C177", "blue": "#9CCFD8", "magenta": "#C4A7E7", "cyan": "#EBBCBA", "white": "#E0DEF4",
+               "bright_black": "#6E6A86", "bright_red": "#EB6F92", "bright_green": "#31748F", "bright_yellow": "#F6C177", "bright_blue": "#9CCFD8", "bright_magenta": "#C4A7E7", "bright_cyan": "#EBBCBA", "bright_white": "#E0DEF4"},
+      "syntax": {"comment": "#6E6A86", "keyword": "#31748F", "string": "#F6C177", "number": "#EBBCBA", "function": "#EBBCBA", "type": "#9CCFD8", "variable": "#E0DEF4", "constant": "#C4A7E7",
+                 "operator": "#908CAA", "punctuation": "#908CAA", "tag": "#9CCFD8", "attribute": "#C4A7E7", "property": "#9CCFD8", "link": "#C4A7E7", "title": "#C4A7E7", "special": "#EB6F92"}
+    },
+    {
+      "id": "everforest-dark", "name": "Hyper Everforest Dark", "appearance": "dark", "origin": "Everforest Dark (medium)",
+      "bg": "#2D353B", "bg_alt": "#272E33", "bg_elev": "#343F44", "fg": "#D3C6AA", "fg_muted": "#9DA9A0", "fg_dim": "#859289",
+      "border": "#3D484D", "selection": "#475258", "cursor": "#D3C6AA", "line_hl": "#323C41", "accent": "#A7C080",
+      "ansi": {"black": "#475258", "red": "#E67E80", "green": "#A7C080", "yellow": "#DBBC7F", "blue": "#7FBBB3", "magenta": "#D699B6", "cyan": "#83C092", "white": "#D3C6AA",
+               "bright_black": "#859289", "bright_red": "#E67E80", "bright_green": "#A7C080", "bright_yellow": "#DBBC7F", "bright_blue": "#7FBBB3", "bright_magenta": "#D699B6", "bright_cyan": "#83C092", "bright_white": "#D3C6AA"},
+      "syntax": {"comment": "#859289", "keyword": "#E67E80", "string": "#83C092", "number": "#D699B6", "function": "#A7C080", "type": "#DBBC7F", "variable": "#7FBBB3", "constant": "#D699B6",
+                 "operator": "#E69875", "punctuation": "#D3C6AA", "tag": "#E69875", "attribute": "#DBBC7F", "property": "#7FBBB3", "link": "#7FBBB3", "title": "#A7C080", "special": "#E69875"}
+    },
+    {
+      "id": "ayu-mirage", "name": "Hyper Ayu Mirage", "appearance": "dark", "origin": "Ayu Mirage",
+      "bg": "#1F2430", "bg_alt": "#1C212B", "bg_elev": "#242936", "fg": "#CCCAC2", "fg_muted": "#8A9199", "fg_dim": "#707A8C",
+      "border": "#171B24", "selection": "#409FFF40", "cursor": "#FFCC66", "line_hl": "#1A1F29", "accent": "#FFCC66",
+      "ansi": {"black": "#171B24", "red": "#ED8274", "green": "#87D96C", "yellow": "#FACC6E", "blue": "#6DCBFA", "magenta": "#DABAFA", "cyan": "#90E1C6", "white": "#C7C7C7",
+               "bright_black": "#686868", "bright_red": "#F28779", "bright_green": "#D5FF80", "bright_yellow": "#FFD173", "bright_blue": "#73D0FF", "bright_magenta": "#DFBFFF", "bright_cyan": "#95E6CB", "bright_white": "#FFFFFF"},
+      "syntax": {"comment": "#6C7380", "keyword": "#FFAD66", "string": "#D5FF80", "number": "#DFBFFF", "function": "#FFD173", "type": "#73D0FF", "variable": "#CCCAC2", "constant": "#DFBFFF",
+                 "operator": "#F29E74", "punctuation": "#A9ADB5", "tag": "#5CCFE6", "attribute": "#FFD173", "property": "#73D0FF", "link": "#5CCFE6", "title": "#FFD173", "special": "#95E6CB"}
+    }
+  ]
+}
