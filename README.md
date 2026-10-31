@@ -79,6 +79,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · join ⇧⌘J · reverse · number lines · sort ascending / descending / numeric · remove duplicate lines · remove blank lines · trim trailing / both · tabs → spaces · spaces → tabs · UPPER / lower / Capitalize / iNVERT case.
 
 - **Calculate (⌃⌘=):** evaluates the selection, or the current line (the part after the last `=` if there is one), and appends ` ⇒ result` — `3+0.5+0.25` becomes `3+0.5+0.25 ⇒ 3.75`; running it again on an edited line replaces the old result. Plain arithmetic only: `+ - * / % ^`, parentheses, `1,234` / `1_000` numbers, `sqrt abs round floor ceil min max`, `pi` and `e`. Invalid expressions are reported in the Output panel and leave the text alone.
+- **Macros (⇧⌘M record / stop, ⌥⌘M play):** records typing (for Korean IME, only the committed syllables), caret movement, deletion and newline commands, paste (as the clipboard text at the time), the text tools above and Find Next (F3, with its query), then replays them at the caret. "Play Macro Multiple Times…" repeats up to 10,000 times and stops on its own when a Find step finds nothing or a run changes nothing; a whole run is one undo step. "Save Last Macro As…" adds it to the Macro menu; the list lives in `~/Library/Application Support/HyperEdit/macros/macros.json`, which "Edit Macros File…" opens in the editor. Mouse clicks, selection changes and multi-caret edits (Replace All, Insert Number) are not recorded. The status bar shows `● REC` while recording.
 - **Align Columns (⌃⌘T):** pads tab-separated columns (the selected lines, or the block of tab lines around the caret) so every column starts at the same display column, counting Hangul / CJK as two cells. Lines that all contain `|` are treated as a Markdown table instead: cells are padded inside ` | `, `---` rows are redrawn and `--:` columns right-aligned.
 
 ### Saving
@@ -109,7 +110,8 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
 | ⌘, | Settings | ⇧⌘P | Markdown preview |
-| ⌃⌘H | Syntax colors | | |
+| ⌃⌘H | Syntax colors | ⇧⌘M | Record / stop macro |
+| ⌥⌘M | Play macro | | |
 
 ## Themes
 
@@ -182,7 +184,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 - UI in English and Korean (follows the system language); no other languages yet.
 - Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
-- Planned editing tools — comment toggle, JSON tidy, macros, split view — are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math).
+- Planned editing tools — comment toggle, JSON tidy, split view — are on the roadmap but not implemented yet. Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math).
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).
 

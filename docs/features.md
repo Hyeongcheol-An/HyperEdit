@@ -69,7 +69,7 @@
 | ✅ | **열 맞춤** ⌃⌘T — 탭 표(선택 또는 캐럿 주변 탭 줄 묶음)를 표시 폭(한글·CJK 2칸) 기준 공백 패딩으로 맞춤. 줄마다 `\|` 가 있으면 마크다운 표로: ` \| ` 안 패딩, `---` 재생성, `--:` 오른쪽 정렬 | `TextTools.alignColumns` · `displayWidth`. 결과에 탭이 남지 않는다 |
 | 🔜 | JSON 정리, Base64/URL 인코딩, Unix time ↔ 날짜 같은 변환 도구 | 로드맵 |
 | 🔜 | 공백 문자 표시 | 로드맵 |
-| 🔜 | 매크로(키 입력 기록·재생) | 로드맵 |
+| ✅ | **매크로** ⇧⌘M 기록/중지 · ⌥⌘M 재생 — 타이핑(IME 는 확정 글자만)·이동/삭제/줄바꿈 명령·붙여넣기(당시 클립보드 문자열)·텍스트 도구·F3 다음 찾기(검색어 포함)를 기록해 재생. "여러 번 재생…"(최대 10,000회, 찾기 실패·무변화면 중단), 전체 재생이 undo 한 단계. "이름 붙여 저장" 으로 매크로 메뉴에 등록, `~/Library/Application Support/HyperEdit/macros/macros.json`(편집기로 열어 직접 수정 가능). 상태바 `● REC` / `▶ MACRO`, 편집 탭 "매크로" 그룹 | `MacroStep`/`MacroStore`(HyperCore `Text/Macro.swift`) · `Editor/MacroRecorder.swift` · `MacroUI.swift`. 마우스 클릭·선택 변경·모두 바꾸기·숫자 채우기 등 멀티 캐럿 편집은 기록되지 않음. 1.3 MB 문서에서 10단계 ×100 재생 ≈ 0.8 s |
 | 🔜 | 선택 영역 통계 표시 | `TextTools.stats`는 있음, UI 없음 |
 | ✗ | 16진수 편집, 두 파일 비교 | 필요성 낮음 |
 
