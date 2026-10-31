@@ -422,9 +422,9 @@ extension RibbonTab {
     /// 탭 내용이 접히지 않고 다 보이는 데 필요한 폭(pt). 그룹을 추가하면 갱신할 것 (스크린샷에서 마지막 그룹 오른쪽 끝 + 여유 20).
     var requiredWidth: CGFloat {
         switch self {
-        case .home: 1060
-        case .edit: 1290
-        case .layout: 840
+        case .home: 1060      // 파일 그룹 끝 ≈ 1035
+        case .edit: 1520      // 도구 그룹 끝 ≈ 1505 (1600pt 스크린샷 실측)
+        case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
         case .advanced: 260
         case .window: 260
         }
