@@ -149,7 +149,7 @@ private struct EditTab: View {
             RibbonStack {
                 RibbonSmallButton(title: "Trim Trailing", systemImage: "text.alignleft", help: "Remove spaces and tabs at the end of lines", theme: theme) { model.textTool(.trimTrailing) }
                 RibbonSmallButton(title: "Trim Both Ends", systemImage: "text.aligncenter", help: "Remove spaces and tabs at both ends of lines", theme: theme) { model.textTool(.trimBoth) }
-                RibbonSmallButton(title: "Remove Blanks", systemImage: "rectangle.compress.vertical", help: "Delete empty or whitespace-only lines", theme: theme) { model.textTool(.removeBlank) }
+                RibbonSmallButton(title: "Remove Blanks", systemImage: "text.badge.minus", help: "Delete empty or whitespace-only lines", theme: theme) { model.textTool(.removeBlank) }
             }
             RibbonStack {
                 RibbonSmallButton(title: "Tabs → Spaces", systemImage: "arrow.right.to.line.compact", help: "Tabs to 4 spaces", theme: theme) { model.textTool(.tabsToSpaces) }
@@ -168,7 +168,7 @@ private struct EditTab: View {
             RibbonBigButton(title: "Calculate", systemImage: "plus.forwardslash.minus", help: "Evaluate the selection or current line and append ⇒ result (⌃⌘=)", theme: theme) { model.textTool(.calculate) }
             RibbonStack {
                 RibbonSmallButton(title: "Align Columns", systemImage: "tablecells", help: "Pad tab- or pipe-separated columns so they line up (⌃⌘T)", theme: theme) { model.textTool(.alignColumns) }
-                RibbonSmallButton(title: "Toggle Comment", systemImage: "number", help: "Comment or uncomment the selected lines with the file type's marker (⌘/)", theme: theme) { model.textTool(.toggleComment) }
+                RibbonSmallButton(title: "Toggle Comment", systemImage: "text.bubble", help: "Comment or uncomment the selected lines with the file type's marker (⌘/)", theme: theme) { model.textTool(.toggleComment) }
             }
             RibbonStack {
                 RibbonSmallButton(title: "Format JSON", systemImage: "curlybraces", help: "Pretty-print the selection or the whole document as JSON — key order and numbers are kept (⌃⌘J)", theme: theme) { model.textTool(.formatJSON) }
@@ -229,8 +229,8 @@ private struct LayoutTab: View {
                 RibbonSmallButton(title: "Outline", systemImage: "list.bullet.indent", help: "Headings, [Title] lines, 가./나. and numbered items (⌘3)", theme: theme) { model.showOutline() }
                 RibbonSmallButton(title: "Timeline", systemImage: "calendar", help: "Timestamp and date lines grouped by month (⌘4)", theme: theme) { model.showTimeline() }
             }
+            // 스택은 최대 3줄 — 4줄이면 그룹 제목이 리본 높이(96) 밖으로 밀려 잘린다 (자동 줄바꿈 토글은 홈 탭 '모드' 그룹과 보기 메뉴 ⌥Z 에 있다)
             RibbonStack {
-                RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
                 // split: 토글 + 방향 전환 (같은 스택이라 그룹 폭은 그대로)
                 RibbonSmallToggle(title: "Split Editor", systemImage: "rectangle.split.2x1", help: "Show the document in two editors (⌘\\)", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() }), theme: theme)
                 RibbonSmallButton(title: "Split Direction", systemImage: "rectangle.split.1x2", help: "Switch between side-by-side and stacked split", theme: theme) { model.cycleSplitOrientation() }

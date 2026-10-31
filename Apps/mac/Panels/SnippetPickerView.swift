@@ -44,6 +44,12 @@ struct SnippetPickerView: View {
                 .onTapGesture { selected = s.id }
             }
             .frame(minHeight: 200)
+            .overlay {   // 빈 상태: 스니펫이 하나도 없거나 필터에 맞는 것이 없을 때 (빈 목록만 보이지 않도록)
+                if filtered.isEmpty {
+                    Text(store.snippets.isEmpty ? "No snippets yet — Edit Snippets… adds the file" : "No snippets match the filter")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+            }
             .onKeyPress(.return) { insertSelected(); return .handled }
             if let e = store.lastError {
                 Text(e).font(.system(size: 11)).foregroundStyle(.red).lineLimit(2)

@@ -1,0 +1,6 @@
+{
+  "⌃⌥Space and ⌃⇧Space are often taken by input-source switching (System Settings › Keyboard › Shortcuts). In the app, ⇧⌘N opens the panel; ⌘↩ appends to the end of the current document and saves at once.": "⌃⌥Space·⌃⇧Space 는 입력 소스 전환에 쓰이는 경우가 많습니다(시스템 설정 › 키보드 › 단축키). 앱 안에서는 ⇧⌘N 으로 창을 열고, ⌘↩ 로 현재 문서 끝에 덧붙인 뒤 바로 저장합니다.",
+  "⌘↩ append · Esc close": "⌘↩ 추가 · Esc 닫기",
+  "No snippets yet — Edit Snippets… adds the file": "스니펫이 아직 없습니다 — 스니펫 편집… 으로 파일을 만듭니다",
+  "No snippets match the filter": "필터에 맞는 스니펫이 없습니다"
+}
