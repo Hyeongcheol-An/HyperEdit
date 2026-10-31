@@ -17,6 +17,31 @@ final class GutterView: NSView {
     private var lineHighlightColor = NSColor.clear
     private var lastDigits = 0
 
+    // fold: 접기 화살표 열 (FoldController 가 설치). 문단 범위(개행 포함)의 시작 오프셋과, 필요할 때만 계산하는 끝 오프셋으로 묻는다
+    enum FoldMarker { case foldable, folded }
+    static let foldColumnWidth: CGFloat = 14
+    var foldMarker: ((_ paragraphStart: Int, _ paragraphEnd: () -> Int) -> FoldMarker?)?
+    var onFoldMarkerClick: ((_ paragraphStart: Int, _ paragraphEnd: Int) -> Void)?
+    /// 화살표는 두 선분 경로로 그린다 — 글꼴 폴백 글리프나 SF Symbol 렌더링 없이 µs 단위 (거터는 키 입력마다 다시 그려진다)
+    private func drawChevron(folded: Bool, centerX: CGFloat, centerY: CGFloat) {
+        let r = max(2.5, (numberFont.pointSize - 4) / 2)
+        let path = NSBezierPath()
+        if folded {   // ›
+            path.move(to: NSPoint(x: centerX - r / 2, y: centerY - r))
+            path.line(to: NSPoint(x: centerX + r / 2, y: centerY))
+            path.line(to: NSPoint(x: centerX - r / 2, y: centerY + r))
+        } else {      // ∨
+            path.move(to: NSPoint(x: centerX - r, y: centerY - r / 2))
+            path.line(to: NSPoint(x: centerX, y: centerY + r / 2))
+            path.line(to: NSPoint(x: centerX + r, y: centerY - r / 2))
+        }
+        path.lineWidth = 1.5
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        (folded ? currentColor : numberColor).setStroke()
+        path.stroke()
+    }
+
     init(textView: NSTextView, scrollView: NSScrollView, documentProvider: @escaping () -> MemoDocument?) {
         self.textView = textView
         self.scrollView = scrollView
@@ -48,7 +73,7 @@ final class GutterView: NSView {
         guard digits != lastDigits else { return }
         lastDigits = digits
         let w = (String(repeating: "8", count: digits) as NSString).size(withAttributes: [.font: numberFont]).width
-        let t = ceil(w) + 18
+        let t = ceil(w) + 18 + Self.foldColumnWidth   // fold: 왼쪽에 화살표 열
         if abs(t - thickness) > 0.5 {
             thickness = t
             superview?.needsLayout = true
@@ -80,6 +105,7 @@ final class GutterView: NSView {
 
         lm.enumerateTextLayoutFragments(from: startLocation, options: [.ensuresLayout]) { frag in
             let frame = frag.layoutFragmentFrame
+            if frame.height <= 0 { return true }   // fold: 접힌(높이 0) 문단은 번호를 건너뛴다
             let yInTextView = frame.minY + origin.y
             if yInTextView > visible.maxY { return false }
             if yInTextView + frame.height < visible.minY { return true }
@@ -96,8 +122,23 @@ final class GutterView: NSView {
             let size = label.size(withAttributes: attrs)
             let x = self.thickness - size.width - 10
             label.draw(at: NSPoint(x: x, y: y + (firstLineHeight - size.height) / 2), withAttributes: line == caretLine ? curAttrs : attrs)
+            // fold: 접기 화살표 (∨ 접을 수 있음 · › 접힘)
+            if let marker = self.foldMarker?(offset, { cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.endLocation) }) {
+                self.drawChevron(folded: marker == .folded, centerX: Self.foldColumnWidth / 2 + 2, centerY: y + firstLineHeight / 2)
+            }
             return true
         }
+    }
+
+    // fold: 화살표 열 클릭 → 그 문단의 접기 토글
+    override func mouseDown(with event: NSEvent) {
+        let p = convert(event.locationInWindow, from: nil)
+        guard p.x <= Self.foldColumnWidth + 4, let click = onFoldMarkerClick, let tv = textView,
+              let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { super.mouseDown(with: event); return }
+        let docY = p.y + tv.visibleRect.minY - tv.textContainerOrigin.y
+        guard let frag = lm.textLayoutFragment(for: CGPoint(x: 0, y: docY)), frag.layoutFragmentFrame.height > 0 else { return }
+        click(cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.location),
+              cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.endLocation))
     }
 }
 
@@ -105,6 +146,14 @@ final class GutterView: NSView {
 final class EditorContainerView: NSView {
     let gutter: GutterView
     let scrollView: NSScrollView
+    /// 스크롤바 마커 띠 — 오른쪽 가장자리, 스크롤뷰 위에 겹친다 (markers)
+    var markerView: NSView? {
+        didSet {
+            oldValue?.removeFromSuperview()
+            if let v = markerView { addSubview(v, positioned: .above, relativeTo: scrollView) }
+            needsLayout = true
+        }
+    }
 
     init(gutter: GutterView, scrollView: NSScrollView) {
         self.gutter = gutter
@@ -129,5 +178,6 @@ final class EditorContainerView: NSView {
         let t = gutter.isHidden ? 0 : gutter.thickness
         gutter.frame = NSRect(x: 0, y: 0, width: t, height: bounds.height)
         scrollView.frame = NSRect(x: t, y: 0, width: max(0, bounds.width - t), height: bounds.height)
+        markerView?.frame = NSRect(x: bounds.maxX - ScrollMarkerView.width, y: 0, width: ScrollMarkerView.width, height: bounds.height)   // markers
     }
 }

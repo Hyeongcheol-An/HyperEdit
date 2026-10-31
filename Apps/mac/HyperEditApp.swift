@@ -118,6 +118,12 @@ struct EditorCommands: Commands {
             Toggle("Markdown Preview", isOn: $model.showMarkdownPreview).keyboardShortcut("p", modifiers: [.command, .shift])
             // ⌥⌘H 는 시스템 '기타 가리기(Hide Others)' 가 앱 메뉴에서 먼저 가로채므로 ⌃⌘H (⌃⌘E·⌃⌘F 와 같은 계열)
             Toggle("Syntax Colors", isOn: $model.syntaxHighlighting).keyboardShortcut("h", modifiers: [.command, .control])
+            Toggle("Scrollbar Markers", isOn: $model.showScrollMarkers)   // markers
+            Divider()   // fold: Xcode 와 같은 ⌥⌘← / ⌥⌘→ (전체는 ⇧ 추가)
+            Button("Fold") { model.send(.fold) }.keyboardShortcut(.leftArrow, modifiers: [.option, .command])
+            Button("Unfold") { model.send(.unfold) }.keyboardShortcut(.rightArrow, modifiers: [.option, .command])
+            Button("Fold All") { model.send(.foldAll) }.keyboardShortcut(.leftArrow, modifiers: [.option, .command, .shift])
+            Button("Unfold All") { model.send(.unfoldAll) }.keyboardShortcut(.rightArrow, modifiers: [.option, .command, .shift])
             Divider()
             ForEach(RibbonTab.allCases) { tab in
                 Button(tab.menuLabel) { model.ribbonTab = tab }

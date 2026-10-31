@@ -65,6 +65,9 @@ enum EditorCommand {
     case saveViewState
     /// 개발·셀프테스트용: 텍스트 뷰에 직접 접근
     case perform((HyperTextView) -> Void)
+    /// 접기: 캐럿 영역 접기/펼치기, 전체 접기/펼치기, 특정 줄 토글(거터·실행 인자)   // fold
+    case fold, unfold, foldAll, unfoldAll
+    case toggleFold(line: Int)
 }
 
 enum LeftTab: String, CaseIterable, Identifiable {
@@ -184,6 +187,14 @@ final class AppModel: ObservableObject {
     var columnBlockActive: Bool { caret.columnBlockActive }
     @Published var showGoToLine = false
     @Published var goToLineText = ""
+    /// 스크롤바 마커 — 편집기 오른쪽 가장자리에 검색 매치·북마크·캐럿 줄·접힌 머리 줄 (markers)
+    @Published var showScrollMarkers: Bool {
+        didSet {
+            guard showScrollMarkers != oldValue else { return }
+            AppDefaults.store.set(showScrollMarkers, forKey: "ui.scrollMarkers")
+            log(showScrollMarkers ? String(localized: "Scrollbar markers on") : String(localized: "Scrollbar markers off"))
+        }
+    }
 
     let editorCommands = PassthroughSubject<EditorCommand, Never>()
     private var cancellables = Set<AnyCancellable>()
@@ -198,6 +209,7 @@ final class AppModel: ObservableObject {
         showLineNumbers = d.object(forKey: "ui.lineNumbers") as? Bool ?? true
         showMarkdownPreview = d.object(forKey: "ui.markdownPreview") as? Bool ?? false
         syntaxHighlighting = LaunchOptions.has("--no-highlight") ? false : (d.object(forKey: "ui.syntaxHighlighting") as? Bool ?? true)
+        showScrollMarkers = d.object(forKey: "ui.scrollMarkers") as? Bool ?? true   // markers
         let url = MemoLocation.resolveDefault()
         let doc = MemoDocument(url: url)
         document = doc
@@ -533,6 +545,7 @@ final class AppModel: ObservableObject {
     /// `--theme <id>` `--follow-system-theme` `--ribbon <home|edit|layout|advanced|window>` `--left <files|outline|timeline>`
     /// `--bottom <find|bookmarks|output>` `--hide-left` `--hide-bottom` `--search <q>` `--replace [--replace-with <s>]` `--find-in-files`
     /// `--column` `--goto <line>` `--preview` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
+    /// `--fold <line>` `--fold-all` (접기 — 영역 스캔이 끝난 뒤 적용, 스크린샷용) `--no-fold` (접기 delegate 설치 안 함)
     private func applyLaunchOptions() {
         if let t = LaunchOptions.value("--theme") { themes.select(id: t) }
         if LaunchOptions.has("--follow-system-theme") { themes.setFollowsSystem(true) }
@@ -551,6 +564,12 @@ final class AppModel: ObservableObject {
         if LaunchOptions.has("--preview") { showMarkdownPreview = true }
         if let g = LaunchOptions.value("--goto"), let n = Int(g) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.jump(toLine: n) }
+        }
+        if let f = LaunchOptions.value("--fold"), let n = Int(f) {   // fold: 스크린샷용 — 영역 스캔 뒤 해당 줄 접기 토글
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.send(.toggleFold(line: n)) }
+        }
+        if LaunchOptions.has("--fold-all") {   // fold
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.send(.foldAll) }
         }
     }
 }

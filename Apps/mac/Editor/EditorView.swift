@@ -74,6 +74,8 @@ struct EditorView: NSViewRepresentable {
         private var grammar: any LanguageGrammar
         private var syntaxColors: [TokenKind: NSColor] = [:]
         private(set) var highlightEnabled: Bool
+        private var foldController: FoldController?    // fold
+        private var markerView: ScrollMarkerView?      // markers
 
         init(model: AppModel) {
             self.model = model
@@ -224,6 +226,16 @@ struct EditorView: NSViewRepresentable {
                 let b = m?.block != nil
                 if c.columnBlockActive != b { c.columnBlockActive = b }
             }
+            // fold / markers: 텍스트 뷰마다 하나씩 (분할 편집기는 편집기별로 만든다)
+            let fold = FoldController(textView: textView, gutter: gutter, log: { [weak self] in self?.model.log($0) })   // fold
+            fold.bind(document: document)                                                                                   // fold
+            foldController = fold                                                                                           // fold
+            let markers = ScrollMarkerView(model: model, scrollView: scrollView, documentProvider: { [weak self] in self?.document })   // markers
+            markers.foldLines = { [weak fold] in fold?.foldedHeaderLines ?? [] }                                           // markers
+            markers.bind(document: document)                                                                                // markers
+            container.markerView = markers                                                                                  // markers
+            markerView = markers                                                                                            // markers
+            fold.onChange = { [weak markers] in markers?.needsDisplay = true }                                              // markers
         }
 
         private func bindDocument() {
@@ -262,6 +274,8 @@ struct EditorView: NSViewRepresentable {
             restored = false
             appliedThemeID = nil
             bindDocument()
+            foldController?.bind(document: newDoc)   // fold
+            markerView?.bind(document: newDoc)       // markers
             grammar = GrammarRegistry.grammar(for: newDoc.url)
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) } else { invalidateHighlight() }
         }
@@ -313,6 +327,8 @@ struct EditorView: NSViewRepresentable {
             tv.currentLineColor = theme.lineHighlight.nsColor
             scrollView?.backgroundColor = theme.background.nsColor
             gutter?.apply(theme: theme, baseFont: base)
+            foldController?.apply(theme: theme)   // fold
+            markerView?.apply(theme: theme)       // markers
             container?.layer?.backgroundColor = theme.background.nsColor.cgColor
             tv.needsDisplay = true
             highlightKey = ""   // 전체 속성 재적용으로 매치 강조가 지워졌으니 다음 update 에서 다시 칠한다
@@ -463,6 +479,8 @@ struct EditorView: NSViewRepresentable {
             case .perform(let action):
                 action(tv)
                 document.textDidChange()
+            case .fold, .unfold, .foldAll, .unfoldAll, .toggleFold:   // fold
+                foldController?.handle(cmd)
             }
         }
 
@@ -733,6 +751,7 @@ struct EditorView: NSViewRepresentable {
             let line = model.caretLine
             if line != lastCaretLine { lastCaretLine = line; gutter?.needsDisplay = true }
             scheduleSaveViewState()
+            foldController?.selectionDidChange()   // fold: 캐럿이 숨은 줄로 들어가면 펼친다
         }
     }
 }

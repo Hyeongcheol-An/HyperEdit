@@ -221,6 +221,17 @@ private struct LayoutTab: View {
             }
             RibbonStack {
                 RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
+                RibbonSmallToggle(title: "Scroll Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)   // markers
+            }
+        }
+        RibbonGroup(title: "Folding", theme: theme) {   // fold
+            RibbonStack {
+                RibbonSmallButton(title: "Fold", systemImage: "chevron.right.square", help: "Fold the region at the caret — indented block, Markdown heading or { } block (⌥⌘←)", theme: theme) { model.send(.fold) }
+                RibbonSmallButton(title: "Unfold", systemImage: "chevron.down.square", help: "Unfold the region whose header is at the caret (⌥⌘→)", theme: theme) { model.send(.unfold) }
+            }
+            RibbonStack {
+                RibbonSmallButton(title: "Fold All", systemImage: "rectangle.compress.vertical", help: "Fold every region in the document (⌥⇧⌘←)", theme: theme) { model.send(.foldAll) }
+                RibbonSmallButton(title: "Unfold All", systemImage: "rectangle.expand.vertical", help: "Unfold every region (⌥⇧⌘→)", theme: theme) { model.send(.unfoldAll) }
             }
         }
         RibbonGroup(title: "Markdown", theme: theme) {
@@ -424,7 +435,7 @@ extension RibbonTab {
         switch self {
         case .home: 1060      // 파일 그룹 끝 ≈ 1035
         case .edit: 1520      // 도구 그룹 끝 ≈ 1505 (1600pt 스크린샷 실측)
-        case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
+        case .layout: 1210    // 글꼴 크기 그룹 끝 ≈ 1190 (접기 그룹 추가 후 1600pt 스크린샷 실측)
         case .advanced: 260
         case .window: 260
         }
