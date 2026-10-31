@@ -162,6 +162,9 @@ final class EditorContainerView: NSView {
         wantsLayer = true
         addSubview(scrollView)
         addSubview(gutter)
+        NotificationCenter.default.addObserver(forName: NSScroller.preferredScrollerStyleDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.needsLayout = true   // markers: 스크롤러 스타일이 바뀌면 띠 위치 재계산
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -178,6 +181,9 @@ final class EditorContainerView: NSView {
         let t = gutter.isHidden ? 0 : gutter.thickness
         gutter.frame = NSRect(x: 0, y: 0, width: t, height: bounds.height)
         scrollView.frame = NSRect(x: t, y: 0, width: max(0, bounds.width - t), height: bounds.height)
-        markerView?.frame = NSRect(x: bounds.maxX - ScrollMarkerView.width, y: 0, width: ScrollMarkerView.width, height: bounds.height)   // markers
+        // markers: 오버레이 스크롤러는 띠 아래로 비치지만, '스크롤 막대 항상 보기'(레거시) 설정이면 트랙이 가려지므로 스크롤러 왼쪽에 둔다
+        let scrollerInset = scrollView.scrollerStyle == .legacy && scrollView.hasVerticalScroller
+            ? NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy) : 0
+        markerView?.frame = NSRect(x: bounds.maxX - scrollerInset - ScrollMarkerView.width, y: 0, width: ScrollMarkerView.width, height: bounds.height)
     }
 }

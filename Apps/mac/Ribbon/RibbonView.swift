@@ -32,7 +32,8 @@ struct RibbonView: View {
 
             // 창이 좁아 탭 내용이 다 들어가지 않으면 작은 버튼을 아이콘만 남기는 '접힘(compact)' 모드로 전환한다
             GeometryReader { geo in
-                let compact = geo.size.width < model.ribbonTab.requiredWidth
+                // 창이 좁으면 오른쪽(덜 쓰는) 그룹부터 작은 버튼을 아이콘만 남기는 '접힘' 모드로 바꾼다 — 폭에 맞을 때까지만
+                let compactGroups = model.ribbonTab.compactGroups(for: geo.size.width)
                 ScrollView(.horizontal, showsIndicators: true) {
                     HStack(alignment: .top, spacing: 0) {
                         switch model.ribbonTab {
@@ -45,7 +46,7 @@ struct RibbonView: View {
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
-                    .environment(\.ribbonCompact, compact)
+                    .environment(\.ribbonCompactGroups, compactGroups)
                 }
             }
             .frame(height: 96)
@@ -245,7 +246,7 @@ private struct LayoutTab: View {
                 RibbonSmallButton(title: "Fold All", systemImage: "rectangle.compress.vertical", help: "Fold every region in the document (⌥⇧⌘←)", theme: theme) { model.send(.foldAll) }
                 RibbonSmallButton(title: "Unfold All", systemImage: "rectangle.expand.vertical", help: "Unfold every region (⌥⇧⌘→)", theme: theme) { model.send(.unfoldAll) }
                 // markers: 패널 그룹의 세 번째 스택은 이미 3줄(자동 줄바꿈·분할·방향) — 4줄이 되면 96pt 리본을 넘겨 그룹 제목이 잘린다. 접힌 머리 줄도 표시하므로 접기 그룹에 둔다
-                RibbonSmallToggle(title: "Scrollbar Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)
+                RibbonSmallToggle(title: "Scroll Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)
             }
         }
         RibbonGroup(title: "Markdown", theme: theme) {
@@ -327,14 +328,17 @@ struct QuickButton: View {
 }
 
 struct RibbonGroup<Content: View>: View {
-    let title: LocalizedStringKey
+    /// 영어 제목 리터럴 — 카탈로그 키이자 접힘 판정용 id (`RibbonTab.groups` 의 id 와 같아야 한다)
+    let title: String
     let theme: Theme
     @ViewBuilder let content: () -> Content
+    @Environment(\.ribbonCompactGroups) private var compactGroups
     var body: some View {
         VStack(spacing: 2) {
             HStack(alignment: .top, spacing: 2) { content() }
                 .frame(maxHeight: .infinity, alignment: .top)
-            Text(title).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
+                .environment(\.ribbonCompact, compactGroups.contains(title))
+            Text(LocalizedStringKey(title)).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
@@ -435,27 +439,62 @@ struct RibbonSmallToggle: View {
 // MARK: - 접힘(compact) 모드
 
 private struct RibbonCompactKey: EnvironmentKey { static let defaultValue = false }
+private struct RibbonCompactGroupsKey: EnvironmentKey { static let defaultValue = Set<String>() }
 extension EnvironmentValues {
-    /// 리본 폭이 탭 내용보다 좁을 때 true — 작은 버튼이 아이콘만 표시한다
+    /// 이 그룹이 접힘 상태인가 — 작은 버튼이 아이콘만 표시한다 (RibbonGroup 이 그룹별로 설정)
     var ribbonCompact: Bool {
         get { self[RibbonCompactKey.self] }
         set { self[RibbonCompactKey.self] = newValue }
     }
-}
-
-extension RibbonTab {
-    /// 탭 내용이 접히지 않고 다 보이는 데 필요한 폭(pt). 그룹을 추가하면 갱신할 것 (스크린샷에서 마지막 그룹 오른쪽 끝 + 여유 20).
-    var requiredWidth: CGFloat {
-        switch self {
-        case .home: 1190      // 파일 그룹 끝 ≈ 1166 (삽입 그룹에 '스니펫…'+'빠른 추가…' 스택 하나 추가, 1600pt 스크린샷 실측)
-        case .edit: 1865      // 매크로 그룹 끝 ≈ 1843 (도구 그룹 1637 + 매크로 그룹 206; 2000pt 스크린샷 실측)   // macro
-        case .layout: 1195    // 접기 그룹 끝 ≈ 1172 (영어, 접기 그룹·스크롤 마커 토글 추가 후 1600pt 스크린샷 실측; 한국어는 1158)
-        case .advanced: 260
-        case .window: 260
-        }
+    /// 현재 폭에서 접어야 하는 그룹 id 집합 (RibbonView 가 탭 단위로 계산)
+    var ribbonCompactGroups: Set<String> {
+        get { self[RibbonCompactGroupsKey.self] }
+        set { self[RibbonCompactGroupsKey.self] = newValue }
     }
 }
 
+/// 리본 그룹의 폭 모델. 큰 버튼(또는 테마 메뉴·큰 토글)은 60pt, 작은 버튼 스택은 펼침 128 / 접힘 26pt, 항목 간격 2, 그룹 좌우 패딩 16, 구분선 1.
+/// 실측(1600·2000pt 스크린샷)과 3pt 이내로 맞는다: 홈 1165 · 편집 1843 · 레이아웃 1174.
+struct RibbonGroupSpec {
+    let id: String
+    let bigs: Int
+    let stacks: Int
+    func width(compact: Bool) -> CGFloat {
+        let items = bigs + stacks
+        return CGFloat(bigs) * 60 + CGFloat(stacks) * (compact ? 26 : 128) + CGFloat(max(0, items - 1)) * 2 + 16 + 1
+    }
+}
+
+extension RibbonTab {
+    /// 탭의 그룹 구성 (왼쪽부터). id 는 RibbonGroup(title:) 의 영어 리터럴과 같아야 한다.
+    var groups: [RibbonGroupSpec] {
+        switch self {
+        case .home: [.init(id: "Clipboard", bigs: 1, stacks: 1), .init(id: "Find", bigs: 1, stacks: 1), .init(id: "Insert", bigs: 1, stacks: 2),
+                     .init(id: "Mode", bigs: 1, stacks: 1), .init(id: "File", bigs: 1, stacks: 1)]
+        case .edit: [.init(id: "Lines", bigs: 1, stacks: 2), .init(id: "Case", bigs: 0, stacks: 2), .init(id: "Sort", bigs: 1, stacks: 1),
+                     .init(id: "Whitespace", bigs: 0, stacks: 2), .init(id: "Column & Multi-Caret", bigs: 1, stacks: 1),
+                     .init(id: "Tools", bigs: 1, stacks: 2), .init(id: "Macro", bigs: 1, stacks: 1)]
+        case .layout: [.init(id: "Theme", bigs: 1, stacks: 1), .init(id: "Panels", bigs: 0, stacks: 3), .init(id: "Folding", bigs: 0, stacks: 2),
+                       .init(id: "Markdown", bigs: 1, stacks: 0), .init(id: "Font Size", bigs: 1, stacks: 1)]
+        case .advanced: [.init(id: "Settings", bigs: 1, stacks: 1)]
+        case .window: [.init(id: "Window", bigs: 1, stacks: 1)]
+        }
+    }
+
+    /// 탭 내용이 하나도 접히지 않고 다 보이는 데 필요한 폭(pt) — 그룹 폭 합 + 좌우 패딩·여유
+    var requiredWidth: CGFloat { groups.reduce(0) { $0 + $1.width(compact: false) } + 20 }
+
+    /// 주어진 폭에 맞을 때까지 오른쪽 그룹부터 접는다. 다 접어도 모자라면 가로 스크롤이 남는다.
+    func compactGroups(for width: CGFloat) -> Set<String> {
+        var total = requiredWidth
+        var result = Set<String>()
+        for g in groups.reversed() where total > width {
+            total -= g.width(compact: false) - g.width(compact: true)
+            result.insert(g.id)
+        }
+        return result
+    }
+}
 
 struct RibbonBigToggle: View {
     let title: LocalizedStringKey

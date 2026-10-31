@@ -45,6 +45,6 @@ struct SettingsView: View {
             QuickAppendSettingsSection(controller: model.quickAppend)   // quick append: 전역 단축키
         }
         .formStyle(.grouped)
-        .frame(width: 560, height: 640)
+        .frame(width: 560, height: 720)
     }
 }
