@@ -6,7 +6,7 @@ import HyperCore
 extension SelfTest {
     @MainActor
     static func runEditTools(model: AppModel, check: (Bool, String) -> Void, log: (String) -> Void) async {
-        func wait(_ ms: UInt64) async { try? await Task.sleep(nanoseconds: ms * 1_000_000) }
+        func wait(_ ms: UInt64) async { pumpEvent(); try? await Task.sleep(nanoseconds: ms * 1_000_000) }   // 이벤트를 흘려 undo 그룹을 닫는다
         func text() -> NSString { model.document.textStorage.string as NSString }
         func lastLines(_ n: Int) -> [String] { Array((text() as String).components(separatedBy: "\n").suffix(n)) }
         func caret() -> Int { var loc = -1; model.send(.perform { tv in loc = tv.selectedRange().location }); return loc }

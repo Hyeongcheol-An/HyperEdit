@@ -7,7 +7,7 @@ import HyperCore
 extension SelfTest {
     @MainActor
     static func runSplit(model: AppModel, check: (Bool, String) -> Void, log: (String) -> Void) async {
-        func wait(_ ms: UInt64) async { try? await Task.sleep(nanoseconds: ms * 1_000_000) }
+        func wait(_ ms: UInt64) async { pumpEvent(); try? await Task.sleep(nanoseconds: ms * 1_000_000) }   // 이벤트를 흘려 undo 그룹을 닫는다
         func text() -> String { model.document.textStorage.string }
         func appendViaActive(_ s: String) {
             model.send(.perform { tv in

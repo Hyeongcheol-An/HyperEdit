@@ -31,9 +31,11 @@ public extension LanguageGrammar {
     func tokens(in ns: NSString, range: NSRange) -> [Token] {
         let safe = NSIntersectionRange(range, NSRange(location: 0, length: ns.length))
         guard safe.length > 0 else { return [] }
-        var buf = [unichar](repeating: 0, count: safe.length)
-        buf.withUnsafeMutableBufferPointer { ns.getCharacters($0.baseAddress!, range: safe) }
-        return buf.withUnsafeBufferPointer { tokens(buffer: $0, base: safe.location) }
+        // 레이아웃 프래그먼트(= 한 줄)마다 불리므로 힙 배열 대신 임시 버퍼(짧은 줄은 스택)로 복사 — 보이는 줄마다 생기던 할당/해제를 없앤다
+        return withUnsafeTemporaryAllocation(of: unichar.self, capacity: safe.length) { buf in
+            ns.getCharacters(buf.baseAddress!, range: safe)
+            return tokens(buffer: UnsafeBufferPointer(buf), base: safe.location)
+        }
     }
 
     /// 테스트·도구용: 문자열(여러 줄 가능)을 토큰화. 범위는 문자열의 UTF-16 오프셋.

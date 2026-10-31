@@ -62,6 +62,8 @@ struct ContentView: View {
         // 종료 시 저장은 AppDelegate.applicationShouldTerminate 가 동기로 처리한다 (willTerminate 시점의 비동기 저장은 실행될 기회가 없다)
         .task { if SelfTest.enabled { await SelfTest.run(model: model) } }
         .task { if SelfTest.openEnabled { await SelfTest.runOpen(model: model) } }
+        .task { if Bench.enabled { await Bench.run(model: model) } }   // perf bench
+        .onAppear { Bench.launchMilestone("contentViewAppeared") }   // perf bench (계측이 꺼져 있으면 비용 0)
         .onAppear { if CommandLine.arguments.contains("--debug-startup") { FileHandle.standardError.write("[startup] ContentView appeared\n".data(using: .utf8)!) } }
     }
 }

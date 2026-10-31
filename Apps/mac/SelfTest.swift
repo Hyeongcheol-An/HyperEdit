@@ -104,7 +104,9 @@ enum SelfTest {
             return ns.substring(with: NSIntersectionRange(r, NSRange(location: 0, length: ns.length)))
         }
         func count(_ needle: String) -> Int { (text() as String).components(separatedBy: needle).count - 1 }
-        func wait(_ ms: UInt64) async { try? await Task.sleep(nanoseconds: ms * 1_000_000) }
+        // 편집 사이에 빈 이벤트를 하나 흘린다 — AppKit 은 NSEvent 처리가 끝날 때만 undo 자동 그룹을 닫으므로(Task.sleep 으로는 안 닫힘),
+        // 이벤트 없이 편집만 하면 undo 가 그 전 편집까지 한꺼번에 되돌린다 (매크로 셀프테스트와 같은 처리)
+        func wait(_ ms: UInt64) async { pumpEvent(); try? await Task.sleep(nanoseconds: ms * 1_000_000) }
 
         // 0. 임시 폴더에 샘플 두 개 생성 후 열기 — 사용자 문서는 건드리지 않음
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-selftest-\(UUID().uuidString.prefix(8))", isDirectory: true)

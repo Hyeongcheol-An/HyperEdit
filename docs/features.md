@@ -65,6 +65,7 @@
 | ✅ | 자동 줄바꿈 ⌥Z, 줄 번호 ⌥⌘L, 구문 색 ⌃⌘H, 확대/축소 ⌘= / ⌘- / ⌘0 | ⌥⌘H 는 시스템 '기타 가리기' 가 가로채므로 ⌃⌘H |
 | ✅ | 대용량 성능 — 1.3 MB·3만 4천 줄에서 키 입력당 약 3 ms | design.ko.md §5 |
 | ✅ | **주석 토글** ⌘/ — 선택한 줄(없으면 현재 줄)에 파일 종류의 주석 기호를 넣거나 뺀다(VS Code 방식: 전부 주석이면 해제, 아니면 모두 주석. 가장 얕은 들여쓰기에 맞춰 기호를 세로로 정렬, 빈 줄은 건너뜀, 탭·공백 유지). 코드는 `CodeLanguage` 의 주석 정의(`//` `#` `--` …), 마크다운·HTML/XML 은 `<!-- -->`, CSS 는 `/* */` 를 줄마다, 메모는 `//` | `TextTools.toggleLineComment` · `CommentRegistry` · 편집 탭 도구 그룹 |
+| ✅ | 성능 벤치마크 하네스 — `--bench` / `scripts/bench.sh`: 열기·타이핑·검색·바꾸기·스크롤·테마·메모리·유휴 CPU·실행 시간을 예산과 비교(PASS/FAIL), JSON 기준선 비교 | `Apps/mac/Bench.swift` · [performance.md](performance.md) |
 | ✅ | **즉석 계산** ⌃⌘= — 선택 또는 현재 줄(마지막 `=` 뒤)을 평가해 줄 끝에 `⇒ 결과` 삽입, 옛 결과는 교체. `+ - * / % ^`, 괄호, `1,234`·`1_000`, `sqrt abs round floor ceil min max`, `pi` `e`. 정수는 소수점 없이, 아니면 6자리까지 | `TextTools.evaluate` 재귀 하강 파서(NSExpression 미사용). 수식이 아니면 출력 패널에 알림 |
 | ✅ | **열 맞춤** ⌃⌘T — 탭 표(선택 또는 캐럿 주변 탭 줄 묶음)를 표시 폭(한글·CJK 2칸) 기준 공백 패딩으로 맞춤. 줄마다 `\|` 가 있으면 마크다운 표로: ` \| ` 안 패딩, `---` 재생성, `--:` 오른쪽 정렬 | `TextTools.alignColumns` · `displayWidth`. 결과에 탭이 남지 않는다 |
 | ✅ | **JSON 정리** ⌃⌘J / **JSON 한 줄로** — 선택(없으면 문서 전체)을 들여쓰기 2칸으로 정리하거나 한 줄로. 키 순서·숫자 표기(`1.0`, 큰 정수) 유지, 문자열은 의미 그대로 다시 이스케이프(한글·이모지는 그대로). 입력은 BOM·뒤따르는 쉼표·`//` `/* */` 주석(JSONC)을 받고 출력은 엄격한 JSON. 문법 오류면 텍스트를 두고 출력 패널에 `줄:열` 을 알린 뒤 캐럿을 그 자리로. 5.6 MB 를 31 ms(릴리스) | `JSONFormatter` 자체 재귀 하강 파서(JSONSerialization 미사용 — 키 순서가 바뀐다) · 편집 탭 도구 그룹 |
@@ -111,7 +112,7 @@
 
 | 상태 | 기능 | 메모 |
 |---|---|---|
-| ✅ | 개발용 실행 인자 — `--file`, `--snapshot`, `--selftest`, `--theme`, `--ribbon`, `--left`, `--bottom`, `--search`, `--replace`, `--find-in-files`, `--column`, `--goto`, `--preview`, `--split`, `--quick-append`, `--no-highlight`, `--ephemeral`, `--debug-perf` | README 참고 |
+| ✅ | 개발용 실행 인자 — `--file`, `--snapshot`, `--selftest`, `--theme`, `--ribbon`, `--left`, `--bottom`, `--search`, `--replace`, `--find-in-files`, `--column`, `--goto`, `--preview`, `--split`, `--quick-append`, `--no-highlight`, `--ephemeral`, `--debug-perf`, `--bench`, `--quit-after-launch` | README 참고 |
 | 🔜 | URL 스킴, App Intents(Shortcuts), macOS 서비스 메뉴 | |
 | 🔜 | CLI(`add`, `grep`, `tail`) | |
 | 🔜 | Spotlight 인덱싱 | |

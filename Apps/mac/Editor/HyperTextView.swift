@@ -218,7 +218,17 @@ final class HyperTextView: NSTextView {
     func performReplacements(_ pairs: [(range: NSRange, string: String)]) -> [NSRange] {
         guard !pairs.isEmpty, let ts = textStorage else { return [] }
         let sorted = pairs.sorted { $0.range.location < $1.range.location }
-        guard shouldChangeText(inRanges: sorted.map { NSValue(range: $0.range) }, replacementStrings: sorted.map(\.string)) else { return [] }
+        let ns = ts.string as NSString
+        // 되돌리기는 직접 등록한다 (perf): AppKit 이 shouldChangeText(inRanges:) 에서 등록하는 undo 는 범위마다 replaceCharacters 를 따로 재생해
+        // 속성 런 배열(한글 폰트 런)을 매번 memmove 한다 — 1.3 MB 문서에서 5,000건 모두 바꾸기의 ⌘Z 가 1.7 s. 편집 전 문자열을 모아 한 번의
+        // 일괄 편집으로 되돌리면(redo 도 같은 경로) 수십 ms 다. AppKit 의 등록만 끄고 delegate 확인·IME 정리·줄 추적 훅은 그대로 거친다.
+        let originals = sorted.map { ns.substring(with: $0.range) }
+        let um = undoManager
+        breakUndoCoalescing()
+        um?.disableUndoRegistration()
+        let allowed = shouldChangeText(inRanges: sorted.map { NSValue(range: $0.range) }, replacementStrings: sorted.map(\.string))
+        um?.enableUndoRegistration()
+        guard allowed else { return [] }
         settingSelectionProgrammatically = true
         defer { settingSelectionProgrammatically = false }
         ts.beginEditing()
@@ -227,10 +237,21 @@ final class HyperTextView: NSTextView {
         didChangeText()
         var delta = 0
         var out: [NSRange] = []
-        for p in sorted {
+        var inverse: [(range: NSRange, string: String)] = []
+        for (i, p) in sorted.enumerated() {
             let len = (p.string as NSString).length
+            inverse.append((NSRange(location: p.range.location + delta, length: len), originals[i]))
             out.append(NSRange(location: p.range.location + delta + len, length: 0))
             delta += len - p.range.length
+        }
+        if let um {
+            um.registerUndo(withTarget: self) { tv in
+                tv.clearMulti()
+                let carets = tv.performReplacements(inverse)
+                if let first = carets.first { tv.setSelectedRange(NSRange(location: first.location - (inverse[0].string as NSString).length, length: 0)) }
+            }
+            um.setActionName(String(localized: "Replace"))
+            breakUndoCoalescing()
         }
         return out
     }
