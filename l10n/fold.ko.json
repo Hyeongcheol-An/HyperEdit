@@ -1,0 +1,23 @@
+{
+  "Fold": "접기",
+  "Unfold": "펼치기",
+  "Fold All": "모두 접기",
+  "Unfold All": "모두 펼치기",
+  "Folding": "접기",
+  "Fold the region at the caret — indented block, Markdown heading or { } block (⌥⌘←)": "캐럿이 있는 영역 접기 — 들여쓴 블록, 마크다운 헤딩, { } 블록 (⌥⌘←)",
+  "Unfold the region whose header is at the caret (⌥⌘→)": "캐럿 줄이 머리인 영역 펼치기 (⌥⌘→)",
+  "Fold every region in the document (⌥⇧⌘←)": "문서의 모든 영역 접기 (⌥⇧⌘←)",
+  "Unfold every region (⌥⇧⌘→)": "모든 영역 펼치기 (⌥⇧⌘→)",
+  "Folded lines %lld–%lld": "%lld–%lld줄 접음",
+  "Unfolded lines %lld–%lld": "%lld–%lld줄 펼침",
+  "Folded %lld regions": "영역 %lld개 접음",
+  "Unfolded %lld regions": "영역 %lld개 펼침",
+  "Nothing to fold here": "여기에는 접을 영역이 없습니다",
+  "Nothing to unfold here": "여기에는 펼칠 영역이 없습니다",
+  "caret": "캐럿 진입",
+  "⋯ %lld lines": "⋯ %lld줄",
+  "Scrollbar Markers": "스크롤바 마커",
+  "Search matches, bookmarks, the caret line and folded headers on the editor's right edge": "편집기 오른쪽 가장자리에 검색 매치·북마크·캐럿 줄·접힌 머리 줄 표시",
+  "Scrollbar markers on": "스크롤바 마커 켬",
+  "Scrollbar markers off": "스크롤바 마커 끔"
+}

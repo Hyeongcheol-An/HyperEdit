@@ -38,12 +38,27 @@ public struct FontSettings: Codable, Equatable, Sendable {
 }
 
 public enum FontCascade {
-    public static func isInstalled(family: String) -> Bool {
-        #if canImport(AppKit)
-        return NSFontManager.shared.availableFontFamilies.contains(family)
-        #else
-        return UIFont.familyNames.contains(family)
+    /// 설치된 패밀리 집합 캐시. `NSFontManager.availableFontFamilies` 는 호출마다 폰트 레지스트리를 훑어 20–60 ms 가 들고(실측, 시작 프로파일의 12 %),
+    /// 테마·폰트 적용(`baseFont`·`hangulFont`)마다 세 번씩 불렸다. 폰트 등록이 바뀌면(설치/삭제) 알림으로 비운다. 메인 스레드에서만 쓴다.
+    nonisolated(unsafe) private static var installedFamilies: Set<String>?
+    private static let installObserver: Void = {
+        #if canImport(AppKit) || canImport(UIKit)
+        NotificationCenter.default.addObserver(forName: Notification.Name(kCTFontManagerRegisteredFontsChangedNotification as String), object: nil, queue: .main) { _ in
+            installedFamilies = nil
+        }
         #endif
+    }()
+
+    public static func isInstalled(family: String) -> Bool {
+        _ = installObserver
+        if let s = installedFamilies { return s.contains(family) }
+        #if canImport(AppKit)
+        let s = Set(NSFontManager.shared.availableFontFamilies)
+        #else
+        let s = Set(UIFont.familyNames)
+        #endif
+        installedFamilies = s
+        return s.contains(family)
     }
 
     /// 본문 폰트: family + 시스템 폴백 앞에 hangulFamily 캐스케이드. (크기는 동일 — 2:1 보정은 HangulFontFixer 담당)

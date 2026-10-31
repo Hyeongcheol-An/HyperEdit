@@ -10,7 +10,7 @@
 |---|---|
 | 플랫폼 | macOS 15+ (유니버설). 엔진은 iOS 18 타깃도 선언하지만 iOS 앱은 아직 없음 |
 | 스택 | Swift 6 툴체인 · Swift 5 언어 모드 · SwiftUI 셸 + AppKit `NSTextView`(TextKit 2) · 공유 패키지 `HyperCore` |
-| 데이터 | 로컬 일반 텍스트 파일(UTF-8·EUC-KR·CP1252·Latin-1 무손실 판별). 파생 데이터는 Application Support 아래의 북마크 JSON과 스냅샷 사본뿐 |
+| 데이터 | 로컬 일반 텍스트 파일(UTF-8·EUC-KR·CP1252·Latin-1 무손실 판별). 파생 데이터는 Application Support 아래의 북마크 JSON·스냅샷 사본·스니펫(`snippets.json`)·매크로(`macros/macros.json`) JSON 뿐 |
 | 동기화 | 없음(로컬 전용). iCloud 연동은 보류 (§7) |
 | 테마 | 22종, `themes/palettes.json` 단일 소스 → 앱 테마 + Zed 테마. 이름은 모두 `Hyper ` 접두사, 기본값은 시스템 외형을 따르는 **Hyper Light / Hyper Dark** |
 | UI | 고전 UltraEdit 리본 레이아웃에서 영감(리본 탭·그룹, 문서 탭, 사이드바, 하단 패널, 상태바). UltraEdit는 IDM Computer Solutions의 상표이며 HyperEdit는 무관한 독립 프로젝트 |
@@ -47,28 +47,39 @@
 | 북마크 저장 위치 | `~/Library/Application Support/HyperEdit/bookmarks/<경로 해시>.json`. 옛 사이드카는 1회 읽어 이전, 쓰지 않음 | 문서 폴더에 숨김 파일을 만들지 않고 읽기 전용 볼륨도 북마크 가능 | 2026-10-31 |
 | 스냅샷 보관 | 파일별 최신 20개 + 90일 | 무한 증가 방지 | 2026-10-31 |
 | 리본 정리 | 코딩(Coding) 리본 탭과 비활성 자리표시자 제거, 용어를 사이드바·하단 패널·파일로 통일, ⌘N 새 문서 | UI에 "예정"을 보여주지 않는다 | 2026-10-31 |
+| 편집기 분할 | 같은 문서를 두 텍스트 뷰로: `NSTextContentStorage` 하나에 뷰마다 `NSTextLayoutManager`, `NSUndoManager` 하나를 공유(`EditorSession`). 보조 편집기는 위치 저장·창 제목·검색 강조(스토리지 속성)를 맡지 않음 | `NSTextStorage` 는 TextKit 2 관찰자를 하나만 허용한다 — 스토리지를 복제하면 undo 와 검색 강조가 갈라진다 | 2026-10-31 |
+| dirty·undo 추적 | 문서 변경 감지를 텍스트 뷰 delegate 가 아니라 `NSTextStorageDelegate.textStorage(_:didProcessEditing:)` 에서 건다 | macOS 27 TextKit 2 의 undo/redo 는 `shouldChangeText`/`didChangeText` 를 거치지 않는다 — 뷰 경로만 보면 ⌘Z 뒤 자동 저장·줄 인덱스 갱신이 빠진다 | 2026-10-31 |
+| 스니펫·매크로 저장 | Application Support 의 평범한 JSON(`snippets.json`, `macros/macros.json`), HyperEdit 자신으로 열어 편집하고 저장하면 다시 읽음. 매크로 단계는 평평한 `{"type":…,"value":…}` | GUI 편집기 없이도 고칠 수 있고 grep·git 과 호환. 합성 Codable 의 `{"insert":{"_0":…}}` 는 손으로 고치기 어렵다 | 2026-10-31 |
+| 접기 | 숨김은 `NSTextLayoutManagerDelegate` 가 숨은 문단에 높이 0 레이아웃 프래그먼트를 돌려주는 방식. 접힘 상태는 줄 번호가 아니라 UTF-16 오프셋으로 들고 편집 직전에 옮긴다. 세션 동안만 유지(파일별 저장 없음) | 텍스트·속성을 바꾸지 않으므로 파일·undo·검색에 영향이 없다. 줄 인덱스는 편집 뒤 250 ms 늦으므로 줄 번호 기반이면 편집 직후 어긋난다 | 2026-10-31 |
+| 빠른 추가 전역 단축키 | Carbon `RegisterEventHotKey` + 앱을 활성화하지 않는 `NSPanel`. 기본 ⌃⌥N, 설정에서 끄기 / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N | 손쉬운 사용 권한 없이 동작하고 다른 키 입력을 보지 않는다. 입력 소스 전환과 겹치는 조합은 시스템이 먼저 가로채므로 설정 화면에 안내만 둔다 | 2026-10-31 |
+| 성능 예산 | `--bench` 하네스 + `scripts/bench.sh`. 예산(타이핑 중앙값 8 ms / p95 16 ms 등)은 제품 요구치로 고정하고 그날의 측정값에 맞추지 않는다. CI 에는 넣지 않음 | GitHub 러너는 ms 예산에 너무 시끄럽다. 로컬에서 `--compare` 로 전후를 비교해 PR 에 붙인다 | 2026-10-31 |
+| Release 스트립 | `DEAD_CODE_STRIPPING` · `DEPLOYMENT_POSTPROCESSING` · `STRIP_INSTALLED_PRODUCT` · `STRIP_STYLE: all` | 유니버설 바이너리 13.5 → 6.5 MB, 셀프테스트 변화 없음 | 2026-10-31 |
 
 ## 4. 아키텍처
 
 ```
 HyperEdit/
-├─ Packages/HyperCore/            Swift Package (macOS·iOS 공유), 단위 테스트 10개 스위트
-│  ├─ Document/   MemoDocument(인코딩 판별·유지, 자동 저장 + 동기 저장, 스냅샷·보관 정책, 외부 변경 감지, 제자리 파일 전환)
+├─ Packages/HyperCore/            Swift Package (macOS·iOS 공유), 단위 테스트 11개 파일 · 137개
+│  ├─ Document/   MemoDocument(인코딩 판별·유지, 자동 저장 + 동기 저장, 스냅샷·보관 정책, 외부 변경 감지, 제자리 파일 전환, 저장소 알림 기반 dirty 추적)
 │  │              MemoLocation(기본 문서·마지막 파일 결정) · TextFileDetector · ViewStateStore(파일별 위치)
-│  ├─ Text/       LineIndex(줄↔오프셋) · TextTools(정렬·중복 제거·케이스·공백·탭…) · Timestamp · ColumnBlock(열 블록 수학)
+│  ├─ Text/       LineIndex(줄↔오프셋, 증분 갱신) · TextTools(정렬·중복 제거·케이스·공백·탭·계산·열 맞춤) · CommentToggle · JSONFormatter · Snippets · Macro · QuickAppend · Timestamp · ColumnBlock(열 블록 수학)
 │  ├─ Search/     SearchEngine(정규식·치환 템플릿) · FileSearch(폴더 검색·마스크·바이너리 제외)
-│  ├─ Navigation/ BookmarkStore(Application Support JSON, 옛 사이드카 1회 이전) · OutlineScanner(아웃라인·타임라인 추출)
-│  ├─ Font/       FontCascade(폰트 설정·캐스케이드) · HangulFontFixer(한글 런 2:1 보정)
+│  ├─ Navigation/ BookmarkStore(Application Support JSON, 옛 사이드카 1회 이전) · OutlineScanner(아웃라인·타임라인 추출) · FoldScanner(접기 영역)
+│  ├─ Highlight/  LanguageGrammar · PlainNotesGrammar · CodeGrammar · GrammarRegistry(확장자 → 문법)
+│  ├─ Markdown/   MarkdownHTML(swift-markdown → 테마 CSS 가 붙은 HTML)
+│  ├─ Font/       FontCascade(폰트 설정·캐스케이드, 설치 폰트 캐시) · HangulFontFixer(한글 런 2:1 보정)
 │  └─ Theme/      palettes.json 디코더 → Theme(색 토큰) · ThemeStore(선택·시스템 따르기)
 ├─ Apps/mac/                      SwiftUI 셸
-│  ├─ HyperEditApp.swift          메뉴·단축키 · AppDelegate(창 복구, --snapshot)
-│  ├─ AppModel.swift              @MainActor 상태 모델, 실행 인자, 검색·바꾸기·북마크 명령
-│  ├─ Editor/                     HyperTextView(TextKit 2 NSTextView: 멀티 커서·열 블록) · GutterView · EditorView(NSViewRepresentable)
-│  ├─ Ribbon/ · Panels/           리본 5탭 · 사이드바(파일·아웃라인·타임라인) · 하단 패널(찾기 결과·북마크·출력)
-│  └─ SelfTest.swift · Perf.swift 셀프테스트 · 성능 계측
+│  ├─ HyperEditApp.swift          메뉴·단축키 · MacroUI.swift(매크로 메뉴·상태바) · AppDelegate.swift(창 복구, --snapshot)
+│  ├─ AppModel.swift              @MainActor 상태 모델, 실행 인자, 검색·바꾸기·북마크·분할·접기 명령
+│  ├─ Editor/                     HyperTextView(TextKit 2 NSTextView: 멀티 커서·열 블록) · GutterView · EditorView(NSViewRepresentable) · EditorSession(분할 공유 상태) · FoldController · ScrollMarkerView · SnippetSession · MacroRecorder
+│  ├─ QuickAppend/                QuickAppendPanel(비활성화 NSPanel) · QuickAppendController · GlobalHotKey(Carbon)
+│  ├─ Ribbon/ · Panels/ · Markdown/   리본 5탭 · 사이드바(파일·아웃라인·타임라인) · 하단 패널(찾기 결과·북마크·출력) · SnippetPickerView · WKWebView 마크다운 미리보기
+│  └─ SelfTest*.swift · Perf.swift · Bench.swift   셀프테스트(155개 검사) · 성능 계측 · --bench 하네스
 ├─ themes/                        palettes.json · build_zed_theme.py · build_preview.py · validate.py · dist/hyperedit-themes.json
-├─ docs/                          이 문서 · features.md · fonts.md · zed.md · theme-preview.html · screenshots/ · sample/
-├─ scripts/                       bootstrap · build-mac · install-mac · make-dmg · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · install-hooks
+├─ docs/                          이 문서 · features.md · performance.md · fonts.md · zed.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
+├─ l10n/                          <주제>.ko.json — 기능별 한국어 번역 입력(scripts/l10n-add.py 가 카탈로그에 반영)
+├─ scripts/                       bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-add · install-hooks
 ├─ Config/                        Version.xcconfig(semantic-release 갱신) · Signing.xcconfig(로컬 실행 기본) · Local.xcconfig.example
 ├─ project.yml                    XcodeGen 정의 → HyperEdit.xcodeproj (git 제외)
 └─ .github/workflows/             ci.yml · release.yml · release-tag.yml
@@ -132,6 +143,16 @@ HyperEdit/
 - 조치: `MemoDocument.switchTo(url:)` / `BookmarkStore.switchTo`로 제자리 전환. 계측 도구 `--debug-perf [--debug-perf-log <path>]`(구간 시간 + 메인 스레드 120 ms 이상 정지 감시), `--selftest-open`(작은 파일↔큰 파일 전환 벤치 + dirty 상태 전환 저장 정확성 검사, 가리킨 파일을 수정하므로 사본에서만).
 - 결과: 큰 문서 전환 170~770 ms → 약 100 ms, 2 KB 파일 약 90 ms, 반복 전환 시 정지 0. 남은 비용 약 70 ms는 텍스트 뷰 뷰포트 레이아웃(CoreText 셰이핑).
 
+### v0.6 메모 — 분할·undo·접기·매크로·전역 단축키
+- **`NSTextStorage` 는 TextKit 2 관찰자(`NSTextContentStorage`)를 하나만 허용한다.** 분할 보기는 문서 스토리지에 콘텐츠 스토리지 하나를 붙이고 뷰마다 `NSTextLayoutManager` 만 추가한다(`EditorSession`). undo 는 `NSUndoManager` 하나를 모든 뷰가 쓰고, 포커스가 다른 뷰로 옮겨지면 입력 그룹 병합을 끊는다. 분할을 닫은 보조 편집기는 공유 undo 스택에 그 뷰의 항목이 남아 있는 동안 살려 둔다.
+- **macOS 27 TextKit 2 의 undo/redo 는 `shouldChangeText`/`didChangeText` 를 부르지 않는다**(실측). dirty·자동 저장·줄 인덱스 갱신·북마크 이동은 `MemoDocument.textStorage(_:didProcessEditing:)` 에서 건다. 프로그램적 전체 교체(`programmaticReplaceDepth`)는 제외하고, 뷰 경로의 `textDidChange()` 와 겹쳐도 예약 취소·재예약뿐이라 비용이 없다.
+- **접기는 높이 0 레이아웃 프래그먼트다.** `NSTextLayoutManagerDelegate.textLayoutManager(_:textLayoutFragmentFor:in:)` 가 숨은 문단에 `FoldedLayoutFragment` 를 돌려준다. 접힘이 바뀌면 그 범위에 `edited(.editedAttributes)` 를 알려 프래그먼트를 다시 만들게 한다 — `invalidateLayout` 은 기존 프래그먼트를 재사용해서 숨김이 풀리지 않는다. 접힘 오프셋은 `HyperTextView.onTextWillChange`(저장소 변경 직전)에서 즉시 옮기므로 줄 인덱스의 250 ms 지연과 무관하다. 후보 영역은 `FoldScanner` 가 백그라운드에서 계산한다.
+- **AppKit 은 NSEvent 처리가 끝날 때만 자동 undo 그룹을 닫는다.** `Task.sleep`·런루프 양보·타이머로는 닫히지 않는다(실측). 프로그램적으로만 편집하는 셀프테스트는 `SelfTest.pumpEvent()`(빈 `applicationDefined` 이벤트 게시)를 `wait()` 마다 흘려야 대화형 사용과 같은 undo 단위가 된다 — 없으면 ⌘Z 한 번이 여러 단계를 되돌려 매크로·분할 검사가 틀린다.
+- **모두 바꾸기 5,000건의 undo 가 1.7 s 걸렸다.** AppKit 의 `shouldChangeText(inRanges:)` undo 는 범위마다 `replaceCharacters` 를 다시 돌리고 매번 속성 런 배열을 memmove 한다(`NSMutableRLEArray`). `HyperTextView.performReplacements` 가 모든 범위를 한 번에 되돌리는 undo 를 직접 등록해 0.25 s. redo 도 같은 경로.
+- **키 입력마다 SwiftUI 가 다시 평가되던 곳 세 군데**: `isDirty = true` 재대입(값이 같아도 `@Published` 는 발행한다), 검색 패널이 `EditorCaret` 전체를 구독, 아웃라인·타임라인도 같은 구독. 각각 한 번만 설정·히트 목록만 구독·`$line.removeDuplicates()` 로 바꿨다. `NSFontManager.availableFontFamilies` 는 테마 적용마다 세 번 불려 캐시했다(`kCTFontManagerRegisteredFontsChangedNotification` 으로 무효화).
+- **Carbon `RegisterEventHotKey`** 는 손쉬운 사용 권한 없이 동작하고 다른 키 입력을 보지 않는다. 다른 앱이 같은 조합을 먼저 등록했으면 `eventHotKeyExistsErr`(-9878) 로 실패해 상태바에 알리고, 시스템 단축키(입력 소스 전환 ⌃Space 계열)와 겹치면 오류 없이 시스템이 먼저 가로채므로 설정 화면에 안내만 둔다.
+- **JSON 정리는 자체 재귀 하강 파서**다. `JSONSerialization` 은 키 순서를 바꾸고 `1.0` 을 `1` 로 만든다. BOM·뒤따르는 쉼표·주석(JSONC)을 받아 엄격한 JSON 으로 쓰며 5.6 MB 를 약 30 ms 에 처리한다. 오류는 `줄:열` 로 보고하고 캐럿을 옮긴다.
+
 ### 창 복구
 - 같은 앱 인스턴스가 떠 있는 상태에서 LaunchServices가 새 인스턴스를 띄우면 SwiftUI가 기본 창을 만들지 않는 경우가 있다. `AppDelegate`가 0.4초 뒤 창이 없으면 '다시 열기(`rapp`)' 애플 이벤트를 자신에게 보내 `WindowGroup` 창을 연다.
 
@@ -169,12 +190,14 @@ HyperEdit/
 | 현지화 | UI 영어·한국어(시스템 언어를 따름), String Catalog 기반 | 완료 — 다른 언어 기여 환영 |
 | M2-b | 스냅샷 버전 브라우저, (보류 중인) iCloud 연동 | 보류 |
 | M3 | iOS 타깃: 마지막 위치 복원, 검색, 빠른 추가 | 예정 |
-| M4 | 마크다운 분할 미리보기, 즉석 계산, 탭 표 정렬, 붙여넣기 정리, 주석 토글 | 예정 |
-| M5 | 매크로, URL 스킴·CLI, Spotlight, 분할 보기 → v1.0.0 | 예정 |
+| M4 | 마크다운 분할 미리보기, 구문 색, 즉석 계산, 탭 표 정렬, 북마크 줄 추적 | 완료 (v0.5) |
+| M5 | 주석 토글, JSON 정리, 스니펫, 매크로, 편집기 분할, 빠른 추가(전역 단축키), 접기, 스크롤바 마커, 성능 벤치 하네스·최적화 | 완료 (v0.6) |
+| M6 | 붙여넣기 정리, URL 스킴·CLI, Spotlight, 스냅샷 버전 브라우저 → v1.0.0 | 예정 |
 
-구현되지 않은 항목은 UI에 나타나지 않는다(비활성 자리표시자 없음). 구문 강조는 현재 계획에 없다(일반 텍스트 전용).
+구현되지 않은 항목은 UI에 나타나지 않는다(비활성 자리표시자 없음). 구문 색은 v0.5 에서 줄 단위의 가벼운 규칙으로 들어왔다 — 여러 줄 상태 추적이나 트리시터 같은 완전한 파서는 메모 파일 성능을 위해 계획에 없다(features.md K).
 
 ## 8. 결정 이력
 
 - **2026-10-30** — 1차: 스택(Swift/SwiftUI + TextKit 2), 단일 텍스트 파일, 계승할 편집 도구 4종. 2차: 테마 단일 소스(20종), 폰트(Fira Code + D2Coding ×1.2), 타임스탬프 형식, 마지막 위치 복원. 3차: 리본 레이아웃과 기본 패널 배치 확정. 같은 날 M1·M2-a 구현, Developer ID 서명·공증 파이프라인 가동(v0.2.1), 성능 패스(v0.2.2), 로컬 전용으로 정리하고 iCloud 연동 보류(v0.2.3).
 - **2026-10-31** — 프로젝트명 HyperEdit, MIT 라이선스로 공개. 테마 이름을 `Hyper ` 접두사로 통일하고 Hyper Light / Hyper Dark를 추가해 22종, 기본값은 시스템 외형 따르기. 기본 문서 `~/Documents/HyperEdit/notes.md`와 환영 문서. Homebrew tap 배포. 영어 README를 1차 문서로 하고 한국어판 완역. 개인 정보 검사(`scripts/check-sensitive.sh`)를 CI에 추가. 같은 날 후속: 종료·창 닫기·파일 전환 시 동기 저장(직렬 쓰기 큐), 인코딩 판별·유지(UTF-8·EUC-KR·CP1252·Latin-1), 북마크를 Application Support로 이전(옛 사이드카 1회 읽기), 스냅샷 보관 정책(파일별 20개·90일), 검색 매치 편집기 강조, 외부 재로드 시 캐럿 유지, ⌘N 새 문서, 코딩(Coding) 리본 탭과 비활성 자리표시자 제거, 용어를 사이드바·하단 패널·파일로 통일, 시스템 따르기를 모든 테마 메뉴에 노출, CI 액션 SHA 고정·`npm ci --ignore-scripts`·서명 시크릿 필수화·cask 푸시 분리.
+- **2026-10-31 (v0.6)** — 기능 브랜치 5개를 통합: 주석 토글 ⌘/, JSON 정리 ⌃⌘J · 한 줄로, 스니펫(트리거 + Tab · ⇧⌘I 선택창 · 탭스톱), 매크로(⇧⌘M 기록/중지 · ⌥⌘M 재생 · N번 재생 · 이름 저장), 편집기 분할 ⌘\ · ⌥⌘\, 빠른 추가 ⇧⌘N · 전역 ⌃⌥N, 접기 ⌥⌘← / ⌥⌘→ · 모두 ⌥⇧⌘← / →, 스크롤바 마커, 성능 벤치 하네스(`--bench`, `scripts/bench.sh`, `docs/performance.md`). 결정: ① 분할은 `NSTextContentStorage` 하나를 공유하고 뷰마다 레이아웃 매니저만 둔다 — undo 스택도 하나. ② dirty·자동 저장·줄 인덱스 갱신은 `textStorage(_:didProcessEditing:)` 에서 — macOS 27 의 undo 는 텍스트 뷰 delegate 를 거치지 않는다. ③ 스니펫·매크로는 Application Support 의 평범한 JSON 으로 두고 HyperEdit 자신으로 편집한다(GUI 편집기 없음). ④ 접기는 높이 0 레이아웃 프래그먼트로 숨기고 UTF-16 오프셋으로 추적하며, 접힘 상태는 파일별로 저장하지 않는다(세션 한정). ⑤ 전역 단축키는 Carbon `RegisterEventHotKey`(권한 불필요), 패널은 앱을 활성화하지 않는다. ⑥ 성능 예산은 제품 요구치로 고정하고 벤치는 CI 밖에서 돈다 — 모두 바꾸기 undo 일괄 등록(1.7 s → 0.25 s), 키 입력마다의 SwiftUI 재평가 제거, 폰트 목록 캐시, `LineIndex` 증분 갱신(배선은 후속), Release 심볼 스트립(13.5 → 6.5 MB). ⑦ 셀프테스트는 편집 사이에 빈 NSEvent 를 흘려(`SelfTest.pumpEvent()`) undo 그룹을 대화형과 같게 만든다. 알려진 제한: 매크로는 키보드 편집만 기록, 접기는 세션 한정이고 드래그 선택에 숨은 텍스트가 포함됨, 주석 토글은 줄 단위, JSON 정렬 없음, 스니펫 GUI 편집기 없음, ⌃Space 계열 전역 단축키는 입력 소스 전환과 충돌.

@@ -9,7 +9,7 @@ struct HyperEditApp: App {
 
     init() {
         // 스크린샷·셀프테스트 실행은 사용자 설정(테마·패널·마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다 (`--ephemeral` 은 수동 테스트 실행용)
-        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--ephemeral") {
+        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--ephemeral") || Bench.enabled {
             AppDefaults.useEphemeral()
         }
     }
@@ -49,6 +49,7 @@ struct EditorCommands: Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Document…") { model.newDocument() }.keyboardShortcut("n")
             Button("Open…") { model.presentOpenPanel() }.keyboardShortcut("o")
+            Button("Quick Append…") { model.quickAppend.show() }.keyboardShortcut("n", modifiers: [.command, .shift])   // quick append
             Button("Open Default Document (~/Documents/HyperEdit/notes.md)") { model.openDefaultDocument() }
             Button("Save") { model.saveNow() }.keyboardShortcut("s")
             Button("Reveal in Finder") { model.revealInFinder() }
@@ -70,6 +71,8 @@ struct EditorCommands: Commands {
             Button("Insert Number…") { model.showInsertNumber = true }.keyboardShortcut("n", modifiers: [.command, .option])
             Divider()
             Button("Insert Date/Time") { model.insertTimestamp() }.keyboardShortcut(fKey(7), modifiers: [])
+            Button("Insert Snippet…") { model.showSnippetPicker = true }.keyboardShortcut("i", modifiers: [.command, .shift])
+            Button("Edit Snippets…") { model.editSnippets() }
             Button("Go to End of Document") { model.goToEnd() }.keyboardShortcut("e", modifiers: [.command, .control])
             Divider()
             Button("Toggle Bookmark") { model.toggleBookmarkAtCaret() }.keyboardShortcut(fKey(2), modifiers: [.command])
@@ -107,7 +110,12 @@ struct EditorCommands: Commands {
             Divider()
             Button("Calculate") { model.textTool(.calculate) }.keyboardShortcut("=", modifiers: [.control, .command])
             Button("Align Columns") { model.textTool(.alignColumns) }.keyboardShortcut("t", modifiers: [.control, .command])
+            Divider()
+            Button("Toggle Comment") { model.textTool(.toggleComment) }.keyboardShortcut("/", modifiers: [.command])
+            Button("Format JSON") { model.textTool(.formatJSON) }.keyboardShortcut("j", modifiers: [.control, .command])
+            Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
+        MacroCommands(model: model)   // macro
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")
@@ -118,6 +126,21 @@ struct EditorCommands: Commands {
             Toggle("Markdown Preview", isOn: $model.showMarkdownPreview).keyboardShortcut("p", modifiers: [.command, .shift])
             // ⌥⌘H 는 시스템 '기타 가리기(Hide Others)' 가 앱 메뉴에서 먼저 가로채므로 ⌃⌘H (⌃⌘E·⌃⌘F 와 같은 계열)
             Toggle("Syntax Colors", isOn: $model.syntaxHighlighting).keyboardShortcut("h", modifiers: [.command, .control])
+            // split: ⌘\ 토글 + 방향 하위 메뉴, ⌥⌘\ 다른 분할로 포커스
+            Toggle("Split Editor", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() })).keyboardShortcut("\\")
+            Menu("Split") {
+                Button("Split Side by Side") { model.setSplit(.vertical) }
+                Button("Split Stacked") { model.setSplit(.horizontal) }
+                Button("Single Editor") { model.setSplit(.none) }
+                Divider()
+                Button("Focus Other Split") { model.focusOtherSplit() }.keyboardShortcut("\\", modifiers: [.command, .option])
+            }
+            Toggle("Scrollbar Markers", isOn: $model.showScrollMarkers)   // markers
+            Divider()   // fold: Xcode 와 같은 ⌥⌘← / ⌥⌘→ (전체는 ⇧ 추가)
+            Button("Fold") { model.send(.fold) }.keyboardShortcut(.leftArrow, modifiers: [.option, .command])
+            Button("Unfold") { model.send(.unfold) }.keyboardShortcut(.rightArrow, modifiers: [.option, .command])
+            Button("Fold All") { model.send(.foldAll) }.keyboardShortcut(.leftArrow, modifiers: [.option, .command, .shift])
+            Button("Unfold All") { model.send(.unfoldAll) }.keyboardShortcut(.rightArrow, modifiers: [.option, .command, .shift])
             Divider()
             ForEach(RibbonTab.allCases) { tab in
                 Button(tab.menuLabel) { model.ribbonTab = tab }

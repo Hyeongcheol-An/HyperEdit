@@ -49,10 +49,14 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 ## Features
 
 ### Editor
-- Tuned for big files: about 3 ms per keystroke on a 1.3 MB / 34,000-line file, with viewport-based TextKit 2 layout.
+- Tuned for big files: about 3 ms per keystroke on a 1.3 MB / 34,000-line file, with viewport-based TextKit 2 layout. A benchmark harness (`scripts/bench.sh`) measures typing, file open, search, scrolling, memory, idle CPU and launch against fixed budgets — see [docs/performance.md](docs/performance.md). v0.6 cut the single undo of a 5,000-match Replace All from 1.7 s to 0.25 s, stopped the per-keystroke SwiftUI re-evaluation of the panels and cached the installed-font list.
 - Line-number gutter, current-line highlight, word wrap (⌥Z), line numbers (⌥⌘L), zoom (⌘= / ⌘- / ⌘0).
 - Last caret and scroll position restored per file; ⌃⌘E jumps to the end; ⌘L goes to a line.
+- **Code folding (⌥⌘← / ⌥⌘→, all regions ⌥⇧⌘← / ⌥⇧⌘→):** a line folds the lines indented under it (blank lines ignored), a Markdown `#` heading folds everything up to the next heading of the same or higher level (fenced code blocks fold too), and in code a line ending in `{`, `[` or `(` folds through its closing bracket line. Click the gutter chevron or the `⋯ N lines` pill to toggle. Moving the caret into a folded line (find, go to line, bookmarks, undo) unfolds it; ↑ / ↓ skip over folds. Folds follow edits — typing in the header, inserting or deleting lines above, undo — and last for the session.
+- **Scrollbar markers:** a 12 pt strip at the editor's right edge shows search matches (accent ticks), bookmarks (warning color), the caret line and folded headers at their relative positions; hidden when the document fits on one screen. View menu → Scrollbar Markers, or the Layout tab's Folding group.
 - F7 inserts a timestamp heading such as `## 2026-10-30 (Fri) 14:05`. The weekday follows the system locale, e.g. `(금)` on Korean systems.
+- **Split editor (⌘\\)** shows the same document in two editors, side by side or stacked (View › Split, or the Layout tab). Both views edit the same text and share one undo stack — type in one, ⌘Z in the other — but scroll independently; commands, the status bar and the Markdown preview follow the view you clicked last, and ⌥⌘\\ moves the focus to the other split. The status bar shows **SPLIT** while it is on.
+- **Quick Append (⇧⌘N, or ⌃⌥N from any app):** a small floating panel that does not activate HyperEdit. Type a note, press ⌘↩ and it is appended to the end of the document — with a timestamp heading by default — saved at once, and undoable in one step; the panel then hides and focus returns to the app you were in. Esc closes the panel and keeps the draft for next time. The global shortcut (off / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N) is chosen in Settings and needs no Accessibility permission.
 - **Syntax colors (⌃⌘H)**, chosen by file extension and shown in the status bar. Notes and Markdown get a deliberately light rule set — URLs, ISO dates and times, `#` headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 code languages (Swift, Python, JavaScript/TypeScript, JSON, shell, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI) get comments, strings, numbers, keywords, function and type names. Colors come from the theme's `syntax` palette and are applied as TextKit 2 rendering attributes to visible lines only, so they never touch the file, undo history or typing speed. Tokenization is line-based: a block comment or string that spans lines is colored only where it opens.
 
 ### Markdown preview
@@ -79,7 +83,11 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · join ⇧⌘J · reverse · number lines · sort ascending / descending / numeric · remove duplicate lines · remove blank lines · trim trailing / both · tabs → spaces · spaces → tabs · UPPER / lower / Capitalize / iNVERT case.
 
 - **Calculate (⌃⌘=):** evaluates the selection, or the current line (the part after the last `=` if there is one), and appends ` ⇒ result` — `3+0.5+0.25` becomes `3+0.5+0.25 ⇒ 3.75`; running it again on an edited line replaces the old result. Plain arithmetic only: `+ - * / % ^`, parentheses, `1,234` / `1_000` numbers, `sqrt abs round floor ceil min max`, `pi` and `e`. Invalid expressions are reported in the Output panel and leave the text alone.
+- **Macros (⇧⌘M record / stop, ⌥⌘M play):** records typing (for Korean IME, only the committed syllables), caret movement, deletion and newline commands, paste (as the clipboard text at the time), the text tools above and Find Next (F3, with its query), then replays them at the caret. "Play Macro Multiple Times…" repeats up to 10,000 times and stops on its own when a Find step finds nothing or a run changes nothing; a whole run is one undo step. The last recording is kept in memory only until you quit (so passwords typed while recording never reach the disk); "Save Last Macro As…" adds it to the Macro menu, and the saved list lives in `~/Library/Application Support/HyperEdit/macros/macros.json`, which "Edit Macros File…" opens in the editor. Mouse clicks, selection changes and multi-caret edits (Replace All, Insert Number) are not recorded. The status bar shows `● REC` while recording.
 - **Align Columns (⌃⌘T):** pads tab-separated columns (the selected lines, or the block of tab lines around the caret) so every column starts at the same display column, counting Hangul / CJK as two cells. Lines that all contain `|` are treated as a Markdown table instead: cells are padded inside ` | `, `---` rows are redrawn and `--:` columns right-aligned.
+- **Toggle Comment (⌘/):** comments or uncomments the selected lines (or the current line) with the file type's marker — `//`, `#`, `--`, … for code, `<!-- -->` for Markdown and HTML/XML, `/* */` for CSS, `//` for plain notes. VS Code semantics: if every non-blank line is already commented they are all uncommented, otherwise all are commented, with the markers aligned at the shallowest indentation; blank lines are skipped and tabs stay tabs.
+- **Format JSON (⌃⌘J) / Minify JSON:** pretty-prints (2-space indent) or collapses the selection, or the whole document when nothing is selected. Key order and number text (`1.0`, big integers) are preserved, strings are re-escaped minimally (Korean and emoji stay as-is). Input may contain a BOM, trailing commas and `//` / `/* */` comments (JSONC); the output is always strict JSON. On a syntax error the text is left alone, the Output panel shows `line:column` and the caret jumps there. A 5.6 MB document formats in about 30 ms.
+- **Snippets:** type a trigger such as `todo`, `date`, `time`, `now`, `meeting`, `table`, `link` or `code` and press Tab, or pick one from **Insert Snippet… (⇧⌘I)**. Bodies support `${date}`, `${time}`, `${datetime}`, `${selection}`, `${clipboard}`, `${filename}` and tabstops `$1` … `$9`, `${1:placeholder}` and `$0`; Tab / ⇧Tab move between tabstops (a number used twice becomes a multi-caret), Esc or a click ends the session. **Edit Snippets…** opens `~/Library/Application Support/HyperEdit/snippets.json` in HyperEdit itself; it is re-read after you save.
 
 ### Saving
 - Autosave 2 seconds after typing stops. On quit, window close and when switching files the document is saved synchronously, so there is no 2-second loss window. Every write is atomic.
@@ -104,12 +112,18 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⇧⌘K | Delete line | ⇧⌘D | Duplicate line |
 | ⌥↑ / ⌥↓ | Move line up / down | ⇧⌘J | Join lines |
 | ⌃⌘= | Calculate (append ⇒ result) | ⌃⌘T | Align columns |
+| ⌘/ | Toggle comment | ⌃⌘J | Format JSON |
+| ⇧⌘I | Insert snippet | Tab | Expand snippet trigger / next tabstop |
 | ⌘1 | Sidebar | ⌘2 | Bottom panel |
 | ⌘3 | Outline | ⌘4 | Timeline |
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
 | ⌘, | Settings | ⇧⌘P | Markdown preview |
-| ⌃⌘H | Syntax colors | | |
+| ⌃⌘H | Syntax colors | ⌘\\ | Split editor |
+| ⌥⌘\\ | Focus other split | ⇧⌘N | Quick Append |
+| ⌃⌥N | Quick Append from any app (global, configurable) | ⇧⌘M | Record / stop macro |
+| ⌥⌘M | Play macro | ⌥⌘← / ⌥⌘→ | Fold / unfold |
+| ⌥⇧⌘← / ⌥⇧⌘→ | Fold all / unfold all | | |
 
 ## Themes
 
@@ -148,25 +162,34 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | Flag | Effect |
 |---|---|
 | `--file <path>` | Open this file instead of the remembered one |
-| `--snapshot <png> [--snapshot-delay s] [--quit]` | Capture the window to PNG via ScreenCaptureKit (needs Screen Recording permission) |
-| `--selftest [--selftest-out <txt>] [--quit]` | Run the built-in self-test on temporary files; never touches your documents |
-| `--theme <id>` | Start with a palette id from `palettes.json`, e.g. `hyper-dark` |
+| `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | Capture the window to PNG via ScreenCaptureKit (needs Screen Recording permission); `--snapshot-panel` captures the floating Quick Append panel opened by `--quick-append`. Snapshot runs use a 1280 pt window unless a width is given |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | Run the built-in self-test (393 checks) on temporary files; never touches your documents. `--selftest-split-big` adds a split-editor typing-latency check that types into and restores the given file (use a copy); `--show-snippet-picker` leaves the Insert Snippet sheet open for screenshots. `--selftest-open` is a file-switching benchmark that edits the files it is pointed at — copies only |
+| `--theme <id>` · `--follow-system-theme` | Start with a palette id from `palettes.json`, e.g. `hyper-dark` / start following the system appearance |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | Select a ribbon tab |
-| `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` | Show a sidebar / bottom-panel tab |
+| `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | Show a sidebar / bottom-panel tab, or hide the sidebar / bottom panel |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
+| `--split [vertical\|horizontal]` · `--quick-append` | Start with the editor split (side by side by default) / open the Quick Append panel |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
+| `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |
 | `--ephemeral` | Use throwaway preferences (theme, panels, remembered file) for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
+| `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | Diagnostics: log window creation during launch to stderr (and a file) / log Markdown preview renders and navigation / skip theme and font attribute application |
+| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | Performance benchmark on a generated corpus (2 KB–8 MB); writes JSON + Markdown with PASS/FAIL budgets — see [docs/performance.md](docs/performance.md). Phases: `idle open memory scroll search outline theme typing replace save`. `scripts/bench.sh` wraps it |
+| `--quit-after-launch [--bench-launch-log <file>]` | Quit ~0.1 s after the first window and append launch milestones (process start → window) to the log |
 
 ## Project layout
 
 ```
-Apps/mac/            SwiftUI shell: ribbon, panels, settings, the AppKit editor in Editor/ and the WKWebView Markdown preview in Markdown/
-Packages/HyperCore/  Engine (document, search, text tools, column-block math, outline/timeline, themes, fonts, Markdown → HTML) + tests
+Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditApp.swift, MacroUI.swift), Bench.swift, SelfTest*.swift
+  Editor/            AppKit editor: HyperTextView (TextKit 2), GutterView, EditorSession (split), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
+  QuickAppend/       Non-activating NSPanel, controller and the Carbon global hot key
+  Panels/ Markdown/  Sidebar and bottom panels, SnippetPickerView · WKWebView Markdown preview
+Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, themes, fonts, Markdown → HTML) + 137 unit tests
 themes/              palettes.json (single source), build_zed_theme.py, build_preview.py, validate.py, dist/
-docs/                features.md · fonts.md · zed.md · design.ko.md · theme-preview.html · screenshots/ · sample/
-scripts/             bootstrap · build-mac · install-mac · make-dmg · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · install-hooks
+docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/ (baseline JSON) · release-notes/ · screenshots/ · sample/
+l10n/                <topic>.ko.json — Korean translations added per feature and applied with scripts/l10n-add.py
+scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-add · install-hooks
 Config/              Version.xcconfig (managed by semantic-release) · Signing.xcconfig defaults · Local.xcconfig.example
 .github/workflows/   ci.yml (themes, sensitive-info check, commitlint, macOS build + tests) · release.yml (semantic-release → DMG → GitHub Release → Homebrew cask)
 ```
@@ -175,14 +198,17 @@ Config/              Version.xcconfig (managed by semantic-release) · Signing.x
 
 ## Release process
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Korean or English subjects are fine). On every push to `main`, [semantic-release](https://semantic-release.gitbook.io) computes the next version from the commits, updates `CHANGELOG.md`, `VERSION` and `Config/Version.xcconfig`, builds, signs and notarizes the DMG, publishes a GitHub Release with `SHA256SUMS` and the Zed theme file, and updates the Homebrew cask in `Hyeongcheol-An/homebrew-tap`. `feat:` → minor, `fix:` / `perf:` → patch, `docs:` / `chore:` / `refactor:` → no release. The workflow refuses to publish without the Developer ID and notarization secrets (forks can set the repository variable `ALLOW_UNSIGNED_RELEASE=true` to allow unsigned builds). Install the local commit-message hook with `scripts/install-hooks.sh`.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Korean or English subjects are fine). On every push to `main`, [semantic-release](https://semantic-release.gitbook.io) computes the next version from the commits, updates `CHANGELOG.md`, `VERSION` and `Config/Version.xcconfig`, builds, signs and notarizes the DMG, publishes a GitHub Release with `SHA256SUMS` and the Zed theme file, and updates the Homebrew cask in `Hyeongcheol-An/homebrew-tap`. `feat:` → minor, `fix:` / `perf:` → patch, `docs:` / `chore:` / `refactor:` → no release. The workflow refuses to publish without the Developer ID and notarization secrets (forks can set the repository variable `ALLOW_UNSIGNED_RELEASE=true` to allow unsigned builds). Release builds strip symbols and dead code (`project.yml`: `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), which took the universal binary from 13.5 MB to 6.5 MB in v0.6. Install the local commit-message hook with `scripts/install-hooks.sh`.
 
 ## Roadmap and limitations
 
 - UI in English and Korean (follows the system language); no other languages yet.
 - Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
-- Planned editing tools — comment toggle, JSON tidy, macros, split view — are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math).
+- Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
+- Snippets and macros are edited as JSON files (`snippets.json`, `macros/macros.json` under Application Support); there is no GUI editor for them.
+- Code folding lasts for the session only (folds are not saved per file), and a mouse drag across a folded header still selects the hidden text.
+- The Quick Append global shortcut uses the system hot-key API, so the ⌃Space / ⌃⌥Space variants lose silently to input-source switching when that is enabled in System Settings › Keyboard; pick ⌃⌥N or ⌃⌥⌘N instead.
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).
 

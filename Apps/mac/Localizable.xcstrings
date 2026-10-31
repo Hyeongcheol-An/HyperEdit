@@ -71,6 +71,16 @@
         }
       }
     },
+    "'%@' not found": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'%@' 을(를) 찾지 못함"
+          }
+        }
+      }
+    },
     "(blank line)": {
       "localizations": {
         "ko": {
@@ -147,6 +157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld줄의 열을 맞췄습니다"
+          }
+        }
+      }
+    },
+    "An emergency copy of the unsaved text was written to %@. Quit anyway, or cancel to keep editing?": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "저장되지 않은 내용의 비상 사본을 %@ 에 남겼습니다. 그래도 종료할까요, 아니면 취소하고 계속 편집할까요?"
           }
         }
       }
@@ -381,6 +401,16 @@
         }
       }
     },
+    "Collapse the selection or the whole document to single-line JSON": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택 영역(없으면 문서 전체)을 한 줄 JSON 으로 줄입니다"
+          }
+        }
+      }
+    },
     "Column & Multi-Caret": {
       "localizations": {
         "ko": {
@@ -447,6 +477,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "열 모드 켜짐 (⌥C 로 끄기)"
+          }
+        }
+      }
+    },
+    "Comment or uncomment the selected lines with the file type's marker (⌘/)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택한 줄(없으면 현재 줄)에 파일 종류의 주석 기호를 넣거나 뺍니다 (⌘/)"
           }
         }
       }
@@ -591,6 +631,16 @@
         }
       }
     },
+    "Delete Macro": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 삭제"
+          }
+        }
+      }
+    },
     "Delete empty or whitespace-only lines": {
       "localizations": {
         "ko": {
@@ -637,6 +687,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "편집"
+          }
+        }
+      }
+    },
+    "Edit Macros File…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 파일 편집…"
+          }
+        }
+      }
+    },
+    "Edit Snippets…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 편집…"
+          }
+        }
+      }
+    },
+    "Editing snippets — save, then type a trigger and press Tab": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 편집 중 — 저장한 뒤 편집기에서 트리거를 치고 Tab 을 누르세요"
           }
         }
       }
@@ -751,6 +831,16 @@
         }
       }
     },
+    "Filter by trigger, title or text": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "트리거·제목·본문 필터"
+          }
+        }
+      }
+    },
     "Filter outline": {
       "localizations": {
         "ko": {
@@ -861,12 +951,102 @@
         }
       }
     },
+    "Floating note panel — ⌘↩ appends to the end of the document (⇧⌘N, global ⌃⌥N)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "떠 있는 메모 창 — ⌘↩ 로 문서 끝에 덧붙입니다 (⇧⌘N, 전역 ⌃⌥N)"
+          }
+        }
+      }
+    },
+    "Focus Other Split": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다른 분할로 포커스"
+          }
+        }
+      }
+    },
+    "Fold": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "접기"
+          }
+        }
+      }
+    },
+    "Fold All": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모두 접기"
+          }
+        }
+      }
+    },
+    "Fold every region in the document (⌥⇧⌘←)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문서의 모든 영역 접기 (⌥⇧⌘←)"
+          }
+        }
+      }
+    },
+    "Fold the region at the caret — indented block, Markdown heading or { } block (⌥⌘←)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캐럿이 있는 영역 접기 — 들여쓴 블록, 마크다운 헤딩, { } 블록 (⌥⌘←)"
+          }
+        }
+      }
+    },
+    "Folded %lld regions": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "영역 %lld개 접음"
+          }
+        }
+      }
+    },
+    "Folded lines %lld–%lld": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld줄 접음"
+          }
+        }
+      }
+    },
     "Folder to search": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "검색할 폴더"
+          }
+        }
+      }
+    },
+    "Folding": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "접기"
           }
         }
       }
@@ -951,12 +1131,72 @@
         }
       }
     },
+    "Format JSON": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 정리"
+          }
+        }
+      }
+    },
+    "Formatted JSON · %lld lines": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 정리 · %lld줄"
+          }
+        }
+      }
+    },
     "Full Screen": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "전체 화면"
+          }
+        }
+      }
+    },
+    "Global shortcut": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키"
+          }
+        }
+      }
+    },
+    "Global shortcut %@ could not be registered (in use by another app, error %lld)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키 %@ 을(를) 등록하지 못했습니다 (다른 앱이 사용 중, 오류 %lld)"
+          }
+        }
+      }
+    },
+    "Global shortcut off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키 끔"
+          }
+        }
+      }
+    },
+    "Global shortcut registered: %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전역 단축키 등록됨: %@"
           }
         }
       }
@@ -1211,12 +1451,42 @@
         }
       }
     },
+    "Insert Snippet": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 삽입"
+          }
+        }
+      }
+    },
+    "Insert Snippet…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 삽입…"
+          }
+        }
+      }
+    },
     "Insert Timestamp": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "타임스탬프 삽입"
+          }
+        }
+      }
+    },
+    "Insert a snippet — or type a trigger such as todo and press Tab (⇧⌘I)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫을 삽입합니다 — 또는 편집기에서 todo 같은 트리거를 치고 Tab (⇧⌘I)"
           }
         }
       }
@@ -1257,6 +1527,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "대소문자 반전"
+          }
+        }
+      }
+    },
+    "JSON error · line %lld, column %lld · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 오류 · %lld줄 %lld열 · %@"
           }
         }
       }
@@ -1461,6 +1741,126 @@
         }
       }
     },
+    "Macro": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로"
+          }
+        }
+      }
+    },
+    "Macro deleted · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 삭제 · %@"
+          }
+        }
+      }
+    },
+    "Macro played ×%lld · %lld steps · %lld ms": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 재생 ×%lld · %lld단계 · %lld ms"
+          }
+        }
+      }
+    },
+    "Macro recorded · %lld steps": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 기록 완료 · %lld단계"
+          }
+        }
+      }
+    },
+    "Macro recording started": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 기록 시작"
+          }
+        }
+      }
+    },
+    "Macro recording stopped · document changed": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 기록 중지 · 문서가 바뀜"
+          }
+        }
+      }
+    },
+    "Macro recording stopped · nothing recorded": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 기록 중지 · 기록된 것 없음"
+          }
+        }
+      }
+    },
+    "Macro saved · %@ · %lld steps": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 저장 · %@ · %lld단계"
+          }
+        }
+      }
+    },
+    "Macro · unknown command skipped · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 · 알 수 없는 명령 건너뜀 · %@"
+          }
+        }
+      }
+    },
+    "Macro · unknown tool skipped · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 · 알 수 없는 도구 건너뜀 · %@"
+          }
+        }
+      }
+    },
+    "Macros file could not be read · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 파일을 읽지 못함 · %@"
+          }
+        }
+      }
+    },
+    "Macros reloaded · %lld macros": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 다시 읽음 · %lld개"
+          }
+        }
+      }
+    },
     "Markdown": {
       "localizations": {
         "ko": {
@@ -1541,6 +1941,26 @@
         }
       }
     },
+    "Minified JSON · %lld characters": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 한 줄로 · %lld자"
+          }
+        }
+      }
+    },
+    "Minify JSON": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 한 줄로"
+          }
+        }
+      }
+    },
     "Mode": {
       "localizations": {
         "ko": {
@@ -1601,6 +2021,16 @@
         }
       }
     },
+    "Name": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이름"
+          }
+        }
+      }
+    },
     "Name (optional)": {
       "localizations": {
         "ko": {
@@ -1617,6 +2047,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "새 텍스트 파일의 이름과 위치"
+          }
+        }
+      }
+    },
+    "Name the last recorded macro — it appears in the Macro menu": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "마지막으로 기록한 매크로에 이름을 붙임 — 매크로 메뉴에 나타남"
           }
         }
       }
@@ -1701,6 +2141,46 @@
         }
       }
     },
+    "No emergency copy could be written. Quit anyway, or cancel to keep editing?": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비상 사본도 쓰지 못했습니다. 그래도 종료할까요, 아니면 취소하고 계속 편집할까요?"
+          }
+        }
+      }
+    },
+    "No macro recorded yet (⇧⌘M to record)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기록된 매크로가 없음 (⇧⌘M 으로 기록)"
+          }
+        }
+      }
+    },
+    "No snippets match the filter": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "필터에 맞는 스니펫이 없습니다"
+          }
+        }
+      }
+    },
+    "No snippets yet — Edit Snippets… adds the file": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫이 아직 없습니다 — 스니펫 편집… 으로 파일을 만듭니다"
+          }
+        }
+      }
+    },
     "No tab- or pipe-separated columns to align": {
       "localizations": {
         "ko": {
@@ -1741,6 +2221,26 @@
         }
       }
     },
+    "Nothing to fold here": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "여기에는 접을 영역이 없습니다"
+          }
+        }
+      }
+    },
+    "Nothing to unfold here": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "여기에는 펼칠 영역이 없습니다"
+          }
+        }
+      }
+    },
     "Number Lines": {
       "localizations": {
         "ko": {
@@ -1757,6 +2257,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "숫자 정렬"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "끔"
           }
         }
       }
@@ -1901,6 +2411,96 @@
         }
       }
     },
+    "Play": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "재생"
+          }
+        }
+      }
+    },
+    "Play Macro": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 재생"
+          }
+        }
+      }
+    },
+    "Play Macro Multiple Times": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 여러 번 재생"
+          }
+        }
+      }
+    },
+    "Play Macro Multiple Times…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 여러 번 재생…"
+          }
+        }
+      }
+    },
+    "Play N Times…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "N번 재생…"
+          }
+        }
+      }
+    },
+    "Play the last macro several times — stops when a Find step finds nothing or a run changes nothing": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "마지막 매크로를 여러 번 재생 — 찾기 단계가 실패하거나 한 바퀴에 아무 변화가 없으면 멈춤"
+          }
+        }
+      }
+    },
+    "Play the last recorded macro (⌥⌘M)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "마지막으로 기록한 매크로 재생 (⌥⌘M)"
+          }
+        }
+      }
+    },
+    "Playing a macro": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 재생 중"
+          }
+        }
+      }
+    },
+    "Plays the last recorded macro the given number of times. Playback stops early when a Find step finds nothing or a run changes nothing. The whole run is one undo step.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "마지막으로 기록한 매크로를 지정한 횟수만큼 재생합니다. 찾기 단계가 아무것도 찾지 못하거나 한 바퀴에 아무 변화가 없으면 일찍 멈춥니다. 전체 재생은 실행 취소 한 단계입니다."
+          }
+        }
+      }
+    },
     "Preferences (⌘,)": {
       "localizations": {
         "ko": {
@@ -1917,6 +2517,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "선택 줄 앞에 1. 2. 3. 번호"
+          }
+        }
+      }
+    },
+    "Pretty-print the selection or the whole document as JSON — key order and numbers are kept (⌃⌘J)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택 영역(없으면 문서 전체)을 보기 좋은 JSON 으로 — 키 순서와 숫자 표기는 그대로 (⌃⌘J)"
           }
         }
       }
@@ -1991,12 +2601,102 @@
         }
       }
     },
+    "Quick Append": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가"
+          }
+        }
+      }
+    },
+    "Quick Append failed — no document is open": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가 실패 — 열린 문서가 없습니다"
+          }
+        }
+      }
+    },
+    "Quick Append · %lld chars": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가 · %lld자"
+          }
+        }
+      }
+    },
+    "Quick Append…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "빠른 추가…"
+          }
+        }
+      }
+    },
+    "Quit Anyway": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "그래도 종료"
+          }
+        }
+      }
+    },
     "Re-read the file — unsaved changes are discarded": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "파일을 다시 읽음 — 저장 안 한 변경은 버림"
+          }
+        }
+      }
+    },
+    "Record": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기록"
+          }
+        }
+      }
+    },
+    "Record Macro": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 기록"
+          }
+        }
+      }
+    },
+    "Record typing, editing commands and text tools as a macro (⇧⌘M)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "입력·편집 명령·텍스트 도구를 매크로로 기록 (⇧⌘M)"
+          }
+        }
+      }
+    },
+    "Recording a macro — ⇧⌘M stops": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 기록 중 — ⇧⌘M 으로 중지"
           }
         }
       }
@@ -2331,12 +3031,122 @@
         }
       }
     },
+    "Save As…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이름 붙여 저장…"
+          }
+        }
+      }
+    },
+    "Save Last Macro As…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "마지막 매크로 이름 붙여 저장…"
+          }
+        }
+      }
+    },
+    "Save Macro": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "매크로 저장"
+          }
+        }
+      }
+    },
+    "Save failed on quit — emergency copy written to %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "종료 시 저장 실패 — 비상 사본을 %@ 에 남겼습니다"
+          }
+        }
+      }
+    },
+    "Save failed on quit — no emergency copy could be written": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "종료 시 저장 실패 — 비상 사본도 쓰지 못했습니다"
+          }
+        }
+      }
+    },
     "Save now (⌘S) — autosaves 2 seconds after you stop typing": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "지금 저장 (⌘S) — 입력을 멈추면 2초 뒤 자동 저장"
+          }
+        }
+      }
+    },
+    "Saved macros are listed in the Macro menu and kept in ~/Library/Application Support/HyperEdit/macros/macros.json.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "저장한 매크로는 매크로 메뉴에 나열되며 ~/Library/Application Support/HyperEdit/macros/macros.json 에 보관됩니다."
+          }
+        }
+      }
+    },
+    "Scroll Markers": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커"
+          }
+        }
+      }
+    },
+    "Scrollbar Markers": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커"
+          }
+        }
+      }
+    },
+    "Scrollbar markers off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커 끔"
+          }
+        }
+      }
+    },
+    "Scrollbar markers on": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커 켬"
+          }
+        }
+      }
+    },
+    "Search matches, bookmarks, the caret line and folded headers on the editor's right edge": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 오른쪽 가장자리에 검색 매치·북마크·캐럿 줄·접힌 머리 줄 표시"
           }
         }
       }
@@ -2481,6 +3291,16 @@
         }
       }
     },
+    "Show the document in two editors (⌘\\)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "같은 문서를 두 편집기로 나란히 봅니다 (⌘\\)"
+          }
+        }
+      }
+    },
     "Sidebar": {
       "localizations": {
         "ko": {
@@ -2507,6 +3327,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "사이드바 — 파일·아웃라인·타임라인 (⌘1)"
+          }
+        }
+      }
+    },
+    "Single Editor": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분할 해제"
           }
         }
       }
@@ -2571,6 +3401,26 @@
         }
       }
     },
+    "Snippet · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫 · %@"
+          }
+        }
+      }
+    },
+    "Snippet…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스니펫…"
+          }
+        }
+      }
+    },
     "Sort": {
       "localizations": {
         "ko": {
@@ -2621,6 +3471,96 @@
         }
       }
     },
+    "Split": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분할"
+          }
+        }
+      }
+    },
+    "Split Direction": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "분할 방향"
+          }
+        }
+      }
+    },
+    "Split Editor": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할"
+          }
+        }
+      }
+    },
+    "Split Side by Side": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "좌우로 분할"
+          }
+        }
+      }
+    },
+    "Split Stacked": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "상하로 분할"
+          }
+        }
+      }
+    },
+    "Split editor off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할 끔"
+          }
+        }
+      }
+    },
+    "Split editor on (⌘\\)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할 켜짐 (⌘\\)"
+          }
+        }
+      }
+    },
+    "Split editor: side by side": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할: 좌우"
+          }
+        }
+      }
+    },
+    "Split editor: stacked": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 분할: 상하"
+          }
+        }
+      }
+    },
     "Start value": {
       "localizations": {
         "ko": {
@@ -2641,12 +3581,52 @@
         }
       }
     },
+    "Stop": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "중지"
+          }
+        }
+      }
+    },
+    "Stop Recording": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기록 중지"
+          }
+        }
+      }
+    },
+    "Stop recording (⇧⌘M)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기록 중지 (⇧⌘M)"
+          }
+        }
+      }
+    },
     "Swap uppercase ↔ lowercase": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "대문자 ↔ 소문자 뒤집기"
+          }
+        }
+      }
+    },
+    "Switch between side-by-side and stacked split": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "좌우 분할 ↔ 상하 분할 전환"
           }
         }
       }
@@ -2731,6 +3711,16 @@
         }
       }
     },
+    "The document could not be saved": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문서를 저장하지 못했습니다"
+          }
+        }
+      }
+    },
     "Theme": {
       "localizations": {
         "ko": {
@@ -2761,12 +3751,32 @@
         }
       }
     },
+    "Times (1 ~ 10,000)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "횟수 (1 ~ 10,000)"
+          }
+        }
+      }
+    },
     "Timestamp and date lines grouped by month (⌘4)": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "타임스탬프·날짜 줄을 월별로 (⌘4)"
+          }
+        }
+      }
+    },
+    "Timestamp heading": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "타임스탬프 헤딩"
           }
         }
       }
@@ -2781,12 +3791,32 @@
         }
       }
     },
+    "Tip: type a trigger such as todo in the editor and press Tab. Tab / ⇧Tab move between $1 … $9 placeholders, Esc ends.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "팁: 편집기에서 todo 같은 트리거를 치고 Tab 을 누르세요. Tab / ⇧Tab 으로 $1 … $9 자리를 오가고 Esc 로 끝냅니다."
+          }
+        }
+      }
+    },
     "Toggle Bookmark": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "북마크 토글"
+          }
+        }
+      }
+    },
+    "Toggle Comment": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "주석 토글"
           }
         }
       }
@@ -2901,12 +3931,82 @@
         }
       }
     },
+    "Unfold": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "펼치기"
+          }
+        }
+      }
+    },
+    "Unfold All": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모두 펼치기"
+          }
+        }
+      }
+    },
+    "Unfold every region (⌥⇧⌘→)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모든 영역 펼치기 (⌥⇧⌘→)"
+          }
+        }
+      }
+    },
+    "Unfold the region whose header is at the caret (⌥⌘→)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캐럿 줄이 머리인 영역 펼치기 (⌥⌘→)"
+          }
+        }
+      }
+    },
+    "Unfolded %lld regions": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "영역 %lld개 펼침"
+          }
+        }
+      }
+    },
+    "Unfolded lines %lld–%lld": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld줄 펼침"
+          }
+        }
+      }
+    },
     "Uppercase": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "대문자"
+          }
+        }
+      }
+    },
+    "Very long single line — caret moves and reopening may be slow; use Format JSON to restore line breaks": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "한 줄이 매우 깁니다 — 캐럿 이동과 다시 열기가 느려질 수 있으니 줄바꿈이 필요하면 JSON 정리를 쓰세요"
           }
         }
       }
@@ -2981,6 +4081,36 @@
         }
       }
     },
+    "caret": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캐럿 진입"
+          }
+        }
+      }
+    },
+    "nothing changed": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "변화 없음"
+          }
+        }
+      }
+    },
+    "stopped early at run %lld of %lld · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "조기 중단 · %2$lld회 중 %1$lld회째 · %3$@"
+          }
+        }
+      }
+    },
     "⇧F3": {
       "localizations": {
         "ko": {
@@ -3017,6 +4147,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "⇧⌘K"
+          }
+        }
+      }
+    },
+    "⋯ %lld lines": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⋯ %lld줄"
+          }
+        }
+      }
+    },
+    "⌃⌥Space and ⌃⇧Space are often taken by input-source switching (System Settings › Keyboard › Shortcuts). In the app, ⇧⌘N opens the panel; ⌘↩ appends to the end of the current document and saves at once.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌃⌥Space·⌃⇧Space 는 입력 소스 전환에 쓰이는 경우가 많습니다(시스템 설정 › 키보드 › 단축키). 앱 안에서는 ⇧⌘N 으로 창을 열고, ⌘↩ 로 현재 문서 끝에 덧붙인 뒤 바로 저장합니다."
           }
         }
       }
@@ -3107,6 +4257,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "⌘X"
+          }
+        }
+      }
+    },
+    "⌘↩ append · Esc close": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘↩ 추가 · Esc 닫기"
           }
         }
       }

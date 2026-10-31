@@ -44,6 +44,11 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private var loadedLength = 0
     /// 파일 전환 세대. 전환 전에 시작된 저장 완료 콜백이 새 파일 상태를 덮어쓰지 않도록.
     private var fileGeneration = 0
+    /// load/reload 의 전체 교체 중에는 저장소 변경 알림을 '사용자 편집' 으로 치지 않는다 (0 보다 크면 교체 중)
+    private var programmaticReplaceDepth = 0
+    /// 마지막 load/reload 이후 실제 문자 편집(저장소 알림 기준)이 있었는가. 없으면 뷰가 보내는 textDidChange() 는 무시한다 —
+    /// macOS 27 의 undo 경로 보정으로 전체 교체 직후에도 뷰가 didChangeText 를 한 번 더 부르는데, 그 때문에 새로 연 문서가 dirty 가 되면 안 된다.
+    private var editedSinceLoad = false
 
     public init(url: URL) {
         self.url = url.resolvingSymlinksInPath()
@@ -151,9 +156,12 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private func replaceAll(with text: String) {
         lineEnding = Self.detectLineEnding(text)
         fileSize = text.utf8.count
+        programmaticReplaceDepth += 1
         textStorage.beginEditing()
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: text)
         textStorage.endEditing()
+        programmaticReplaceDepth -= 1
+        editedSinceLoad = false
         loadedLength = textStorage.length
         lineIndex = LineIndex(text: text)
         reloadGeneration += 1
@@ -169,7 +177,10 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     /// 텍스트 뷰의 사용자 편집 후 호출.
     public func textDidChange() {
-        isDirty = true
+        guard editedSinceLoad else { return }   // 로드 뒤 문자 편집이 없었으면 무시 (전체 교체 직후 뷰가 보내는 didChangeText 가 새 문서를 dirty 로 만들지 않게)
+        // 같은 값을 다시 대입해도 @Published 는 objectWillChange 를 보낸다 → 키 입력마다 문서를 구독하는 모든 SwiftUI 뷰(탭 바·상태바·EditorView.updateNSView)가
+        // 다시 평가됐다 (타이핑 지연의 약 1/3). 첫 편집에서만 바꾼다.
+        if !isDirty { isDirty = true }
         scheduleIndexRebuild()
         scheduleAutosave()
     }
@@ -244,6 +255,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             loadedLength = length
             fileSize = bytes
             errorMessage = nil
+            externalChange = nil   // 우리 저장이 외부본을 덮어썼다 — 다음 편집에서 ⚠ 외부 변경 경고가 되살아나지 않도록
             if convertedToUTF8 {
                 encoding = .utf8; hasBOM = false
                 status = String(localized: "Saved · \(Self.timeString(lastSaved!)) · converted to UTF-8 because the original encoding cannot represent some characters", bundle: .module)
@@ -269,6 +281,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         isDirty = false; saveRequestedWhileSaving = false; isSaving = false
         fileGeneration += 1   // 큐에 남아 있던 비동기 저장의 완료 콜백은 무시된다 (내용은 이 쓰기 이전에 이미 디스크에 반영됨)
         lastSaved = Date(); ourLastWrite = lastSaved
+        externalChange = nil
         loadedLength = textStorage.length; fileSize = built.data.count
         if built.convertedToUTF8 { encoding = .utf8; hasBOM = false }
         errorMessage = nil
@@ -286,6 +299,18 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     }
 
     // MARK: - Snapshots
+
+    /// 종료 직전 저장이 실패했을 때 메모리의 내용을 스냅샷 폴더에 비상 사본으로 남긴다 (`<파일명>-<시각>-unsaved.txt`, 문서와 같은 인코딩).
+    /// 성공하면 사본 URL, 쓰지 못하면 nil.
+    @discardableResult
+    public func writeEmergencyCopy() -> URL? {
+        let dir = Self.snapshotDirectory
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss"
+        let target = dir.appendingPathComponent("\(url.lastPathComponent)-\(f.string(from: Date()))-unsaved.txt")
+        let built = Self.encode(textStorage.string, encoding: encoding, bom: hasBOM)
+        do { try built.data.write(to: target, options: [.atomic]); return target } catch { return nil }
+    }
 
     public static var snapshotDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -377,7 +402,11 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     public nonisolated func textStorage(_ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions, range editedRange: NSRange, changeInLength delta: Int) {
         MainActor.assumeIsolated {
-            guard editedMask.contains(.editedCharacters), let font = hangulFont else { return }
+            guard editedMask.contains(.editedCharacters) else { return }
+            // 문자 변경은 모두 '편집' 이다 — 텍스트 뷰를 거치지 않는 undo/redo(macOS 27 TextKit 2 는 shouldChangeText/didChangeText 를 부르지 않는다)도
+            // 여기서 잡아 dirty·자동 저장·줄 인덱스 재계산을 건다. 뷰 경로의 textDidChange() 와 겹쳐도 예약 취소·재예약뿐이라 비용은 없다.
+            if programmaticReplaceDepth == 0, isLoaded { editedSinceLoad = true; textDidChange() }
+            guard let font = hangulFont else { return }
             let para = (textStorage.string as NSString).paragraphRange(for: editedRange)
             HangulFontFixer.apply(font: font, to: textStorage, in: para)
         }

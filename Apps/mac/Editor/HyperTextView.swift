@@ -19,7 +19,24 @@ final class HyperTextView: NSTextView {
     var onLinesWillChange: ((_ atLine: Int, _ delta: Int) -> Void)?
     /// false 를 돌려주면(북마크 없음) 줄 번호 계산을 건너뛴다
     var needsLineTracking: (() -> Bool)?
+    /// 분할 보기: 이 뷰가 포커스를 받거나 클릭되면 알린다 — 명령·상태바가 이 뷰 기준이 된다
+    var onBecomeActive: (() -> Void)?   // split
     private var lineChangeDepth = 0
+
+    // MARK: 접기 훅 (FoldController 가 설치 — 이 뷰는 접힘 상태를 모른다. 그리기·이동 구현은 FoldController.swift 의 extension)   // fold
+    /// 모든 편집(줄 수 변화 여부와 무관)을 편집 전 좌표로 알린다 — 접힘 오프셋 추적용. 보통 저장소 변경 직전(alreadyApplied == false)이고,
+    /// shouldChangeText 를 거치지 않는 undo/redo 는 저장소가 바뀐 직후 사후 통지된다(alreadyApplied == true)
+    var onTextWillChange: ((_ edits: [(NSRange, String)], _ alreadyApplied: Bool) -> Void)?
+    /// 접힘이 하나라도 있는가 — 없으면 그리기에서 레이아웃 질의를 건너뛴다
+    var hasFolds: (() -> Bool)?
+    var isOffsetHidden: ((Int) -> Bool)?
+    /// 오프셋을 숨기고 있는 (겹침을 합친) 구간 [hiddenStart, hiddenEnd)
+    var foldedSpan: ((Int) -> NSRange?)?
+    var foldPills: ((_ visibleRange: NSRange) -> [FoldPill])?
+    var onFoldPillClick: ((_ hiddenStart: Int) -> Void)?
+    var foldPillTextColor = NSColor.secondaryLabelColor
+    var foldPillFillColor = NSColor.controlBackgroundColor
+    var foldPillRects: [(NSRect, Int)] = []
 
     /// 열 모드 (UltraEdit Alt+C): 켜져 있으면 드래그와 ⇧방향키가 사각형 블록을 만든다
     var columnModeEnabled = false {
@@ -33,11 +50,30 @@ final class HyperTextView: NSTextView {
         didSet { if multi != oldValue { onMultiChange?(multi); needsDisplay = true } }
     }
     private var settingSelectionProgrammatically = false
+    /// 매크로 기록 싱크(MacroRecorder.install). 재생·텍스트 도구·doCommand 내부 편집 중에는 depth > 0 으로 기록을 끈다 — 구현은 MacroRecorder.swift   // macro
+    var macroSink: ((MacroStep) -> Void)?   // macro
+    var macroSuppressDepth = 0   // macro
+
+    // 스니펫 (SnippetSession.swift): 트리거 단어 → 펼침 결과 (nil 이면 일반 Tab). 저장소는 뷰가 모른다 — Coordinator 가 공급자를 꽂는다
+    var snippetProvider: ((String) -> SnippetExpansion?)?
+    var onSnippetExpanded: ((String) -> Void)?
+    var snippetSession: SnippetSession?
 
     override var acceptsFirstResponder: Bool { true }
 
+    deinit {
+        removeEditObservers()   // fold: 저장소·undo 알림 구독 해제 (이 뷰가 건 것만)
+        Perf.log("HyperTextView deinit")                   // split: 닫힌 보조 뷰 해제 추적 (--debug-perf)
+    }
+
+    override func becomeFirstResponder() -> Bool {   // split
+        let ok = super.becomeFirstResponder()
+        if ok { onBecomeActive?() }
+        return ok
+    }
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        if window != nil { installEditObservers() }
         if window != nil { DispatchQueue.main.async { [weak self] in self?.onDidMoveToWindow?() } }
     }
 
@@ -47,6 +83,7 @@ final class HyperTextView: NSTextView {
         Perf.measure("HyperTextView.drawBackground", threshold: 2) {
             super.drawBackground(in: rect)
             drawCurrentLineHighlight()
+            drawFoldPills()   // fold
         }
     }
 
@@ -82,7 +119,19 @@ final class HyperTextView: NSTextView {
     }
 
     /// 문서 오프셋의 캐럿 사각형 (텍스트 뷰 좌표)
+    /// 이보다 긴 문단(한 줄)에서는 캐럿 사각형을 구하지 않는다 — TextKit 2 는 세그먼트 하나를 얻으려고 문단 전체를 배치하므로
+    /// 1.6M 자짜리 한 줄(압축 JSON)에서는 캐럿을 옮길 때마다 수십 초가 걸린다. 현재 줄 강조·멀티 캐럿 그리기만 빠질 뿐 편집은 그대로다.
+    static let hugeParagraphLength = 20_000
+
+    /// `offset` 이 든 문단이 `hugeParagraphLength` 보다 긴가 (문단 경계 탐색은 memchr 수준이라 싸다)
+    func isInHugeParagraph(_ offset: Int) -> Bool {
+        let ns = string as NSString
+        guard ns.length > Self.hugeParagraphLength else { return false }
+        return ns.paragraphRange(for: NSRange(location: min(offset, ns.length), length: 0)).length > Self.hugeParagraphLength
+    }
+
     func caretRect(at offset: Int) -> NSRect? {
+        guard !isInHugeParagraph(offset) else { return nil }
         guard let lm = textLayoutManager, let cs = textContentStorage,
               let loc = cs.location(cs.documentRange.location, offsetBy: min(offset, (textStorage?.length ?? 0))) else { return nil }
         var rect: CGRect?
@@ -156,14 +205,16 @@ final class HyperTextView: NSTextView {
     }
 
     // MARK: - 줄 수 변화 통지
-    // 모든 편집 — 입력·붙여넣기·텍스트 도구·멀티 편집, 그리고 undo/redo(AppKit 이 범위마다 shouldChangeText(in:) 를 다시 부른다) — 가 이 길을 지난다.
+    // 입력·붙여넣기·텍스트 도구·멀티 편집은 shouldChangeText 를 지나므로 저장소가 바뀌기 직전(편집 전 좌표)에 알린다.
     // AppKit 의 shouldChangeText(in:) 는 안에서 shouldChangeText(inRanges:) 를 부르므로 depth 로 한 번만 알린다.
+    // undo/redo 는 macOS 27 에서 shouldChangeText 를 거치지 않고 저장소를 직접 바꾼다(실측, 0.5.1 에서도 동일) — NSTextStorage 의
+    // didProcessEditing 알림으로 그런 '추적되지 않은' 편집을 잡아 같은 훅을 사후에 부른다 (installEditObservers).
 
     override func shouldChangeText(in affectedCharRange: NSRange, replacementString: String?) -> Bool {
         lineChangeDepth += 1
         defer { lineChangeDepth -= 1 }
         guard super.shouldChangeText(in: affectedCharRange, replacementString: replacementString) else { return false }
-        if lineChangeDepth == 1, let s = replacementString { notifyLineChanges([(affectedCharRange, s)]) }
+        if lineChangeDepth == 1, let s = replacementString { trackedEdits([(affectedCharRange, s)]) }
         return true
     }
 
@@ -172,9 +223,122 @@ final class HyperTextView: NSTextView {
         defer { lineChangeDepth -= 1 }
         guard super.shouldChangeText(inRanges: affectedRanges, replacementStrings: replacementStrings) else { return false }
         if lineChangeDepth == 1, let strs = replacementStrings, strs.count == affectedRanges.count {
-            notifyLineChanges(Array(zip(affectedRanges.map(\.rangeValue), strs)))
+            trackedEdits(Array(zip(affectedRanges.map(\.rangeValue), strs)))
         }
         return true
+    }
+
+    private var expectingTrackedEdit = false
+    /// 어떤 뷰가 shouldChangeText 로 추적 중인 편집의 저장소 (분할 보기: 다른 뷰는 같은 저장소 알림을 '추적되지 않은' 편집으로 보지만,
+    /// 북마크·dirty 는 추적한 뷰가 이미 처리했으므로 접힘만 통지해야 한다 — 보조 편집기의 performReplacements 를 되돌릴 때 북마크가 두 번 밀리던 문제)
+    private static var storagesWithTrackedEdit = Set<ObjectIdentifier>()
+    private var editObserversInstalled = false
+    /// 이 뷰가 직접 등록한 알림 구독. `NotificationCenter.removeObserver(self)` 로 통째로 지우면 AppKit 이 NSTextView 내부에 건 구독까지
+    /// 사라져 보관 중인 뷰의 레이아웃 매니저가 편집마다 문서 전체를 다시 배치하는 것이 실측됐다 → 반드시 이것만 해제한다.
+    private var editObserverNames: [Notification.Name] = []
+    /// undo/redo 직전의 전체 개행 수 (그룹 안의 편집마다 갱신) — 북마크 증감 계산용
+    private var undoNewlineCount: Int?
+    /// 분할 보기: 두 뷰가 같은 저장소 알림을 받으므로, 추적되지 않은 편집(undo/redo)의 북마크 이동·문서 dirty 통지는 주 편집기 한 곳만 한다
+    /// (접힘 통지는 뷰마다 자기 상태를 맞춰야 하므로 모두 받는다)
+    var tracksUntrackedLineChanges = true
+
+    private func trackedEdits(_ edits: [(NSRange, String)]) {
+        expectingTrackedEdit = true
+        let storageID = textStorage.map { ObjectIdentifier($0) }
+        if let id = storageID { Self.storagesWithTrackedEdit.insert(id) }
+        DispatchQueue.main.async { [weak self] in   // 편집이 취소돼 저장소 알림이 안 오면 다음 턴에 해제
+            self?.expectingTrackedEdit = false
+            if let id = storageID { Self.storagesWithTrackedEdit.remove(id) }
+        }
+        onTextWillChange?(edits, false)   // fold
+        notifyLineChanges(edits)
+        snippetTextWillChange(edits)      // snippets: 탭스톱 범위 보정 (편집 전 좌표)
+    }
+
+    /// 분할을 닫은 뒤 undo 항목 때문에 보관만 되는 뷰: 저장소·undo 알림 구독과 모든 훅을 끊어 편집마다 일하지 않게 한다
+    /// (보관 뷰 20개가 각각 개행 수를 세면 타이핑이 5배 느려지는 것이 실측됐다). undo 재생은 AppKit 이 뷰의 textStorage 로 직접 수행하므로 영향 없다.
+    func retireFromEditing() {
+        removeEditObservers()
+        editObserversInstalled = true   // 다시 설치되지 않게
+        onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
+        tracksUntrackedLineChanges = false
+        hasFolds = nil; isOffsetHidden = nil; foldedSpan = nil; foldPills = nil; onFoldPillClick = nil
+        snippetProvider = nil; macroSink = nil
+        onBecomeActive = nil; onMultiChange = nil; onDidMoveToWindow = nil
+    }
+
+    /// 저장소 변경 알림(undo/redo 포함)과 undo 관리자 알림 구독. 창에 붙을 때 한 번.
+    private func installEditObservers() {
+        guard !editObserversInstalled else { return }
+        editObserversInstalled = true
+        let nc = NotificationCenter.default
+        let pairs: [(Notification.Name, Selector)] = [
+            (NSTextStorage.didProcessEditingNotification, #selector(storageDidProcessEditing(_:))),
+            (.NSUndoManagerWillUndoChange, #selector(undoWillChange(_:))),
+            (.NSUndoManagerWillRedoChange, #selector(undoWillChange(_:))),
+            (.NSUndoManagerDidUndoChange, #selector(undoDidChange(_:))),
+            (.NSUndoManagerDidRedoChange, #selector(undoDidChange(_:))),
+        ]
+        for (name, sel) in pairs { nc.addObserver(self, selector: sel, name: name, object: nil) }
+        editObserverNames = pairs.map(\.0)
+    }
+
+    /// installEditObservers 가 건 구독만 해제한다 (이름 단위 — AppKit 내부 구독은 건드리지 않는다)
+    private func removeEditObservers() {
+        let nc = NotificationCenter.default
+        for name in editObserverNames { nc.removeObserver(self, name: name, object: nil) }
+        editObserverNames.removeAll()
+    }
+
+    /// undo/redo 가 진행 중인가 (저장소 알림이 어떤 편집에서 왔는지 구분하는 데 쓴다)
+    private var undoInProgress = false
+
+    @objc private func undoWillChange(_ n: Notification) {
+        guard (n.object as? UndoManager) === undoManager else { return }
+        undoInProgress = true
+        guard onLinesWillChange != nil, needsLineTracking?() ?? true else { undoNewlineCount = nil; return }
+        let ns = string as NSString
+        undoNewlineCount = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))
+    }
+
+    @objc private func undoDidChange(_ n: Notification) {
+        guard (n.object as? UndoManager) === undoManager else { return }
+        undoInProgress = false
+        undoNewlineCount = nil
+        endSnippetSession()   // snippets: undo/redo 는 shouldChangeText 를 거치지 않아 탭스톱 범위가 낡는다 → 세션 종료
+    }
+
+    /// shouldChangeText 를 거치지 않은 문자 편집(undo/redo)을 사후에 통지한다. editedRange 는 편집 후 범위, changeInLength 로 편집 전 범위를 되짚는다.
+    @objc private func storageDidProcessEditing(_ n: Notification) {
+        guard let ts = n.object as? NSTextStorage, ts === textStorage, ts.editedMask.contains(.editedCharacters) else { return }
+        if expectingTrackedEdit { expectingTrackedEdit = false; return }
+        // 추적되지 않은 편집은 undo/redo 이거나 프로그램적 전체 교체(파일 열기·다시 읽기)다. 접힘이 없고 undo 도 아니면 할 일이 없다 —
+        // 여기서 교체 문자열을 복사하면 8 MB 문서를 열 때마다 8 MB 를 복사하게 된다.
+        let foldsActive = hasFolds?() ?? false
+        guard foldsActive || undoInProgress else { return }
+        let edited = ts.editedRange
+        guard edited.location != NSNotFound else { return }
+        let ns = ts.string as NSString
+        let pre = NSRange(location: edited.location, length: max(0, edited.length - ts.changeInLength))
+        if foldsActive {
+            let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
+            onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
+        }
+        // split: 아래는 주 편집기만, 그리고 다른 뷰가 shouldChangeText 로 추적한 편집(그 뷰의 undo 클로저가 재생한 performReplacements 등)은 그 뷰가 처리했으므로 제외
+        guard undoInProgress, tracksUntrackedLineChanges, !Self.storagesWithTrackedEdit.contains(ObjectIdentifier(ts)) else { return }
+        // undo/redo 는 didChangeText 도 부르지 않는다 — 저장소 편집 처리가 끝난 뒤 직접 불러 뷰 상태(입력 합치기 등)를 정리한다.
+        // 이 호출을 빼면 undo 뒤 모든 입력이 5배쯤 느려지는 것이 실측됐다. 문서 dirty 는 MemoDocument 가 저장소 알림으로 직접 관리하며,
+        // load/reload 의 전체 교체 뒤에 오는 이 호출은 MemoDocument.textDidChange() 가 (문자 편집이 없었으므로) 무시한다.
+        DispatchQueue.main.async { [weak self] in self?.didChangeText() }
+        // 북마크: 개행 증감은 undo 직전에 세어 둔 전체 개행 수와 비교한다 (undo 한 그룹 안의 연속 편집도 각각 제 몫만큼)
+        guard let hook = onLinesWillChange, needsLineTracking?() ?? true, let before = undoNewlineCount else { return }
+        let total = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))
+        undoNewlineCount = total
+        let delta = total - before
+        guard delta != 0 else { return }
+        var pivot = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: pre.location)) + 1
+        if pre.location == 0 || ns.character(at: pre.location - 1) == 10 { pivot -= 1 }
+        hook(pivot, delta)
     }
 
     /// 편집 전 텍스트 기준으로 범위별 개행 증감을 계산해 뒤 범위부터 알린다 (앞 범위의 이동이 뒤 범위의 줄 번호를 흔들지 않도록).
@@ -201,7 +365,17 @@ final class HyperTextView: NSTextView {
     func performReplacements(_ pairs: [(range: NSRange, string: String)]) -> [NSRange] {
         guard !pairs.isEmpty, let ts = textStorage else { return [] }
         let sorted = pairs.sorted { $0.range.location < $1.range.location }
-        guard shouldChangeText(inRanges: sorted.map { NSValue(range: $0.range) }, replacementStrings: sorted.map(\.string)) else { return [] }
+        let ns = ts.string as NSString
+        // 되돌리기는 직접 등록한다 (perf): AppKit 이 shouldChangeText(inRanges:) 에서 등록하는 undo 는 범위마다 replaceCharacters 를 따로 재생해
+        // 속성 런 배열(한글 폰트 런)을 매번 memmove 한다 — 1.3 MB 문서에서 5,000건 모두 바꾸기의 ⌘Z 가 1.7 s. 편집 전 문자열을 모아 한 번의
+        // 일괄 편집으로 되돌리면(redo 도 같은 경로) 수십 ms 다. AppKit 의 등록만 끄고 delegate 확인·IME 정리·줄 추적 훅은 그대로 거친다.
+        let originals = sorted.map { ns.substring(with: $0.range) }
+        let um = undoManager
+        breakUndoCoalescing()
+        um?.disableUndoRegistration()
+        let allowed = shouldChangeText(inRanges: sorted.map { NSValue(range: $0.range) }, replacementStrings: sorted.map(\.string))
+        um?.enableUndoRegistration()
+        guard allowed else { return [] }
         settingSelectionProgrammatically = true
         defer { settingSelectionProgrammatically = false }
         ts.beginEditing()
@@ -210,10 +384,21 @@ final class HyperTextView: NSTextView {
         didChangeText()
         var delta = 0
         var out: [NSRange] = []
-        for p in sorted {
+        var inverse: [(range: NSRange, string: String)] = []
+        for (i, p) in sorted.enumerated() {
             let len = (p.string as NSString).length
+            inverse.append((NSRange(location: p.range.location + delta, length: len), originals[i]))
             out.append(NSRange(location: p.range.location + delta + len, length: 0))
             delta += len - p.range.length
+        }
+        if let um {
+            um.registerUndo(withTarget: self) { tv in
+                tv.clearMulti()
+                let carets = tv.performReplacements(inverse)
+                if let first = carets.first { tv.setSelectedRange(NSRange(location: first.location - (inverse[0].string as NSString).length, length: 0)) }
+            }
+            um.setActionName(String(localized: "Replace"))
+            breakUndoCoalescing()
         }
         return out
     }
@@ -254,6 +439,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func insertText(_ string: Any, replacementRange: NSRange) {
+        macroRecordInsert(string, replacementRange: replacementRange)   // macro
         guard let m = multi, m.ranges.count > 1 || m.isColumn else {
             super.insertText(string, replacementRange: replacementRange); return
         }
@@ -278,9 +464,17 @@ final class HyperTextView: NSTextView {
     }
 
     override func doCommand(by selector: Selector) {
+        macroRecordCommand(selector); macroSuppressDepth += 1; defer { macroSuppressDepth -= 1 }   // macro
         let hasMulti = multi != nil
         let columnish = columnModeEnabled || multi?.isColumn == true
+        // fold: ↑/↓ 가 접힌 줄에 닿으면 접힌 구간을 건너뛴다 (그 밖의 이동은 선택 변경 감시가 자동으로 펼친다)
+        if !hasMulti, selector == #selector(NSResponder.moveDown(_:)) || selector == #selector(NSResponder.moveUp(_:)),
+           moveAcrossFold(down: selector == #selector(NSResponder.moveDown(_:))) { return }
         switch selector {
+        // 스니펫 탭스톱 세션 중에는 Tab/⇧Tab 이 탭스톱 이동, Esc 가 종료 (멀티 캐럿으로 펼친 같은 번호 탭스톱보다 먼저)
+        case #selector(NSResponder.insertTab(_:)) where snippetSession != nil: snippetTabForward(); return
+        case #selector(NSResponder.insertBacktab(_:)) where snippetSession != nil: snippetTabBackward(); return
+        case #selector(NSResponder.cancelOperation(_:)) where snippetSession != nil: endSnippetSession(); if hasMulti { collapseToHead() }; return
         case #selector(NSResponder.moveLeftAndModifySelection(_:)) where columnish: extendBlock(dx: -1, dy: 0); return
         case #selector(NSResponder.moveRightAndModifySelection(_:)) where columnish: extendBlock(dx: 1, dy: 0); return
         case #selector(NSResponder.moveUpAndModifySelection(_:)) where columnish: extendBlock(dx: 0, dy: -1); return
@@ -295,7 +489,10 @@ final class HyperTextView: NSTextView {
         if hasMulti, selector.description.hasPrefix("move") {
             if columnish { collapseToHead() } else { clearMulti() }
         }
+        // 단일 캐럿 Tab: 캐럿 앞 단어가 스니펫 트리거면 펼친다 (아니면 일반 Tab)
+        if selector == #selector(NSResponder.insertTab(_:)), !hasMulti, expandSnippetAtCaret() { return }
         super.doCommand(by: selector)
+        if snippetSession != nil, selector.description.hasPrefix("move") { snippetCaretMoved() }
     }
 
     /// ⇧방향키로 블록 확장 (블록이 없으면 현재 캐럿에서 시작)
@@ -316,8 +513,11 @@ final class HyperTextView: NSTextView {
     // MARK: - 마우스: ⌘클릭 캐럿 추가, 열 모드/⌥ 드래그 블록 선택
 
     override func mouseDown(with event: NSEvent) {
+        onBecomeActive?()   // split
+        endSnippetSession()   // 클릭은 탭스톱 세션을 끝낸다
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let point = convert(event.locationInWindow, from: nil)
+        if let hit = foldPillRects.first(where: { $0.0.contains(point) }) { onFoldPillClick?(hit.1); return }   // fold: ⋯ N lines 표식 클릭 → 펼침
         if flags.contains(.command), !flags.contains(.shift) {
             addCaret(at: characterIndexForInsertion(at: point)); return
         }
@@ -396,6 +596,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func paste(_ sender: Any?) {
+        macroRecordPaste(); macroSuppressDepth += 1; defer { macroSuppressDepth -= 1 }   // macro
         guard let m = multi, let s = NSPasteboard.general.string(forType: .string) else { super.paste(sender); return }
         var lines = s.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n").components(separatedBy: "\n")
         if lines.last == "" { lines.removeLast() }

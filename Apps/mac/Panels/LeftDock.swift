@@ -44,12 +44,13 @@ struct LeftDock: View {
 /// 아웃라인: 헤딩 · [제목] · 가/나/다 · 번호 항목. 현재 줄 위의 가장 가까운 항목 강조.
 struct OutlinePanel: View {
     @EnvironmentObject var model: AppModel
-    @EnvironmentObject var caret: EditorCaret
+    /// 캐럿 줄만 따라간다 — EditorCaret 전체를 구독하면 키 입력(열 이동)마다 목록이 다시 평가된다 (perf)
+    @State private var caretLine = 1
     let theme: Theme
     @State private var filter = ""
 
     var body: some View {
-        let current = model.outline.lastIndexedLine(atOrBefore: caret.line)
+        let current = model.outline.lastIndexedLine(atOrBefore: caretLine)
         let items = filter.isEmpty ? model.outline : model.outline.filter { $0.title.localizedCaseInsensitiveContains(filter) }
         VStack(spacing: 0) {
             HStack(spacing: 6) {
@@ -82,6 +83,7 @@ struct OutlinePanel: View {
                     .font(.system(size: 10.5)).foregroundStyle(theme.foregroundMuted.color).padding(8)
             }
         }
+        .onReceive(model.caret.$line.removeDuplicates()) { caretLine = $0 }
     }
 
     private func icon(_ k: OutlineItem.Kind) -> String {
@@ -92,7 +94,7 @@ struct OutlinePanel: View {
 /// 타임라인: 타임스탬프 헤딩(F7)과 날짜로 시작하는 줄을 연·월로 묶어 최신순 표시
 struct TimelinePanel: View {
     @EnvironmentObject var model: AppModel
-    @EnvironmentObject var caret: EditorCaret
+    @State private var caretLine = 1   // 캐럿 줄만 (perf — OutlinePanel 참고)
     let theme: Theme
     @State private var collapsed: Set<String> = []
 
@@ -102,7 +104,7 @@ struct TimelinePanel: View {
     }
 
     var body: some View {
-        let current = model.timeline.lastIndexedLine(atOrBefore: caret.line)
+        let current = model.timeline.lastIndexedLine(atOrBefore: caretLine)
         VStack(spacing: 0) {
             HStack {
                 Text("\(model.timeline.count) entries · \(groups.count) months").font(.system(size: 10.5, design: .monospaced)).foregroundStyle(theme.foregroundMuted.color)
@@ -155,5 +157,6 @@ struct TimelinePanel: View {
                     .font(.system(size: 10.5)).foregroundStyle(theme.foregroundMuted.color).padding(8)
             }
         }
+        .onReceive(model.caret.$line.removeDuplicates()) { caretLine = $0 }
     }
 }

@@ -41,6 +41,10 @@ enum TextTool: String, CaseIterable {
     case trimTrailing, trimBoth, tabsToSpaces, spacesToTabs
     /// 즉석 계산(⌃⌘=) · 열 맞춤(⌃⌘T)
     case calculate, alignColumns
+    /// 주석 토글(⌘/)
+    case toggleComment   // comment
+    /// JSON 정리(⌃⌘J) · 한 줄로
+    case formatJSON, minifyJSON   // json
 }
 
 struct Replacement { let range: NSRange; let string: String }
@@ -65,6 +69,9 @@ enum EditorCommand {
     case saveViewState
     /// 개발·셀프테스트용: 텍스트 뷰에 직접 접근
     case perform((HyperTextView) -> Void)
+    /// 접기: 캐럿 영역 접기/펼치기, 전체 접기/펼치기, 특정 줄 토글(거터·실행 인자)   // fold
+    case fold, unfold, foldAll, unfoldAll
+    case toggleFold(line: Int)
 }
 
 enum LeftTab: String, CaseIterable, Identifiable {
@@ -184,10 +191,23 @@ final class AppModel: ObservableObject {
     var columnBlockActive: Bool { caret.columnBlockActive }
     @Published var showGoToLine = false
     @Published var goToLineText = ""
+    /// 스크롤바 마커 — 편집기 오른쪽 가장자리에 검색 매치·북마크·캐럿 줄·접힌 머리 줄 (markers)
+    @Published var showScrollMarkers: Bool {
+        didSet {
+            guard showScrollMarkers != oldValue else { return }
+            AppDefaults.store.set(showScrollMarkers, forKey: "ui.scrollMarkers")
+            log(showScrollMarkers ? String(localized: "Scrollbar markers on") : String(localized: "Scrollbar markers off"))
+        }
+    }
 
     let editorCommands = PassthroughSubject<EditorCommand, Never>()
     private var cancellables = Set<AnyCancellable>()
     private var searchTask: Task<Void, Never>?
+    let macros = MacroRecorder()   // macro
+
+    // snippets
+    let snippets = SnippetStore(directory: SnippetStore.launchDirectory)
+    @Published var showSnippetPicker = false
 
     init() {
         let d = AppDefaults.store
@@ -198,6 +218,7 @@ final class AppModel: ObservableObject {
         showLineNumbers = d.object(forKey: "ui.lineNumbers") as? Bool ?? true
         showMarkdownPreview = d.object(forKey: "ui.markdownPreview") as? Bool ?? false
         syntaxHighlighting = LaunchOptions.has("--no-highlight") ? false : (d.object(forKey: "ui.syntaxHighlighting") as? Bool ?? true)
+        showScrollMarkers = d.object(forKey: "ui.scrollMarkers") as? Bool ?? true   // markers
         let url = MemoLocation.resolveDefault()
         let doc = MemoDocument(url: url)
         document = doc
@@ -221,6 +242,7 @@ final class AppModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] dark in self?.themes.systemAppearanceChanged(isDark: dark) }
             .store(in: &cancellables)
+        session.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)   // split: 메뉴·상태바·리본 토글
         document.$status.removeDuplicates().filter { !$0.isEmpty }
             .sink { [weak self] s in self?.log(s) }.store(in: &cancellables)
         document.$errorMessage.compactMap { $0 }.removeDuplicates()
@@ -408,6 +430,7 @@ final class AppModel: ObservableObject {
     }
 
     func findNext() {
+        macros.recordFind(searchQuery)   // macro
         guard !searchHits.isEmpty else { runSearch(); return }
         let from = caretOffset + (selectionLength > 0 ? 1 : 0)
         if let h = searchHits.first(where: { $0.range.location >= from }) ?? searchHits.first { jump(to: h) }
@@ -532,7 +555,8 @@ final class AppModel: ObservableObject {
 
     /// `--theme <id>` `--follow-system-theme` `--ribbon <home|edit|layout|advanced|window>` `--left <files|outline|timeline>`
     /// `--bottom <find|bookmarks|output>` `--hide-left` `--hide-bottom` `--search <q>` `--replace [--replace-with <s>]` `--find-in-files`
-    /// `--column` `--goto <line>` `--preview` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
+    /// `--column` `--goto <line>` `--preview` `--show-macro-recording` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
+    /// `--fold <line>` `--fold-all` (접기 — 영역 스캔이 끝난 뒤 적용, 스크린샷용) `--no-fold` (접기 delegate 설치 안 함)
     private func applyLaunchOptions() {
         if let t = LaunchOptions.value("--theme") { themes.select(id: t) }
         if LaunchOptions.has("--follow-system-theme") { themes.setFollowsSystem(true) }
@@ -549,10 +573,26 @@ final class AppModel: ObservableObject {
         }
         if LaunchOptions.has("--column") { columnMode = true }
         if LaunchOptions.has("--preview") { showMarkdownPreview = true }
+        if LaunchOptions.has("--show-macro-recording") {   // 스크린샷용: 매크로 기록 상태(리본 빨간 기록 버튼 · 상태바 ● REC). 편집기가 기록기를 연결한 뒤에
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.toggleMacroRecording() }
+        }
         if let g = LaunchOptions.value("--goto"), let n = Int(g) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.jump(toLine: n) }
         }
+        applySplitLaunchOptions()         // split: `--split [vertical|horizontal]`
+        applyQuickAppendLaunchOptions()   // quick append: `--quick-append` + 전역 단축키 등록
+        if let f = LaunchOptions.value("--fold"), let n = Int(f) {   // fold: 스크린샷용 — 영역 스캔 뒤 해당 줄 접기 토글
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.send(.toggleFold(line: n)) }
+        }
+        if LaunchOptions.has("--fold-all") {   // fold
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.send(.foldAll) }
+        }
     }
+
+    // split: 분할 보기 세션 (공유 콘텐츠 스토리지·undo 스택·활성 편집기). 명령은 Editor/EditorSession.swift 의 extension AppModel
+    let session = EditorSession()
+    // quick append: 떠 있는 입력 창 + 전역 단축키 — QuickAppend/QuickAppendController.swift
+    lazy var quickAppend = QuickAppendController(model: self)
 }
 
 /// 스레드 안전 취소 플래그 — 부모 Task 의 취소를 detached 작업에 전달할 때 사용

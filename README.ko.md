@@ -49,10 +49,14 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 ## 기능
 
 ### 편집기
-- 큰 파일에 맞춘 성능: 1.3 MB / 34,000줄 파일에서 키 입력당 약 3 ms, 뷰포트 기반 TextKit 2 레이아웃.
+- 큰 파일에 맞춘 성능: 1.3 MB / 34,000줄 파일에서 키 입력당 약 3 ms, 뷰포트 기반 TextKit 2 레이아웃. 벤치마크 하네스(`scripts/bench.sh`)가 타이핑·파일 열기·검색·스크롤·메모리·유휴 CPU·실행 시간을 고정 예산과 비교합니다 — [docs/performance.md](docs/performance.md) 참고. v0.6에서는 5,000건 모두 바꾸기의 ⌘Z 한 번을 1.7 s에서 0.25 s로 줄이고, 키 입력마다 일어나던 패널의 SwiftUI 재평가를 없애고, 설치된 폰트 목록을 캐시했습니다.
 - 줄 번호 거터, 현재 줄 강조, 자동 줄바꿈(⌥Z), 줄 번호 표시(⌥⌘L), 확대/축소(⌘= / ⌘- / ⌘0).
 - 파일별로 마지막 캐럿·스크롤 위치 복원. ⌃⌘E로 문서 끝으로, ⌘L로 줄 이동.
+- **접기(⌥⌘← / ⌥⌘→, 모두 접기·펼치기 ⌥⇧⌘← / ⌥⇧⌘→):** 어떤 줄은 그 아래 더 깊이 들여쓴 줄들을 접고(빈 줄 무시), 마크다운 `#` 헤딩은 같거나 높은 레벨의 다음 헤딩 직전까지 접으며(펜스 코드 블록도 접힘), 코드에서 `{`, `[`, `(` 로 끝나는 줄은 닫는 괄호 줄까지 접습니다. 거터의 화살표나 `⋯ N lines` 표식을 클릭해도 접고 펼칩니다. 캐럿이 접힌 줄로 들어가면(찾기, 줄 이동, 북마크, 실행 취소) 자동으로 펼쳐지고, ↑ / ↓ 는 접힌 구간을 건너뜁니다. 접힘은 편집을 따라갑니다 — 머리 줄 안의 입력, 위쪽 줄 삽입·삭제, 실행 취소 — 그리고 세션 동안 유지됩니다.
+- **스크롤바 마커:** 편집기 오른쪽 가장자리 12 pt 띠에 검색 매치(강조색 눈금), 북마크(경고색), 캐럿 줄, 접힌 머리 줄을 상대 위치로 표시합니다. 문서가 한 화면에 들어가면 숨겨집니다. 보기 메뉴 → 스크롤바 마커, 또는 레이아웃 탭 패널 그룹.
 - F7은 `## 2026-10-30 (금) 14:05` 같은 타임스탬프 헤딩을 삽입합니다. 요일은 시스템 로케일을 따릅니다(영어 환경이면 `(Fri)`).
+- **편집기 분할(⌘\\)** — 같은 문서를 두 편집기로 좌우 또는 상하로 나란히 봅니다(보기 › 분할, 레이아웃 탭). 두 뷰는 같은 텍스트와 하나의 undo 스택을 공유하지만(한쪽에서 입력, 다른 쪽에서 ⌘Z) 스크롤은 따로 하고, 명령·상태바·마크다운 미리보기는 마지막으로 클릭한 뷰를 따라갑니다. ⌥⌘\\ 로 다른 분할로 포커스를 옮기며, 켜져 있는 동안 상태바에 **SPLIT**이 표시됩니다.
+- **빠른 추가(⇧⌘N, 다른 앱에서는 ⌃⌥N):** HyperEdit를 활성화하지 않는 작은 떠 있는 창입니다. 메모를 쓰고 ⌘↩를 누르면 문서 끝에 덧붙여지고(기본으로 타임스탬프 헤딩 포함) 바로 저장되며 undo 한 번으로 되돌릴 수 있습니다. 창은 숨겨지고 포커스는 쓰던 앱으로 돌아갑니다. Esc로 닫으면 쓰던 글은 다음에 이어집니다. 전역 단축키(끔 / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N)는 설정에서 고르며 손쉬운 사용 권한이 필요 없습니다.
 - **구문 색(⌃⌘H)** — 파일 확장자로 언어를 고르고 상태바에 표시합니다. 메모·마크다운은 일부러 가벼운 규칙만 — URL, ISO 날짜·시각, `#` 헤딩, `[제목]` 줄, 목록 기호와 `[ ]` / `[x]` 체크박스, `#태그`, `키:` 라벨, `**굵게**`, `` `코드` ``, `⇒ → ->` 화살표 — 를 칠하고, 코드 20여 종(Swift, Python, JavaScript/TypeScript, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI)은 주석·문자열·숫자·키워드·함수·타입 이름을 칠합니다. 색은 테마의 `syntax` 팔레트에서 오고 TextKit 2 렌더링 속성으로 보이는 줄에만 입히므로 파일·undo·타이핑 속도에 영향이 없습니다. 줄 단위 토큰화라 여러 줄에 걸친 블록 주석·문자열은 시작한 줄만 칠해집니다.
 
 ### 마크다운 미리보기
@@ -79,7 +83,11 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 줄 삭제 ⇧⌘K · 줄 복제 ⇧⌘D · 위/아래 이동 ⌥↑ / ⌥↓ · 줄 합치기 ⇧⌘J · 역순 · 줄 번호 붙이기 · 오름차순 / 내림차순 / 숫자 정렬 · 중복 줄 제거 · 빈 줄 제거 · 뒤 공백 / 앞뒤 공백 제거 · 탭 → 공백 · 공백 → 탭 · 대문자 / 소문자 / 첫 글자 대문자 / 대소문자 반전.
 
 - **계산(⌃⌘=):** 선택 영역, 없으면 현재 줄(`=`이 있으면 마지막 `=` 뒤)을 계산해 줄 끝에 ` ⇒ 결과`를 붙입니다 — `3+0.5+0.25`는 `3+0.5+0.25 ⇒ 3.75`가 되고, 수식을 고친 뒤 다시 실행하면 옛 결과를 바꿉니다. 산술식만: `+ - * / % ^`, 괄호, `1,234` / `1_000` 숫자, `sqrt abs round floor ceil min max`, `pi`·`e`. 수식이 아니면 출력 패널에 알리고 텍스트는 그대로 둡니다.
+- **매크로(⇧⌘M 기록/중지, ⌥⌘M 재생):** 타이핑(한글 IME 는 확정된 글자만), 캐럿 이동·삭제·줄바꿈 명령, 붙여넣기(당시 클립보드 문자열), 위의 텍스트 도구, 다음 찾기(F3, 검색어 포함)를 기록해 캐럿 위치에서 다시 실행합니다. "매크로 여러 번 재생…"은 최대 10,000회 반복하며 찾기 단계가 실패하거나 한 바퀴에 아무 변화가 없으면 스스로 멈추고, 전체 재생은 실행 취소 한 단계입니다. 마지막 기록은 종료할 때까지 메모리에만 두므로(기록 중 친 비밀번호가 디스크에 남지 않습니다) "마지막 매크로 이름 붙여 저장…"으로 매크로 메뉴에 등록해야 유지되며, 저장된 목록은 `~/Library/Application Support/HyperEdit/macros/macros.json`에 있고 "매크로 파일 편집…"으로 편집기에서 엽니다. 마우스 클릭, 선택 변경, 멀티 커서 편집(모두 바꾸기, 숫자 채우기)은 기록되지 않습니다. 기록 중에는 상태바에 `● REC`가 표시됩니다.
 - **열 맞춤(⌃⌘T):** 탭으로 구분된 열(선택한 줄, 없으면 캐럿 주변의 탭 줄 묶음)을 공백으로 채워 모든 열이 같은 표시 열에서 시작하게 합니다. 한글·CJK는 두 칸으로 셉니다. 줄마다 `|`가 있으면 마크다운 표로 보고 ` | ` 안을 채우며, `---` 줄은 다시 그리고 `--:` 열은 오른쪽 정렬합니다.
+- **주석 토글(⌘/):** 선택한 줄(없으면 현재 줄)에 파일 종류의 주석 기호를 넣거나 뺍니다 — 코드는 `//`, `#`, `--` 등, 마크다운과 HTML/XML은 `<!-- -->`, CSS는 `/* */`, 일반 메모는 `//`. VS Code 방식으로, 비어 있지 않은 줄이 전부 주석이면 모두 해제하고 아니면 모두 주석 처리하며, 기호는 가장 얕은 들여쓰기에 맞춰 세로로 정렬됩니다. 빈 줄은 건너뛰고 탭은 탭 그대로 둡니다.
+- **JSON 정리(⌃⌘J) / JSON 한 줄로:** 선택 영역(없으면 문서 전체)을 들여쓰기 2칸으로 정리하거나 한 줄로 줄입니다. 키 순서와 숫자 표기(`1.0`, 큰 정수)는 그대로 두고 문자열은 최소한으로 다시 이스케이프합니다(한글·이모지는 그대로). 입력은 BOM, 뒤따르는 쉼표, `//` / `/* */` 주석(JSONC)을 받아 주고 출력은 항상 엄격한 JSON입니다. 문법 오류가 있으면 텍스트는 두고 출력 패널에 `줄:열`을 알린 뒤 캐럿을 그 자리로 옮깁니다. 5.6 MB 문서도 약 30 ms에 정리됩니다.
+- **스니펫:** `todo`, `date`, `time`, `now`, `meeting`, `table`, `link`, `code` 같은 트리거를 치고 Tab을 누르거나 **스니펫 삽입…(⇧⌘I)**에서 고릅니다. 본문에는 `${date}`, `${time}`, `${datetime}`, `${selection}`, `${clipboard}`, `${filename}` 변수와 탭스톱 `$1` … `$9`, `${1:자리표시자}`, `$0`을 쓸 수 있고, Tab / ⇧Tab으로 탭스톱을 오가며(같은 번호를 두 번 쓰면 멀티 커서), Esc나 클릭으로 끝냅니다. **스니펫 편집…**은 `~/Library/Application Support/HyperEdit/snippets.json`을 HyperEdit 자신으로 열며, 저장하면 다시 읽습니다.
 
 ### 저장
 - 입력이 멈추고 2초 뒤 자동 저장. 종료·창 닫기·파일 전환 시에는 동기로 저장하므로 2초 사이의 편집이 사라지지 않습니다. 모든 쓰기는 원자적입니다.
@@ -104,12 +112,18 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 | ⇧⌘K | 줄 삭제 | ⇧⌘D | 줄 복제 |
 | ⌥↑ / ⌥↓ | 줄 위 / 아래로 이동 | ⇧⌘J | 줄 합치기 |
 | ⌃⌘= | 계산(⇒ 결과 붙이기) | ⌃⌘T | 열 맞춤 |
+| ⌘/ | 주석 토글 | ⌃⌘J | JSON 정리 |
+| ⇧⌘I | 스니펫 삽입 | Tab | 스니펫 트리거 펼침 / 다음 탭스톱 |
 | ⌘1 | 사이드바 | ⌘2 | 하단 패널 |
 | ⌘3 | 아웃라인 | ⌘4 | 타임라인 |
 | ⌥⌘L | 줄 번호 | ⌥Z | 자동 줄바꿈 |
 | ⌥⌘] / ⌥⌘[ | 다음 / 이전 테마 | ⌘= / ⌘- / ⌘0 | 확대 / 축소 / 기본 |
 | ⌘, | 설정 | ⇧⌘P | 마크다운 미리보기 |
-| ⌃⌘H | 구문 색 | | |
+| ⌃⌘H | 구문 색 | ⌘\\ | 편집기 분할 |
+| ⌥⌘\\ | 다른 분할로 포커스 | ⇧⌘N | 빠른 추가 |
+| ⌃⌥N | 다른 앱에서 빠른 추가(전역, 설정 가능) | ⇧⌘M | 매크로 기록 / 중지 |
+| ⌥⌘M | 매크로 재생 | ⌥⌘← / ⌥⌘→ | 접기 / 펼치기 |
+| ⌥⇧⌘← / ⌥⇧⌘→ | 모두 접기 / 모두 펼치기 | | |
 
 ## 테마
 
@@ -148,25 +162,34 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | 인자 | 효과 |
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
-| `--snapshot <png> [--snapshot-delay s] [--quit]` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요) |
-| `--selftest [--selftest-out <txt>] [--quit]` | 임시 파일에서 내장 셀프테스트 실행. 사용자 문서는 건드리지 않음 |
-| `--theme <id>` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` |
+| `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(393개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만 |
+| `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
-| `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` | 사이드바 / 하단 패널 탭 표시 |
+| `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | 찾기 창 미리 채우기 |
 | `--column` · `--goto <line>` · `--preview` | 열 모드 켜기 / 줄로 이동 / 마크다운 미리보기 표시 |
+| `--split [vertical\|horizontal]` · `--quick-append` | 편집기를 분할한 채 시작(기본 좌우) / 빠른 추가 창 열기 |
 | `--no-highlight` | 구문 색을 끈 채 시작 (스크린샷 비교용) |
+| `--fold <line>` · `--fold-all` · `--no-fold` | 해당 줄이 머리인 영역 접기 / 영역 스캔 뒤 모두 접기 / 접기 기능 끄기 |
 | `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
+| `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
+| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~8 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing replace save`. `scripts/bench.sh` 가 감싸서 실행 |
+| `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성
 
 ```
-Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, Editor/ 의 AppKit 편집기, Markdown/ 의 WKWebView 마크다운 미리보기
-Packages/HyperCore/  엔진(문서, 검색, 텍스트 도구, 열 블록 수학, 아웃라인/타임라인, 테마, 폰트, 마크다운 → HTML) + 테스트
+Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift), Bench.swift, SelfTest*.swift
+  Editor/            AppKit 편집기: HyperTextView(TextKit 2), GutterView, EditorSession(분할), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
+  QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
+  Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
+Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 테마, 폰트, 마크다운 → HTML) + 단위 테스트 137개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
-docs/                features.md · fonts.md · zed.md · design.ko.md · theme-preview.html · screenshots/ · sample/
-scripts/             bootstrap · build-mac · install-mac · make-dmg · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · install-hooks
+docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
+l10n/                <주제>.ko.json — 기능별로 추가한 한국어 번역, scripts/l10n-add.py 로 카탈로그에 반영
+scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-add · install-hooks
 Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xcconfig 기본값 · Local.xcconfig.example
 .github/workflows/   ci.yml(테마, 민감 정보 검사, commitlint, macOS 빌드+테스트) · release.yml(semantic-release → DMG → GitHub Release → Homebrew cask)
 ```
@@ -175,14 +198,17 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 
 ## 릴리스 과정
 
-커밋은 [Conventional Commits](https://www.conventionalcommits.org/ko/)를 따릅니다(제목은 한국어·영어 모두 가능). `main`에 push될 때마다 [semantic-release](https://semantic-release.gitbook.io)가 커밋으로 다음 버전을 계산하고 `CHANGELOG.md`·`VERSION`·`Config/Version.xcconfig`를 갱신한 뒤, DMG를 빌드·서명·공증하고, `SHA256SUMS`와 Zed 테마 파일을 첨부한 GitHub Release를 만들고, `Hyeongcheol-An/homebrew-tap`의 Homebrew cask를 갱신합니다. `feat:` → 마이너, `fix:` / `perf:` → 패치, `docs:` / `chore:` / `refactor:` → 릴리스 없음. 워크플로는 Developer ID·공증 시크릿이 없으면 릴리스를 만들지 않습니다(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 서명 없는 빌드를 허용할 수 있습니다). 로컬 커밋 메시지 훅은 `scripts/install-hooks.sh`로 설치합니다.
+커밋은 [Conventional Commits](https://www.conventionalcommits.org/ko/)를 따릅니다(제목은 한국어·영어 모두 가능). `main`에 push될 때마다 [semantic-release](https://semantic-release.gitbook.io)가 커밋으로 다음 버전을 계산하고 `CHANGELOG.md`·`VERSION`·`Config/Version.xcconfig`를 갱신한 뒤, DMG를 빌드·서명·공증하고, `SHA256SUMS`와 Zed 테마 파일을 첨부한 GitHub Release를 만들고, `Hyeongcheol-An/homebrew-tap`의 Homebrew cask를 갱신합니다. `feat:` → 마이너, `fix:` / `perf:` → 패치, `docs:` / `chore:` / `refactor:` → 릴리스 없음. 워크플로는 Developer ID·공증 시크릿이 없으면 릴리스를 만들지 않습니다(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 서명 없는 빌드를 허용할 수 있습니다). Release 빌드는 심볼과 미사용 코드를 제거하며(`project.yml`의 `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), v0.6에서 유니버설 바이너리가 13.5 MB에서 6.5 MB로 줄었습니다. 로컬 커밋 메시지 훅은 `scripts/install-hooks.sh`로 설치합니다.
 
 ## 로드맵과 제한
 
 - UI는 영어·한국어(시스템 언어를 따름). 다른 언어는 아직 없습니다.
 - 구문 색은 줄 단위라 여러 줄에 걸친 주석·문자열은 시작한 줄만 칠해지고, 사용자 정의 문법은 없습니다. 마크다운 미리보기(⇧⌘P)는 현재 파일을 렌더링해 보여 주는 보기 전용 화면입니다.
 - 로컬 파일만 다룹니다. 클라우드 동기화 없음. 엔진은 iOS를 염두에 두고 만들었지만 iOS 앱은 아직 없습니다.
-- 예정된 편집 도구 — 주석 토글, JSON 정리, 매크로, 분할 보기 — 는 로드맵에 있지만 아직 구현되지 않았습니다. 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음).
+- 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.
+- 스니펫과 매크로는 JSON 파일(Application Support의 `snippets.json`, `macros/macros.json`)로 편집합니다. GUI 편집기는 없습니다.
+- 접기는 세션 동안만 유지되고(파일별로 저장하지 않음), 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
+- 빠른 추가의 전역 단축키는 시스템 핫키 API를 쓰므로, 시스템 설정 › 키보드에서 입력 소스 전환이 켜져 있으면 ⌃Space / ⌃⌥Space 변형은 아무 알림 없이 시스템에 밀립니다. 대신 ⌃⌥N 이나 ⌃⌥⌘N 을 고르세요.
 
 설계 메모와 결정 이력은 [docs/design.ko.md](docs/design.ko.md)에, 상태가 표시된 기능 목록은 [docs/features.md](docs/features.md)에 있습니다.
 

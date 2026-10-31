@@ -104,7 +104,9 @@ enum SelfTest {
             return ns.substring(with: NSIntersectionRange(r, NSRange(location: 0, length: ns.length)))
         }
         func count(_ needle: String) -> Int { (text() as String).components(separatedBy: needle).count - 1 }
-        func wait(_ ms: UInt64) async { try? await Task.sleep(nanoseconds: ms * 1_000_000) }
+        // 편집 사이에 빈 이벤트를 하나 흘린다 — AppKit 은 NSEvent 처리가 끝날 때만 undo 자동 그룹을 닫으므로(Task.sleep 으로는 안 닫힘),
+        // 이벤트 없이 편집만 하면 undo 가 그 전 편집까지 한꺼번에 되돌린다 (매크로 셀프테스트와 같은 처리)
+        func wait(_ ms: UInt64) async { pumpEvent(); try? await Task.sleep(nanoseconds: ms * 1_000_000) }
 
         // 0. 임시 폴더에 샘플 두 개 생성 후 열기 — 사용자 문서는 건드리지 않음
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-selftest-\(UUID().uuidString.prefix(8))", isDirectory: true)
@@ -316,6 +318,15 @@ enum SelfTest {
         check(table == ["name    qty    note", "홍길동  3      ok", "ab      12345  x"] && col2 == [8] && col3 == [15],
               "align columns → \(table) starts \(col2.sorted()) / \(col3.sorted())")
         check(!(text() as String).contains("\tqty"), "tabs replaced by padding")
+
+        await runEditTools(model: model, check: check, log: log)
+        await runSplit(model: model, check: check, log: log)
+        await runDocumentTracking(model: model, check: check, log: log)
+        await runQASplit(model: model, check: check, log: log)   // split · quick append · 문서 무결성 QA (SelfTest+QASplit.swift)
+        await runMacro(model: model, check: check, log: log)   // macro
+        await runFold(model: model, check: check, log: log)
+        await runQAFold(model: model, check: check, log: log)   // QA: 접기·마커·undo 추적 경계 사례
+        await runQAEditTools(model: model, check: check, log: log)   // qa: 편집 도구 경계 상황
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()

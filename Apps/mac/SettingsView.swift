@@ -42,8 +42,9 @@ struct SettingsView: View {
                     Button("Open Snapshot Folder") { model.openSnapshotFolder() }
                 }
             }
+            QuickAppendSettingsSection(controller: model.quickAppend)   // quick append: 전역 단축키
         }
         .formStyle(.grouped)
-        .frame(width: 560, height: 520)
+        .frame(width: 560, height: 720)
     }
 }

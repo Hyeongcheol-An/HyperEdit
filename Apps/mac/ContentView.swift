@@ -20,7 +20,7 @@ struct ContentView: View {
                     // 편집기는 항상 HSplitView 안에 둔다 — 미리보기를 켜고 끌 때 EditorView 의 정체성이 유지되어 텍스트 뷰·undo 스택이 다시 만들어지지 않는다
                     GeometryReader { geo in
                         HSplitView {
-                            EditorView(document: model.document, theme: theme, font: model.font)
+                            SplitEditorArea(session: model.session, theme: theme, font: model.font)   // split: 주 편집기 + (분할 시) 보조 편집기
                                 .frame(minWidth: 320)
                             if model.showMarkdownPreview {
                                 MarkdownPreviewView(document: model.document, caret: model.caret, theme: theme)
@@ -42,7 +42,7 @@ struct ContentView: View {
         .background(theme.background.color)
         .preferredColorScheme(theme.isDark ? .dark : .light)
         // 주의: .ignoresSafeArea(.top) 로 리본 탭 줄을 제목 표시줄 영역에 올리면 hiddenTitleBar 의 제목 표시줄이 탭을 가린다(실측) — 탭 줄은 그 아래에 둔다
-        .frame(minWidth: 900, minHeight: 560)
+        .frame(minWidth: model.session.splitMode == .vertical ? 1180 : 900, minHeight: 560)   // split: 좌우 분할은 편집기 둘(각 280+)과 사이드바가 들어갈 폭
         .alert("Go to Line", isPresented: $model.showGoToLine) {
             TextField("1 ~ \(model.document.lineIndex.lineCount)", text: $model.goToLineText)
                 .onSubmit { model.submitGoToLine() }
@@ -57,9 +57,13 @@ struct ContentView: View {
         } message: {
             Text("Inserts a sequence number on each line of the column selection (or at each caret). Numbers are zero-padded to the same width.")
         }
+        .sheet(isPresented: $model.showSnippetPicker) { SnippetPickerView(store: model.snippets) }   // ⇧⌘I (Panels/SnippetPickerView.swift)
+        .modifier(MacroAlerts(model: model, recorder: model.macros))   // macro
         // 종료 시 저장은 AppDelegate.applicationShouldTerminate 가 동기로 처리한다 (willTerminate 시점의 비동기 저장은 실행될 기회가 없다)
         .task { if SelfTest.enabled { await SelfTest.run(model: model) } }
         .task { if SelfTest.openEnabled { await SelfTest.runOpen(model: model) } }
+        .task { if Bench.enabled { await Bench.run(model: model) } }   // perf bench
+        .onAppear { Bench.launchMilestone("contentViewAppeared") }   // perf bench (계측이 꺼져 있으면 비용 0)
         .onAppear { if CommandLine.arguments.contains("--debug-startup") { FileHandle.standardError.write("[startup] ContentView appeared\n".data(using: .utf8)!) } }
     }
 }
@@ -117,6 +121,10 @@ struct StatusBar: View {
             if model.showMarkdownPreview {
                 cell("MD", width: 40).foregroundStyle(theme.accent.color).help("Markdown preview on (⇧⌘P)")
             }
+            if model.session.splitMode != .none {   // split
+                cell("SPLIT", width: 56).foregroundStyle(theme.accent.color).help("Split editor on (⌘\\)")
+            }
+            MacroStatusCell(recorder: model.macros, theme: theme)   // macro
             if caret.multiCaretCount > 1 {
                 cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")
             }

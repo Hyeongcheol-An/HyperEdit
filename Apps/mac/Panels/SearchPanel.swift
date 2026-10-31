@@ -4,7 +4,6 @@ import HyperCore
 /// 찾기 결과 창 (UltraEdit Find/Replace/Find in Files 계승)
 struct SearchPanel: View {
     @EnvironmentObject var model: AppModel
-    @EnvironmentObject var caret: EditorCaret
     let theme: Theme
     @FocusState private var focused: Bool
 
@@ -78,14 +77,7 @@ struct SearchPanel: View {
             theme.border.color.frame(height: 1)
 
             if model.findScope == .document {
-                List(model.searchHits) { hit in
-                    SearchHitRow(line: hit.line, text: hit.lineText, match: hit.matchInLine, file: nil, theme: theme,
-                                 isCurrent: hit.range.location == caret.offset && hit.range.length == caret.selectionLength)
-                        .contentShape(Rectangle())
-                        .onTapGesture { model.jump(to: hit) }
-                        .listRowBackground(Color.clear).listRowSeparator(.hidden)
-                }
-                .listStyle(.plain).scrollContentBackground(.hidden)
+                SearchHitList(theme: theme)
             } else {
                 List(model.fileHits) { hit in
                     SearchHitRow(line: hit.line, text: hit.lineText, match: hit.matchInLine, file: hit.fileName, theme: theme, isCurrent: false)
@@ -118,6 +110,24 @@ struct SearchPanel: View {
 
     private func smallButton(_ title: LocalizedStringKey, _ help: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(title, action: action).controlSize(.small).font(.system(size: 11)).help(help)
+    }
+}
+
+/// 문서 검색 결과 목록. 캐럿(EditorCaret)은 이 뷰만 구독한다 — 패널 전체가 구독하면 키 입력마다 세그먼트·버튼 줄까지 다시 평가·배치된다 (perf)
+struct SearchHitList: View {
+    @EnvironmentObject var model: AppModel
+    @EnvironmentObject var caret: EditorCaret
+    let theme: Theme
+
+    var body: some View {
+        List(model.searchHits) { hit in
+            SearchHitRow(line: hit.line, text: hit.lineText, match: hit.matchInLine, file: nil, theme: theme,
+                         isCurrent: hit.range.location == caret.offset && hit.range.length == caret.selectionLength)
+                .contentShape(Rectangle())
+                .onTapGesture { model.jump(to: hit) }
+                .listRowBackground(Color.clear).listRowSeparator(.hidden)
+        }
+        .listStyle(.plain).scrollContentBackground(.hidden)
     }
 }
 

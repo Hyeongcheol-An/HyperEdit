@@ -32,7 +32,8 @@ struct RibbonView: View {
 
             // 창이 좁아 탭 내용이 다 들어가지 않으면 작은 버튼을 아이콘만 남기는 '접힘(compact)' 모드로 전환한다
             GeometryReader { geo in
-                let compact = geo.size.width < model.ribbonTab.requiredWidth
+                // 창이 좁으면 오른쪽(덜 쓰는) 그룹부터 작은 버튼을 아이콘만 남기는 '접힘' 모드로 바꾼다 — 폭에 맞을 때까지만
+                let compactGroups = model.ribbonTab.compactGroups(for: geo.size.width)
                 ScrollView(.horizontal, showsIndicators: true) {
                     HStack(alignment: .top, spacing: 0) {
                         switch model.ribbonTab {
@@ -45,7 +46,7 @@ struct RibbonView: View {
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
-                    .environment(\.ribbonCompact, compact)
+                    .environment(\.ribbonCompactGroups, compactGroups)
                 }
             }
             .frame(height: 96)
@@ -85,6 +86,10 @@ private struct HomeTab: View {
                 RibbonSmallButton(title: "Toggle Bookmark", systemImage: "bookmark", help: "Bookmark the current line on/off (⌘F2)", theme: theme) { model.toggleBookmarkAtCaret() }
                 RibbonSmallButton(title: "Next Bookmark", systemImage: "bookmark.fill", help: "Go to the next bookmark (F2)", theme: theme) { model.nextBookmark() }
                 RibbonSmallButton(title: "Prev. Bookmark", systemImage: "bookmark.slash", help: "Go to the previous bookmark (⌥F2)", theme: theme) { model.previousBookmark() }
+            }
+            RibbonStack {   // snippets · quick append
+                RibbonSmallButton(title: "Snippet…", systemImage: "text.insert", help: "Insert a snippet — or type a trigger such as todo and press Tab (⇧⌘I)", theme: theme) { model.showSnippetPicker = true }
+                RibbonSmallButton(title: "Quick Append…", systemImage: "note.text.badge.plus", help: "Floating note panel — ⌘↩ appends to the end of the document (⇧⌘N, global ⌃⌥N)", theme: theme) { model.quickAppend.show() }
             }
         }
         RibbonGroup(title: "Mode", theme: theme) {
@@ -145,7 +150,7 @@ private struct EditTab: View {
             RibbonStack {
                 RibbonSmallButton(title: "Trim Trailing", systemImage: "text.alignleft", help: "Remove spaces and tabs at the end of lines", theme: theme) { model.textTool(.trimTrailing) }
                 RibbonSmallButton(title: "Trim Both Ends", systemImage: "text.aligncenter", help: "Remove spaces and tabs at both ends of lines", theme: theme) { model.textTool(.trimBoth) }
-                RibbonSmallButton(title: "Remove Blanks", systemImage: "rectangle.compress.vertical", help: "Delete empty or whitespace-only lines", theme: theme) { model.textTool(.removeBlank) }
+                RibbonSmallButton(title: "Remove Blanks", systemImage: "text.badge.minus", help: "Delete empty or whitespace-only lines", theme: theme) { model.textTool(.removeBlank) }
             }
             RibbonStack {
                 RibbonSmallButton(title: "Tabs → Spaces", systemImage: "arrow.right.to.line.compact", help: "Tabs to 4 spaces", theme: theme) { model.textTool(.tabsToSpaces) }
@@ -164,8 +169,14 @@ private struct EditTab: View {
             RibbonBigButton(title: "Calculate", systemImage: "plus.forwardslash.minus", help: "Evaluate the selection or current line and append ⇒ result (⌃⌘=)", theme: theme) { model.textTool(.calculate) }
             RibbonStack {
                 RibbonSmallButton(title: "Align Columns", systemImage: "tablecells", help: "Pad tab- or pipe-separated columns so they line up (⌃⌘T)", theme: theme) { model.textTool(.alignColumns) }
+                RibbonSmallButton(title: "Toggle Comment", systemImage: "text.bubble", help: "Comment or uncomment the selected lines with the file type's marker (⌘/)", theme: theme) { model.textTool(.toggleComment) }
+            }
+            RibbonStack {
+                RibbonSmallButton(title: "Format JSON", systemImage: "curlybraces", help: "Pretty-print the selection or the whole document as JSON — key order and numbers are kept (⌃⌘J)", theme: theme) { model.textTool(.formatJSON) }
+                RibbonSmallButton(title: "Minify JSON", systemImage: "curlybraces.square", help: "Collapse the selection or the whole document to single-line JSON", theme: theme) { model.textTool(.minifyJSON) }
             }
         }
+        MacroRibbonGroup(theme: theme)   // macro
     }
 }
 
@@ -219,8 +230,23 @@ private struct LayoutTab: View {
                 RibbonSmallButton(title: "Outline", systemImage: "list.bullet.indent", help: "Headings, [Title] lines, 가./나. and numbered items (⌘3)", theme: theme) { model.showOutline() }
                 RibbonSmallButton(title: "Timeline", systemImage: "calendar", help: "Timestamp and date lines grouped by month (⌘4)", theme: theme) { model.showTimeline() }
             }
+            // 스택은 최대 3줄 — 4줄이면 그룹 제목이 리본 높이(96) 밖으로 밀려 잘린다 (자동 줄바꿈 토글은 홈 탭 '모드' 그룹과 보기 메뉴 ⌥Z 에 있다)
             RibbonStack {
-                RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
+                // split: 토글 + 방향 전환 (같은 스택이라 그룹 폭은 그대로)
+                RibbonSmallToggle(title: "Split Editor", systemImage: "rectangle.split.2x1", help: "Show the document in two editors (⌘\\)", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() }), theme: theme)
+                RibbonSmallButton(title: "Split Direction", systemImage: "rectangle.split.1x2", help: "Switch between side-by-side and stacked split", theme: theme) { model.cycleSplitOrientation() }
+            }
+        }
+        RibbonGroup(title: "Folding", theme: theme) {   // fold
+            RibbonStack {
+                RibbonSmallButton(title: "Fold", systemImage: "chevron.right.square", help: "Fold the region at the caret — indented block, Markdown heading or { } block (⌥⌘←)", theme: theme) { model.send(.fold) }
+                RibbonSmallButton(title: "Unfold", systemImage: "chevron.down.square", help: "Unfold the region whose header is at the caret (⌥⌘→)", theme: theme) { model.send(.unfold) }
+            }
+            RibbonStack {
+                RibbonSmallButton(title: "Fold All", systemImage: "rectangle.compress.vertical", help: "Fold every region in the document (⌥⇧⌘←)", theme: theme) { model.send(.foldAll) }
+                RibbonSmallButton(title: "Unfold All", systemImage: "rectangle.expand.vertical", help: "Unfold every region (⌥⇧⌘→)", theme: theme) { model.send(.unfoldAll) }
+                // markers: 패널 그룹의 세 번째 스택은 이미 3줄(자동 줄바꿈·분할·방향) — 4줄이 되면 96pt 리본을 넘겨 그룹 제목이 잘린다. 접힌 머리 줄도 표시하므로 접기 그룹에 둔다
+                RibbonSmallToggle(title: "Scroll Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)
             }
         }
         RibbonGroup(title: "Markdown", theme: theme) {
@@ -302,14 +328,17 @@ struct QuickButton: View {
 }
 
 struct RibbonGroup<Content: View>: View {
-    let title: LocalizedStringKey
+    /// 영어 제목 리터럴 — 카탈로그 키이자 접힘 판정용 id (`RibbonTab.groups` 의 id 와 같아야 한다)
+    let title: String
     let theme: Theme
     @ViewBuilder let content: () -> Content
+    @Environment(\.ribbonCompactGroups) private var compactGroups
     var body: some View {
         VStack(spacing: 2) {
             HStack(alignment: .top, spacing: 2) { content() }
                 .frame(maxHeight: .infinity, alignment: .top)
-            Text(title).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
+                .environment(\.ribbonCompact, compactGroups.contains(title))
+            Text(LocalizedStringKey(title)).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
@@ -410,27 +439,62 @@ struct RibbonSmallToggle: View {
 // MARK: - 접힘(compact) 모드
 
 private struct RibbonCompactKey: EnvironmentKey { static let defaultValue = false }
+private struct RibbonCompactGroupsKey: EnvironmentKey { static let defaultValue = Set<String>() }
 extension EnvironmentValues {
-    /// 리본 폭이 탭 내용보다 좁을 때 true — 작은 버튼이 아이콘만 표시한다
+    /// 이 그룹이 접힘 상태인가 — 작은 버튼이 아이콘만 표시한다 (RibbonGroup 이 그룹별로 설정)
     var ribbonCompact: Bool {
         get { self[RibbonCompactKey.self] }
         set { self[RibbonCompactKey.self] = newValue }
     }
-}
-
-extension RibbonTab {
-    /// 탭 내용이 접히지 않고 다 보이는 데 필요한 폭(pt). 그룹을 추가하면 갱신할 것 (스크린샷에서 마지막 그룹 오른쪽 끝 + 여유 20).
-    var requiredWidth: CGFloat {
-        switch self {
-        case .home: 1060      // 파일 그룹 끝 ≈ 1035
-        case .edit: 1520      // 도구 그룹 끝 ≈ 1505 (1600pt 스크린샷 실측)
-        case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
-        case .advanced: 260
-        case .window: 260
-        }
+    /// 현재 폭에서 접어야 하는 그룹 id 집합 (RibbonView 가 탭 단위로 계산)
+    var ribbonCompactGroups: Set<String> {
+        get { self[RibbonCompactGroupsKey.self] }
+        set { self[RibbonCompactGroupsKey.self] = newValue }
     }
 }
 
+/// 리본 그룹의 폭 모델. 큰 버튼(또는 테마 메뉴·큰 토글)은 60pt, 작은 버튼 스택은 펼침 128 / 접힘 26pt, 항목 간격 2, 그룹 좌우 패딩 16, 구분선 1.
+/// 실측(1600·2000pt 스크린샷)과 3pt 이내로 맞는다: 홈 1165 · 편집 1843 · 레이아웃 1174.
+struct RibbonGroupSpec {
+    let id: String
+    let bigs: Int
+    let stacks: Int
+    func width(compact: Bool) -> CGFloat {
+        let items = bigs + stacks
+        return CGFloat(bigs) * 60 + CGFloat(stacks) * (compact ? 26 : 128) + CGFloat(max(0, items - 1)) * 2 + 16 + 1
+    }
+}
+
+extension RibbonTab {
+    /// 탭의 그룹 구성 (왼쪽부터). id 는 RibbonGroup(title:) 의 영어 리터럴과 같아야 한다.
+    var groups: [RibbonGroupSpec] {
+        switch self {
+        case .home: [.init(id: "Clipboard", bigs: 1, stacks: 1), .init(id: "Find", bigs: 1, stacks: 1), .init(id: "Insert", bigs: 1, stacks: 2),
+                     .init(id: "Mode", bigs: 1, stacks: 1), .init(id: "File", bigs: 1, stacks: 1)]
+        case .edit: [.init(id: "Lines", bigs: 1, stacks: 2), .init(id: "Case", bigs: 0, stacks: 2), .init(id: "Sort", bigs: 1, stacks: 1),
+                     .init(id: "Whitespace", bigs: 0, stacks: 2), .init(id: "Column & Multi-Caret", bigs: 1, stacks: 1),
+                     .init(id: "Tools", bigs: 1, stacks: 2), .init(id: "Macro", bigs: 1, stacks: 1)]
+        case .layout: [.init(id: "Theme", bigs: 1, stacks: 1), .init(id: "Panels", bigs: 0, stacks: 3), .init(id: "Folding", bigs: 0, stacks: 2),
+                       .init(id: "Markdown", bigs: 1, stacks: 0), .init(id: "Font Size", bigs: 1, stacks: 1)]
+        case .advanced: [.init(id: "Settings", bigs: 1, stacks: 1)]
+        case .window: [.init(id: "Window", bigs: 1, stacks: 1)]
+        }
+    }
+
+    /// 탭 내용이 하나도 접히지 않고 다 보이는 데 필요한 폭(pt) — 그룹 폭 합 + 좌우 패딩·여유
+    var requiredWidth: CGFloat { groups.reduce(0) { $0 + $1.width(compact: false) } + 20 }
+
+    /// 주어진 폭에 맞을 때까지 오른쪽 그룹부터 접는다. 다 접어도 모자라면 가로 스크롤이 남는다.
+    func compactGroups(for width: CGFloat) -> Set<String> {
+        var total = requiredWidth
+        var result = Set<String>()
+        for g in groups.reversed() where total > width {
+            total -= g.width(compact: false) - g.width(compact: true)
+            result.insert(g.id)
+        }
+        return result
+    }
+}
 
 struct RibbonBigToggle: View {
     let title: LocalizedStringKey
