@@ -57,6 +57,7 @@ struct ContentView: View {
         } message: {
             Text("Inserts a sequence number on each line of the column selection (or at each caret). Numbers are zero-padded to the same width.")
         }
+        .sheet(isPresented: $model.showSnippetPicker) { SnippetPickerView(store: model.snippets) }   // ⇧⌘I (Panels/SnippetPickerView.swift)
         // 종료 시 저장은 AppDelegate.applicationShouldTerminate 가 동기로 처리한다 (willTerminate 시점의 비동기 저장은 실행될 기회가 없다)
         .task { if SelfTest.enabled { await SelfTest.run(model: model) } }
         .task { if SelfTest.openEnabled { await SelfTest.runOpen(model: model) } }

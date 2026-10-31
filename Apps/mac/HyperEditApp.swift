@@ -70,6 +70,8 @@ struct EditorCommands: Commands {
             Button("Insert Number…") { model.showInsertNumber = true }.keyboardShortcut("n", modifiers: [.command, .option])
             Divider()
             Button("Insert Date/Time") { model.insertTimestamp() }.keyboardShortcut(fKey(7), modifiers: [])
+            Button("Insert Snippet…") { model.showSnippetPicker = true }.keyboardShortcut("i", modifiers: [.command, .shift])
+            Button("Edit Snippets…") { model.editSnippets() }
             Button("Go to End of Document") { model.goToEnd() }.keyboardShortcut("e", modifiers: [.command, .control])
             Divider()
             Button("Toggle Bookmark") { model.toggleBookmarkAtCaret() }.keyboardShortcut(fKey(2), modifiers: [.command])
@@ -107,6 +109,10 @@ struct EditorCommands: Commands {
             Divider()
             Button("Calculate") { model.textTool(.calculate) }.keyboardShortcut("=", modifiers: [.control, .command])
             Button("Align Columns") { model.textTool(.alignColumns) }.keyboardShortcut("t", modifiers: [.control, .command])
+            Divider()
+            Button("Toggle Comment") { model.textTool(.toggleComment) }.keyboardShortcut("/", modifiers: [.command])
+            Button("Format JSON") { model.textTool(.formatJSON) }.keyboardShortcut("j", modifiers: [.control, .command])
+            Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
