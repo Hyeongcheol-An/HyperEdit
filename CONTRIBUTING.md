@@ -48,7 +48,7 @@ The self-test edits programmatically, and AppKit closes an automatic undo group 
 
 `--selftest-open` is a file-switching benchmark that edits the files it is pointed at; only run it on copies, together with `--file`. `--selftest-split-big <file>` adds a split-editor typing check that types into and restores the given file — again, a copy.
 
-**Performance** is measured by `scripts/bench.sh` (Release build → cold-launch timing → the in-app `--bench` harness → bundle size). It writes `build/bench/<sha>.json` and `.md`, and `--compare docs/bench/baseline-0.5.1.json` adds Δ% against the baseline and lists regressions over 15 %; budgets, phases and the current baseline are in [docs/performance.md](docs/performance.md). Run it before and after any change to the typing, layout or document path and paste the table into the PR — benchmarks are deliberately not part of CI. `--debug-perf [--debug-perf-log <path>]` logs section timings and any main-thread stall over 120 ms. `--snapshot out.png [--snapshot-delay 3] [--quit]` captures the window via ScreenCaptureKit (Screen Recording permission required) for screenshots and visual checks.
+**Performance** is measured by `scripts/bench.sh` (Release build → cold-launch timing → the in-app `--bench` harness → bundle size). It writes `build/bench/<sha>.json` and `.md`, and `--compare docs/bench/baseline-0.6.0.json` adds Δ% against the baseline and lists regressions over 15 %; budgets, phases and the current baseline are in [docs/performance.md](docs/performance.md). Run it before and after any change to the typing, layout or document path and paste the table into the PR — benchmarks are deliberately not part of CI. `--debug-perf [--debug-perf-log <path>]` logs section timings and any main-thread stall over 120 ms. `--snapshot out.png [--snapshot-delay 3] [--quit]` captures the window via ScreenCaptureKit (Screen Recording permission required) for screenshots and visual checks.
 
 **Manual testing** should use `--ephemeral --file <copy>`: the app then keeps its preferences, remembered file, snippets and macros in throwaway locations, so your own settings and `~/Documents/HyperEdit/notes.md` are left alone (the self-test, snapshot and bench modes do this automatically).
 
@@ -126,7 +126,7 @@ Rules of thumb:
 - [ ] Commit messages follow Conventional Commits.
 - [ ] If you changed `package.json`, the updated `package-lock.json` is committed too (CI installs with `npm ci`).
 - [ ] New UI strings have Korean translations (`l10n/<topic>.ko.json` + `python3 scripts/l10n-add.py`) and `python3 scripts/check-l10n.py` passes.
-- [ ] If you touched the typing, layout or document path: `scripts/bench.sh --compare docs/bench/baseline-0.5.1.json` shows no regression (paste the table).
+- [ ] If you touched the typing, layout or document path: `scripts/bench.sh --compare docs/bench/baseline-0.6.0.json` shows no regression (paste the table).
 - [ ] User-facing changes are noted in `README.md` and `README.ko.md` (both — the Korean README is a full translation, not a summary) and, when relevant, in `docs/features.md`.
 - [ ] Screenshots or a short recording for UI changes.
 
@@ -142,7 +142,7 @@ By contributing you agree that your contributions are licensed under the [MIT Li
 
 - **논의 장소:** 버그·구체적 기능 요청은 GitHub Issues(템플릿 사용), 아이디어·질문은 GitHub Discussions, 보안 문제는 공개 이슈 대신 [SECURITY.md](SECURITY.md)의 비공개 신고 절차. 한국어·영어 모두 환영합니다.
 - **개발 환경:** macOS 15 + Xcode 16 이상, `brew install xcodegen` → `scripts/bootstrap.sh`(프로젝트 생성) → `scripts/build-mac.sh --run`. 서명 기본값은 "Sign to Run Locally"라 Apple 팀이 없어도 됩니다. 본인 팀으로 서명하려면 `Config/Local.xcconfig.example`을 `Config/Local.xcconfig`로 복사.
-- **테스트:** 단위 테스트 196개 `swift test --package-path Packages/HyperCore`. 앱 전체 셀프테스트(393개 검사)는 `scripts/build-mac.sh --run --selftest --selftest-out /tmp/r.txt --quit`(임시 폴더에서만 동작, 사용자 문서 무관). 셀프테스트의 `wait()` 는 `SelfTest.pumpEvent()` 로 빈 NSEvent 를 하나 흘립니다 — AppKit 은 이벤트 처리가 끝나야 undo 그룹을 닫기 때문. 성능은 `scripts/bench.sh --compare docs/bench/baseline-0.5.1.json`([performance.md](docs/performance.md)), 수동 테스트는 `--ephemeral --file <사본>` 으로. `--selftest-open`은 가리킨 파일을 수정하는 벤치라 사본에서만 실행.
+- **테스트:** 단위 테스트 196개 `swift test --package-path Packages/HyperCore`. 앱 전체 셀프테스트(393개 검사)는 `scripts/build-mac.sh --run --selftest --selftest-out /tmp/r.txt --quit`(임시 폴더에서만 동작, 사용자 문서 무관). 셀프테스트의 `wait()` 는 `SelfTest.pumpEvent()` 로 빈 NSEvent 를 하나 흘립니다 — AppKit 은 이벤트 처리가 끝나야 undo 그룹을 닫기 때문. 성능은 `scripts/bench.sh --compare docs/bench/baseline-0.6.0.json`([performance.md](docs/performance.md)), 수동 테스트는 `--ephemeral --file <사본>` 으로. `--selftest-open`은 가리킨 파일을 수정하는 벤치라 사본에서만 실행.
 - **커밋 규약:** Conventional Commits. `feat` → 마이너, `fix`/`perf` → 패치, `docs`/`chore`/`refactor` → 릴리스 없음, `(themes)` 스코프는 패치 릴리스. 제목은 한국어도 됩니다. `scripts/install-hooks.sh`로 로컬 훅 설치, PR에서는 commitlint가 검사.
 - **테마 수정:** `themes/palettes.json`만 고치고 `python3 themes/build_zed_theme.py && python3 themes/build_preview.py`로 재생성한 뒤 `python3 themes/validate.py`. 생성물이 팔레트와 어긋나면 CI가 실패합니다. 새 테마 이름은 `Hyper ` 접두사.
 - **코드 스타일:** Swift 5 언어 모드, `@MainActor` 모델과 백그라운드 `Task.detached`, AppKit 편집기는 `Apps/mac/Editor/`에만, `HyperCore`는 플랫폼 중립 유지, 큰 파일 성능 우선. 저장소에 개인 경로·이메일·비밀 금지(`scripts/check-sensitive.sh`).
