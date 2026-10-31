@@ -234,6 +234,17 @@ private struct LayoutTab: View {
                 // split: 토글 + 방향 전환 (같은 스택이라 그룹 폭은 그대로)
                 RibbonSmallToggle(title: "Split Editor", systemImage: "rectangle.split.2x1", help: "Show the document in two editors (⌘\\)", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() }), theme: theme)
                 RibbonSmallButton(title: "Split Direction", systemImage: "rectangle.split.1x2", help: "Switch between side-by-side and stacked split", theme: theme) { model.cycleSplitOrientation() }
+                RibbonSmallToggle(title: "Scroll Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)   // markers
+            }
+        }
+        RibbonGroup(title: "Folding", theme: theme) {   // fold
+            RibbonStack {
+                RibbonSmallButton(title: "Fold", systemImage: "chevron.right.square", help: "Fold the region at the caret — indented block, Markdown heading or { } block (⌥⌘←)", theme: theme) { model.send(.fold) }
+                RibbonSmallButton(title: "Unfold", systemImage: "chevron.down.square", help: "Unfold the region whose header is at the caret (⌥⌘→)", theme: theme) { model.send(.unfold) }
+            }
+            RibbonStack {
+                RibbonSmallButton(title: "Fold All", systemImage: "rectangle.compress.vertical", help: "Fold every region in the document (⌥⇧⌘←)", theme: theme) { model.send(.foldAll) }
+                RibbonSmallButton(title: "Unfold All", systemImage: "rectangle.expand.vertical", help: "Unfold every region (⌥⇧⌘→)", theme: theme) { model.send(.unfoldAll) }
             }
         }
         RibbonGroup(title: "Markdown", theme: theme) {
@@ -436,8 +447,8 @@ extension RibbonTab {
     var requiredWidth: CGFloat {
         switch self {
         case .home: 1190      // 파일 그룹 끝 ≈ 1166 (삽입 그룹에 '스니펫…'+'빠른 추가…' 스택 하나 추가, 1600pt 스크린샷 실측)
-        case .edit: 1865      // 매크로 그룹 끝 ≈ 1843 (도구 그룹 1637 + 매크로 그룹 206; 통합 후 2000pt 스크린샷으로 재측정할 것)   // macro
-        case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
+        case .edit: 1865      // 매크로 그룹 끝 ≈ 1843 (도구 그룹 1637 + 매크로 그룹 206; 2000pt 스크린샷 실측)   // macro
+        case .layout: 1195    // 접기 그룹 끝 ≈ 1172 (영어, 접기 그룹·스크롤 마커 토글 추가 후 1600pt 스크린샷 실측; 한국어는 1158)
         case .advanced: 260
         case .window: 260
         }

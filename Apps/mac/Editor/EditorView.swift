@@ -85,6 +85,8 @@ struct EditorView: NSViewRepresentable {
         private var grammar: any LanguageGrammar
         private var syntaxColors: [TokenKind: NSColor] = [:]
         private(set) var highlightEnabled: Bool
+        private var foldController: FoldController?    // fold
+        private var markerView: ScrollMarkerView?      // markers
 
         init(model: AppModel, role: EditorRole = .primary) {
             self.model = model
@@ -240,6 +242,7 @@ struct EditorView: NSViewRepresentable {
             // 북마크 줄 추적: 줄 수가 바뀌는 편집(입력·붙여넣기·도구·undo/redo 모두 shouldChangeText 경유) 직전에 북마크를 옮긴다
             textView.needsLineTracking = { [weak self] in !(self?.model.bookmarks.bookmarks.isEmpty ?? true) }
             textView.onLinesWillChange = { [weak self] line, delta in self?.model.bookmarks.shift(fromLine: line, delta: delta) }
+            textView.tracksUntrackedLineChanges = role == .primary   // split: undo/redo 의 사후 북마크 이동은 주 편집기만 (두 뷰가 같은 저장소 알림을 받는다)
             textView.onMultiChange = { [weak self] m in
                 guard let self, self.session.isActive(self) else { return }   // split: 상태바 커서 수는 활성 편집기 기준
                 let c = self.model.caret
@@ -250,6 +253,16 @@ struct EditorView: NSViewRepresentable {
             }
             installSnippets(on: textView)   // EditorView+EditTools.swift
             model.macros.install(on: textView, model: model)   // macro
+            // fold / markers: 텍스트 뷰마다 하나씩 (분할 편집기는 편집기별로 만든다)
+            let fold = FoldController(textView: textView, gutter: gutter, log: { [weak self] in self?.model.log($0) })   // fold
+            fold.bind(document: document)                                                                                   // fold
+            foldController = fold                                                                                           // fold
+            let markers = ScrollMarkerView(model: model, scrollView: scrollView, documentProvider: { [weak self] in self?.document })   // markers
+            markers.foldLines = { [weak fold] in fold?.foldedHeaderLines ?? [] }                                           // markers
+            markers.bind(document: document)                                                                                // markers
+            container.markerView = markers                                                                                  // markers
+            markerView = markers                                                                                            // markers
+            fold.onChange = { [weak markers] in markers?.needsDisplay = true }                                              // markers
         }
 
         private func bindDocument() {
@@ -289,6 +302,8 @@ struct EditorView: NSViewRepresentable {
             restored = false
             appliedThemeID = nil
             bindDocument()
+            foldController?.bind(document: newDoc)   // fold
+            markerView?.bind(document: newDoc)       // markers
             grammar = GrammarRegistry.grammar(for: newDoc.url)
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) } else { invalidateHighlight() }
         }
@@ -348,6 +363,8 @@ struct EditorView: NSViewRepresentable {
             tv.currentLineColor = theme.lineHighlight.nsColor
             scrollView?.backgroundColor = theme.background.nsColor
             gutter?.apply(theme: theme, baseFont: base)
+            foldController?.apply(theme: theme)   // fold
+            markerView?.apply(theme: theme)       // markers
             container?.layer?.backgroundColor = theme.background.nsColor.cgColor
             tv.needsDisplay = true
             // 구문 색: 위 전체 setAttributes 가 프래그먼트를 다시 만들며 validator 가 새 색 표(rebuildSyntaxColors)로 칠한다 — 추가 무효화 불필요
@@ -510,6 +527,8 @@ struct EditorView: NSViewRepresentable {
             case .perform(let action):
                 action(tv)
                 document.textDidChange()
+            case .fold, .unfold, .foldAll, .unfoldAll, .toggleFold:   // fold
+                foldController?.handle(cmd)
             }
         }
 
@@ -786,6 +805,7 @@ struct EditorView: NSViewRepresentable {
             let line = isActive ? model.caretLine : document.lineIndex.lineNumber(forUTF16Offset: sel.location)
             if line != lastCaretLine { lastCaretLine = line; gutter?.needsDisplay = true }
             if isActive { scheduleSaveViewState() }
+            foldController?.selectionDidChange()   // fold: 캐럿이 숨은 줄로 들어가면 펼친다 (뷰마다)
         }
     }
 }

@@ -135,6 +135,12 @@ struct EditorCommands: Commands {
                 Divider()
                 Button("Focus Other Split") { model.focusOtherSplit() }.keyboardShortcut("\\", modifiers: [.command, .option])
             }
+            Toggle("Scrollbar Markers", isOn: $model.showScrollMarkers)   // markers
+            Divider()   // fold: Xcode 와 같은 ⌥⌘← / ⌥⌘→ (전체는 ⇧ 추가)
+            Button("Fold") { model.send(.fold) }.keyboardShortcut(.leftArrow, modifiers: [.option, .command])
+            Button("Unfold") { model.send(.unfold) }.keyboardShortcut(.rightArrow, modifiers: [.option, .command])
+            Button("Fold All") { model.send(.foldAll) }.keyboardShortcut(.leftArrow, modifiers: [.option, .command, .shift])
+            Button("Unfold All") { model.send(.unfoldAll) }.keyboardShortcut(.rightArrow, modifiers: [.option, .command, .shift])
             Divider()
             ForEach(RibbonTab.allCases) { tab in
                 Button(tab.menuLabel) { model.ribbonTab = tab }

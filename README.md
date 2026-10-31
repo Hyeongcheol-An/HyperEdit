@@ -52,6 +52,8 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - Tuned for big files: about 3 ms per keystroke on a 1.3 MB / 34,000-line file, with viewport-based TextKit 2 layout.
 - Line-number gutter, current-line highlight, word wrap (⌥Z), line numbers (⌥⌘L), zoom (⌘= / ⌘- / ⌘0).
 - Last caret and scroll position restored per file; ⌃⌘E jumps to the end; ⌘L goes to a line.
+- **Code folding (⌥⌘← / ⌥⌘→, all regions ⌥⇧⌘← / ⌥⇧⌘→):** a line folds the lines indented under it (blank lines ignored), a Markdown `#` heading folds everything up to the next heading of the same or higher level (fenced code blocks fold too), and in code a line ending in `{`, `[` or `(` folds through its closing bracket line. Click the gutter chevron or the `⋯ N lines` pill to toggle. Moving the caret into a folded line (find, go to line, bookmarks, undo) unfolds it; ↑ / ↓ skip over folds. Folds follow edits — typing in the header, inserting or deleting lines above, undo — and last for the session.
+- **Scrollbar markers:** a 12 pt strip at the editor's right edge shows search matches (accent ticks), bookmarks (warning color), the caret line and folded headers at their relative positions; hidden when the document fits on one screen. View menu → Scrollbar Markers, or the Layout tab's Panels group.
 - F7 inserts a timestamp heading such as `## 2026-10-30 (Fri) 14:05`. The weekday follows the system locale, e.g. `(금)` on Korean systems.
 - **Split editor (⌘\\)** shows the same document in two editors, side by side or stacked (View › Split, or the Layout tab). Both views edit the same text and share one undo stack — type in one, ⌘Z in the other — but scroll independently; commands, the status bar and the Markdown preview follow the view you clicked last, and ⌥⌘\\ moves the focus to the other split. The status bar shows **SPLIT** while it is on.
 - **Quick Append (⇧⌘N, or ⌃⌥N from any app):** a small floating panel that does not activate HyperEdit. Type a note, press ⌘↩ and it is appended to the end of the document — with a timestamp heading by default — saved at once, and undoable in one step; the panel then hides and focus returns to the app you were in. Esc closes the panel and keeps the draft for next time. The global shortcut (off / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N) is chosen in Settings and needs no Accessibility permission.
@@ -121,6 +123,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌥⌘\\ | Focus other split | ⇧⌘N | Quick Append |
 | ⌃⌥N | Quick Append from any app (global, configurable) | ⇧⌘M | Record / stop macro |
 | ⌥⌘M | Play macro | | |
+| ⌥⌘← / ⌥⌘→ | Fold / unfold | ⌥⇧⌘← / ⌥⇧⌘→ | Fold all / unfold all |
 
 ## Themes
 
@@ -168,6 +171,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
 | `--split [vertical\|horizontal]` · `--quick-append` | Start with the editor split (side by side by default) / open the Quick Append panel |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
+| `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |
 | `--ephemeral` | Use throwaway preferences (theme, panels, remembered file) for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 | `--bench [--bench-out <json>] [--bench-strict] [--quit]` | Performance benchmark on a generated corpus (2 KB–8 MB); writes JSON + Markdown with PASS/FAIL budgets — see [docs/performance.md](docs/performance.md). `scripts/bench.sh` wraps it |

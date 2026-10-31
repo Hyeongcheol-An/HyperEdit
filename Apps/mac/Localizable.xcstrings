@@ -961,12 +961,82 @@
         }
       }
     },
+    "Fold": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "접기"
+          }
+        }
+      }
+    },
+    "Fold All": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모두 접기"
+          }
+        }
+      }
+    },
+    "Fold every region in the document (⌥⇧⌘←)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문서의 모든 영역 접기 (⌥⇧⌘←)"
+          }
+        }
+      }
+    },
+    "Fold the region at the caret — indented block, Markdown heading or { } block (⌥⌘←)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캐럿이 있는 영역 접기 — 들여쓴 블록, 마크다운 헤딩, { } 블록 (⌥⌘←)"
+          }
+        }
+      }
+    },
+    "Folded %lld regions": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "영역 %lld개 접음"
+          }
+        }
+      }
+    },
+    "Folded lines %lld–%lld": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld줄 접음"
+          }
+        }
+      }
+    },
     "Folder to search": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "검색할 폴더"
+          }
+        }
+      }
+    },
+    "Folding": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "접기"
           }
         }
       }
@@ -2111,6 +2181,26 @@
         }
       }
     },
+    "Nothing to fold here": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "여기에는 접을 영역이 없습니다"
+          }
+        }
+      }
+    },
+    "Nothing to unfold here": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "여기에는 펼칠 영역이 없습니다"
+          }
+        }
+      }
+    },
     "Number Lines": {
       "localizations": {
         "ko": {
@@ -2941,6 +3031,56 @@
         }
       }
     },
+    "Scroll Markers": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤 마커"
+          }
+        }
+      }
+    },
+    "Scrollbar Markers": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커"
+          }
+        }
+      }
+    },
+    "Scrollbar markers off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커 끔"
+          }
+        }
+      }
+    },
+    "Scrollbar markers on": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "스크롤바 마커 켬"
+          }
+        }
+      }
+    },
+    "Search matches, bookmarks, the caret line and folded headers on the editor's right edge": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "편집기 오른쪽 가장자리에 검색 매치·북마크·캐럿 줄·접힌 머리 줄 표시"
+          }
+        }
+      }
+    },
     "Search the folder of the current document": {
       "localizations": {
         "ko": {
@@ -3711,6 +3851,66 @@
         }
       }
     },
+    "Unfold": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "펼치기"
+          }
+        }
+      }
+    },
+    "Unfold All": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모두 펼치기"
+          }
+        }
+      }
+    },
+    "Unfold every region (⌥⇧⌘→)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모든 영역 펼치기 (⌥⇧⌘→)"
+          }
+        }
+      }
+    },
+    "Unfold the region whose header is at the caret (⌥⌘→)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캐럿 줄이 머리인 영역 펼치기 (⌥⌘→)"
+          }
+        }
+      }
+    },
+    "Unfolded %lld regions": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "영역 %lld개 펼침"
+          }
+        }
+      }
+    },
+    "Unfolded lines %lld–%lld": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld–%lld줄 펼침"
+          }
+        }
+      }
+    },
     "Uppercase": {
       "localizations": {
         "ko": {
@@ -3791,6 +3991,16 @@
         }
       }
     },
+    "caret": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캐럿 진입"
+          }
+        }
+      }
+    },
     "nothing changed": {
       "localizations": {
         "ko": {
@@ -3847,6 +4057,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "⇧⌘K"
+          }
+        }
+      }
+    },
+    "⋯ %lld lines": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⋯ %lld줄"
           }
         }
       }

@@ -323,6 +323,7 @@ enum SelfTest {
         await runSplit(model: model, check: check, log: log)
         await runDocumentTracking(model: model, check: check, log: log)
         await runMacro(model: model, check: check, log: log)   // macro
+        await runFold(model: model, check: check, log: log)
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
