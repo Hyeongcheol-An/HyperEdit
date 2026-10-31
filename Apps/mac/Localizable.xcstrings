@@ -826,7 +826,7 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "트리거·제목·본문으로 거르기"
+            "value": "트리거·제목·본문 필터"
           }
         }
       }
@@ -3036,7 +3036,7 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "스크롤 마커"
+            "value": "스크롤바 마커"
           }
         }
       }
@@ -3266,7 +3266,7 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "편집기 하나"
+            "value": "분할 해제"
           }
         }
       }
