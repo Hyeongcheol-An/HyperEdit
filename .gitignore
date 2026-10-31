@@ -33,3 +33,6 @@ AuthKey_*
 /Config/Local.xcconfig
 # Claude Code 에이전트 워크트리·로컬 설정
 .claude/
+
+# Python 캐시 (scripts/*.py 가 서로 import 할 때 생성)
+__pycache__/

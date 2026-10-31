@@ -40,28 +40,36 @@ public enum MemoLocation {
     }
 }
 
-/// 첫 실행 때 기본 문서에 들어가는 안내문 (영/한)
+/// 첫 실행 때 기본 문서에 들어가는 안내문. 언어별 파일 `Resources/Welcome/welcome.<code>.md` 에서 UI 언어에 맞는 것을 고른다 (없으면 영어).
 public enum WelcomeDocument {
-    public static let text = """
-    # Welcome to HyperEdit · HyperEdit에 오신 것을 환영합니다
+    /// 안내문이 있는 언어 코드 (파일 이름의 `welcome.<code>.md`)
+    public static var availableLanguages: [String] {
+        guard let dir = Bundle.module.url(forResource: "Welcome", withExtension: nil),
+              let files = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return [] }
+        return files.compactMap { name -> String? in
+            guard name.hasPrefix("welcome."), name.hasSuffix(".md") else { return nil }
+            return String(name.dropFirst("welcome.".count).dropLast(".md".count))
+        }.sorted()
+    }
+
+    /// 우선 언어 목록(기본: 이 프로세스의 언어 설정)에 맞는 안내문. 번들과 같은 규칙(Bundle.preferredLocalizations)으로 고르고 없으면 영어.
+    public static func text(for preferred: [String] = Locale.preferredLanguages) -> String {
+        let codes = availableLanguages
+        var code = "en"
+        if !codes.isEmpty, let hit = Bundle.preferredLocalizations(from: codes, forPreferences: preferred).first, codes.contains(hit) { code = hit }
+        if let url = Bundle.module.url(forResource: "Welcome", withExtension: nil)?.appendingPathComponent("welcome.\(code).md"),
+           let s = try? String(contentsOf: url, encoding: .utf8), !s.isEmpty { return s }
+        return fallback
+    }
+
+    public static var text: String { text() }
+
+    /// 리소스를 읽지 못했을 때의 최소 안내문
+    static let fallback = """
+    # Welcome to HyperEdit
 
     HyperEdit is a fast plain-text editor built around one big notes file that you keep appending to.
-    HyperEdit는 계속 길어지는 메모 파일 하나를 빠르게 쓰고 찾기 위한 텍스트 에디터입니다.
-
-    ## Getting started · 시작하기
-
-    - F7 inserts a timestamp heading (타임스탬프 삽입): `## 2026-10-31 (Sat) 09:00`
-    - ⌘F find · ⌘R replace · ⇧⌘F find in files (찾기 · 바꾸기 · 파일에서 찾기)
-    - ⌘F2 toggles a bookmark, F2 / ⌥F2 jump to the next / previous one (북마크)
-    - ⌥C column mode · ⌘-click adds a caret · ⌘D selects the next match (열 모드 · 멀티 커서)
-    - ⌘1 left dock (File View / Outline / Timeline) · ⌘2 results panel (좌측 도킹 · 결과 창)
-    - Layout tab → Theme: 22 themes; by default the app follows the system light/dark setting (테마)
-    - ⌘O opens any text file. This file lives at ~/Documents/HyperEdit/notes.md (이 파일의 위치)
-
-    Changes are saved automatically two seconds after you stop typing, and a snapshot of the previous
-    version is kept before the first save of each session (자동 저장 · 스냅샷).
-
-    Delete this text and start writing. 이 글을 지우고 바로 쓰기 시작하세요.
+    Press ⌘, for Settings, ⌘F to find, F7 to insert a timestamp heading. Delete this text and start writing.
 
     """
 }

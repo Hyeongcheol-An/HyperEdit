@@ -124,6 +124,8 @@ final class AppModel: ObservableObject {
 
     /// 종료 처리(AppDelegate)가 동기 저장을 요청할 수 있도록
     nonisolated(unsafe) static weak var current: AppModel?
+    /// `--show-settings` 가 띄운 캡처용 설정 창 (유지용)
+    nonisolated(unsafe) static var snapshotSettingsWindow: NSWindow?
 
     // UI 상태 (리본 레이아웃)
     @Published var ribbonTab: RibbonTab = .home
@@ -199,6 +201,25 @@ final class AppModel: ObservableObject {
             log(showScrollMarkers ? String(localized: "Scrollbar markers on") : String(localized: "Scrollbar markers off"))
         }
     }
+
+    /// 인터페이스 언어 (설정 › Language). AppleLanguages 에 저장되고 재실행 뒤 적용된다 (AppLanguage 참고)
+    @Published var language: AppLanguage = AppLanguage.stored {
+        didSet {
+            guard language != oldValue else { return }
+            AppLanguage.store(language)
+            if AppLanguage.needsRelaunch(for: language) {
+                log(String(localized: "Interface language: \(language.nativeName) — relaunch HyperEdit to apply"))
+            } else {
+                log(String(localized: "Interface language: \(language.nativeName)"))
+            }
+        }
+    }
+    /// 선택한 언어가 지금 보이는 언어와 다른가 (설정 화면의 '지금 재실행' 버튼)
+    var languageNeedsRelaunch: Bool { AppLanguage.needsRelaunch(for: language) }
+    /// 저장 → 종료 → 같은 앱 재실행 (언어 적용)
+    func relaunch() { AppLanguage.relaunch() }
+    /// 지금 보이는 언어의 사용자 가이드(GitHub)를 브라우저로
+    func openUserGuide() { NSWorkspace.shared.open(AppLanguage.running.guideURL) }
 
     let editorCommands = PassthroughSubject<EditorCommand, Never>()
     private var cancellables = Set<AnyCancellable>()
@@ -555,7 +576,7 @@ final class AppModel: ObservableObject {
 
     /// `--theme <id>` `--follow-system-theme` `--ribbon <home|edit|layout|advanced|window>` `--left <files|outline|timeline>`
     /// `--bottom <find|bookmarks|output>` `--hide-left` `--hide-bottom` `--search <q>` `--replace [--replace-with <s>]` `--find-in-files`
-    /// `--column` `--goto <line>` `--preview` `--show-macro-recording` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
+    /// `--column` `--goto <line>` `--preview` `--show-settings` `--show-macro-recording` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
     /// `--fold <line>` `--fold-all` (접기 — 영역 스캔이 끝난 뒤 적용, 스크린샷용) `--no-fold` (접기 delegate 설치 안 함)
     private func applyLaunchOptions() {
         if let t = LaunchOptions.value("--theme") { themes.select(id: t) }
@@ -573,6 +594,19 @@ final class AppModel: ObservableObject {
         }
         if LaunchOptions.has("--column") { columnMode = true }
         if LaunchOptions.has("--preview") { showMarkdownPreview = true }
+        if LaunchOptions.has("--show-settings") {   // 스크린샷용: 설정 뷰를 별도 창에 띄운다 (`--snapshot-settings <png>` 로 따로 찍는다)
+            // SwiftUI 의 Settings 장면(showSettingsWindow:)은 앱이 활성 상태여야 열리므로, 포커스를 뺏지 않고 같은 뷰를 일반 창에 담아 보여 준다
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self else { return }
+                let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView().environmentObject(self)))
+                w.title = String(localized: "Settings")
+                w.styleMask = [.titled, .closable]
+                w.setContentSize(NSSize(width: 560, height: 800))
+                w.center()
+                w.orderFront(nil)
+                Self.snapshotSettingsWindow = w
+            }
+        }
         if LaunchOptions.has("--show-macro-recording") {   // 스크린샷용: 매크로 기록 상태(리본 빨간 기록 버튼 · 상태바 ● REC). 편집기가 기록기를 연결한 뒤에
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.toggleMacroRecording() }
         }

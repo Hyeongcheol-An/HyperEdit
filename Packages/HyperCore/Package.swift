@@ -14,7 +14,7 @@ let package = Package(
         .target(
             name: "HyperCore",
             dependencies: [.product(name: "Markdown", package: "swift-markdown")],
-            resources: [.copy("Resources/palettes.json"), .process("Resources/Localizable.xcstrings")],
+            resources: [.copy("Resources/palettes.json"), .copy("Resources/Welcome"), .process("Resources/Localizable.xcstrings")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(

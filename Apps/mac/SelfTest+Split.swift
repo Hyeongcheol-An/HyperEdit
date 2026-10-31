@@ -106,10 +106,11 @@ extension SelfTest {
         check(((try? String(contentsOf: model.document.url, encoding: .utf8)) ?? "").hasSuffix("panel note\n"), "panel note saved to disk")
         model.send(.undo); await wait(300)
         check(text() == before, "undo removes the panel note")
-        qa.show(); await wait(300)
+        qa.show()
+        for _ in 0..<30 where !(qa.isVisible && qa.textView != nil) { await wait(100) }   // 첫 show 와 같이 창 전환을 기다린다 (부하 중 300 ms 로는 모자랐다)
         qa.textView?.insertText("kept draft", replacementRange: NSRange(location: 0, length: 0)); await wait(100)
         qa.hide(); await wait(200)
-        check(!qa.isVisible && qa.draft == "kept draft", "Esc/hide keeps the draft for next time")
+        check(!qa.isVisible && qa.draft == "kept draft", "Esc/hide keeps the draft for next time (visible=\(qa.isVisible) draft='\(qa.draft)')")
         qa.draft = ""
 
         // 8. (선택) 큰 파일에서 분할 상태 타이핑 지연

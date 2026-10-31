@@ -6,6 +6,28 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Language") {
+                Picker("Interface language", selection: $model.language) {
+                    Text("System Default · \(AppLanguage.systemResolved.nativeName)").tag(AppLanguage.system)
+                    Divider()
+                    ForEach(AppLanguage.supported) { Text(verbatim: $0.nativeName).tag($0) }   // 언어 이름은 그 언어로 (번역하지 않음)
+                }
+                if model.languageNeedsRelaunch {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Applied after HyperEdit relaunches — the document is saved first.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Relaunch Now") { model.relaunch() }
+                    }
+                } else {
+                    Text("Shared with System Settings › General › Language & Region › Applications.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                HStack(alignment: .firstTextBaseline) {
+                    Button("Open User Guide") { model.openUserGuide() }
+                    Text("Opens the guide for the current language on GitHub.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
             Section("Font") {
                 TextField("Latin font", text: $model.font.family)
                 Slider(value: $model.font.size, in: 8...40, step: 1) { Text("Size \(Int(model.font.size))pt") }
@@ -45,6 +67,6 @@ struct SettingsView: View {
             QuickAppendSettingsSection(controller: model.quickAppend)   // quick append: 전역 단축키
         }
         .formStyle(.grouped)
-        .frame(width: 560, height: 720)
+        .frame(width: 560, height: 800)
     }
 }

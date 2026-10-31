@@ -268,3 +268,37 @@ final class FileSearchTests: XCTestCase {
         XCTAssertEqual(SearchEngine.replacement(for: hits[0].range, in: text, query: "x", options: SearchOptions(), template: "Y"), "Y")
     }
 }
+
+// MARK: - 환영문 (언어별 리소스)
+final class WelcomeDocumentTests: XCTestCase {
+    func testEnglishWelcomeIsBundled() {
+        XCTAssertTrue(WelcomeDocument.availableLanguages.contains("en"))
+        let en = WelcomeDocument.text(for: ["en"])
+        XCTAssertTrue(en.hasPrefix("# Welcome to HyperEdit"))
+        XCTAssertTrue(en.contains("notes.md"))
+        XCTAssertTrue(en.hasSuffix("\n"), "환영문은 개행으로 끝나야 한다 (바로 이어서 쓸 수 있게)")
+    }
+
+    func testFallsBackToEnglishForUnknownLanguage() {
+        XCTAssertEqual(WelcomeDocument.text(for: ["xx-YY"]), WelcomeDocument.text(for: ["en"]))
+        XCTAssertEqual(WelcomeDocument.text(for: []), WelcomeDocument.text(for: ["en"]))
+    }
+
+    func testRegionalVariantsPickTheBaseLanguage() {
+        // 번역 파일이 있는 언어만 검사한다 (en 은 항상 있음; 다른 언어는 번역이 들어온 뒤부터)
+        for (pref, code) in [("en-GB", "en"), ("pt-PT", "pt"), ("zh-CN", "zh-Hans"), ("ko-KR", "ko"), ("de-AT", "de")]
+        where WelcomeDocument.availableLanguages.contains(code) {
+            XCTAssertEqual(WelcomeDocument.text(for: [pref]), WelcomeDocument.text(for: [code]), pref)
+        }
+    }
+
+    func testEveryWelcomeFileIsMarkdownMentioningHyperEdit() {
+        for code in WelcomeDocument.availableLanguages {
+            let t = WelcomeDocument.text(for: [code])
+            XCTAssertTrue(t.hasPrefix("# "), "\(code): 제목으로 시작")
+            XCTAssertTrue(t.contains("HyperEdit"), "\(code): 제품명 포함")
+            XCTAssertTrue(t.contains("notes.md"), "\(code): 기본 문서 경로 포함")
+            XCTAssertGreaterThan(t.count, 200, "\(code): 너무 짧음")
+        }
+    }
+}

@@ -11,7 +11,9 @@
 <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-black">
 </p>
 
-<p align="center">English · <a href="README.ko.md">한국어</a></p>
+<p align="center">English · <a href="README.ko.md">한국어</a> · <a href="docs/guide/USER_GUIDE.zh-Hans.md">简体中文</a> · <a href="docs/guide/USER_GUIDE.ja.md">日本語</a> · <a href="docs/guide/USER_GUIDE.vi.md">Tiếng Việt</a> · <a href="docs/guide/USER_GUIDE.hi.md">हिन्दी</a> · <a href="docs/guide/USER_GUIDE.de.md">Deutsch</a> · <a href="docs/guide/USER_GUIDE.fr.md">Français</a> · <a href="docs/guide/USER_GUIDE.es.md">Español</a> · <a href="docs/guide/USER_GUIDE.pt.md">Português</a> · <a href="docs/guide/USER_GUIDE.ar.md">العربية</a></p>
+
+<p align="center"><a href="docs/guide/USER_GUIDE.md">User Guide</a> — the full manual, in all eleven languages</p>
 
 HyperEdit is for people who keep a single, ever-growing text file — tens of thousands of lines of notes, logs and snippets — and spend the day appending to it and searching through it. A SwiftUI shell wraps an AppKit `NSTextView` on TextKit 2, so a multi-megabyte file still types like a small one, and the window follows the layout of a classic ribbon editor: ribbon tabs, a document tab bar, a sidebar, a bottom panel and a dense status bar.
 
@@ -44,7 +46,7 @@ shasum -a 256 -c SHA256SUMS
 
 HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welcome text if it does not exist. ⌘N creates a new empty text file (you choose the name and folder), ⌘O opens any other text file, and the last opened file is remembered for the next launch. Binary files (images, PDFs, archives…) are never loaded into the editor; they open in their default app instead.
 
-> The UI is available in English and Korean and follows the system language. The ribbon layout and shortcuts are the same on every system — translations for other languages are welcome (`Apps/mac/Localizable.xcstrings`).
+> The interface is available in eleven languages — English, Korean, Simplified Chinese, Japanese, Vietnamese, Hindi, German, French, Spanish, Portuguese and Arabic (right-to-left text; the window layout stays left-to-right) — and follows the system language by default. Pick a different one in **Settings (⌘,) › Language** and click **Relaunch Now**; the choice is shared with System Settings › General › Language & Region › Applications. **Help › User Guide** opens the [user guide](docs/guide/USER_GUIDE.md) in the current language. Translations live in `l10n/ui.<language>.json` — corrections are welcome.
 
 ## Features
 
@@ -169,6 +171,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | Show a sidebar / bottom-panel tab, or hide the sidebar / bottom panel |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
+| `--show-settings` · `--snapshot-settings <png>` | Open the Settings window after launch / capture it to PNG (with `--snapshot`) — used for the per-language screenshots |
 | `--split [vertical\|horizontal]` · `--quick-append` | Start with the editor split (side by side by default) / open the Quick Append panel |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
 | `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |
@@ -185,11 +188,11 @@ Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditAp
   Editor/            AppKit editor: HyperTextView (TextKit 2), GutterView, EditorSession (split), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       Non-activating NSPanel, controller and the Carbon global hot key
   Panels/ Markdown/  Sidebar and bottom panels, SnippetPickerView · WKWebView Markdown preview
-Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, themes, fonts, Markdown → HTML) + 137 unit tests
+Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, themes, fonts, Markdown → HTML, per-language welcome text) + 200 unit tests
 themes/              palettes.json (single source), build_zed_theme.py, build_preview.py, validate.py, dist/
-docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/ (baseline JSON) · release-notes/ · screenshots/ · sample/
-l10n/                <topic>.ko.json — Korean translations added per feature and applied with scripts/l10n-add.py
-scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-add · install-hooks
+docs/                guide/ (USER_GUIDE.md + 10 translations) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/ · release-notes/ · screenshots/ · sample/
+l10n/                ui.<language>.json — one flat dictionary per language (exported by scripts/l10n-export.py, merged by scripts/l10n-add.py) · context.json
+scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-export · l10n-add · install-hooks
 Config/              Version.xcconfig (managed by semantic-release) · Signing.xcconfig defaults · Local.xcconfig.example
 .github/workflows/   ci.yml (themes, sensitive-info check, commitlint, macOS build + tests) · release.yml (semantic-release → DMG → GitHub Release → Homebrew cask)
 ```
@@ -202,7 +205,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 
 ## Roadmap and limitations
 
-- UI in English and Korean (follows the system language); no other languages yet.
+- The interface is translated into eleven languages; any other system language falls back to English (Traditional Chinese, for example). Changing the language needs a relaunch, which the Settings button does for you.
 - Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.

@@ -3,90 +3,576 @@
   "strings": {
     "Blocked saving empty content (original had %lld characters). Undo (⌘Z) and save again.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم منع حفظ محتوى فارغ (كان الأصل يحتوي على %lld حرف). تراجع (⌘Z) ثم احفظ مرة أخرى."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sichern von leerem Inhalt blockiert (Original hatte %lld Zeichen). Widerrufen (⌘Z) und erneut sichern."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se bloqueó el guardado de contenido vacío (el original tenía %lld caracteres). Deshaz (⌘Z) y vuelve a guardar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement d'un contenu vide bloqué (l'original comptait %lld caractères). Annulez (⌘Z) puis enregistrez à nouveau."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाली सामग्री सहेजना रोका गया (मूल में %lld वर्ण थे)। पूर्ववत करें (⌘Z) और फिर से सहेजें।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空の内容の保存をブロックしました (元の文書は %lld 文字)。取り消す (⌘Z) で戻してから保存し直してください。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "빈 내용 저장을 차단했습니다 (원본 %lld자). 되돌리기(⌘Z) 후 다시 저장하세요."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gravação de conteúdo vazio bloqueada (o original tinha %lld caracteres). Desfaça (⌘Z) e salve de novo."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chặn lưu nội dung trống (bản gốc có %lld ký tự). Hoàn tác (⌘Z) rồi lưu lại."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已阻止存储空内容（原文有 %lld 个字符）。请撤销 (⌘Z) 后重新存储。"
           }
         }
       }
     },
     "External change detected — saving will overwrite it (the external copy is kept as a snapshot)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم رصد تغيير خارجي — سيكتب الحفظ فوقه (تُحفظ النسخة الخارجية كلقطة)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Externe Änderung erkannt – Sichern überschreibt sie (die externe Fassung bleibt als Schnappschuss erhalten)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambio externo detectado — al guardar se sobrescribirá (la copia externa se conserva como instantánea)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modification externe détectée — l'enregistrement l'écrasera (la copie externe est conservée comme instantané)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बाहरी बदलाव मिला — सहेजने पर वह अधिलेखित हो जाएगा (बाहरी प्रति स्नैपशॉट के रूप में रखी गई है)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部での変更を検出 — 保存すると上書きされます (外部の版はスナップショットとして保管)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "외부 변경 감지 — 저장 시 덮어씁니다 (외부본은 스냅샷 보관)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alteração externa detectada — salvar vai sobrescrevê-la (a cópia externa fica guardada como snapshot)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phát hiện thay đổi bên ngoài — lưu sẽ ghi đè lên (bản bên ngoài được giữ làm bản chụp)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检测到外部更改 — 存储将覆盖它（外部版本已保留为快照）"
           }
         }
       }
     },
     "Loaded": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم التحميل"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geladen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लोड हुआ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込みました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "불러옴"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carregado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tải"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已载入"
           }
         }
       }
     },
     "Open failed: %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فشل الفتح: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnen fehlgeschlagen: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error al abrir: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de l'ouverture : %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खोलना विफल: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開けませんでした: %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "열기 실패: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha ao abrir: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở thất bại: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开失败：%@"
           }
         }
       }
     },
     "Open failed: cannot determine the text encoding (not UTF-8 / EUC-KR / Latin-1)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فشل الفتح: تعذر تحديد ترميز النص (ليس UTF-8 / EUC-KR / Latin-1)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnen fehlgeschlagen: Zeichencodierung nicht erkennbar (weder UTF-8 noch EUC-KR noch Latin-1)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error al abrir: no se puede determinar la codificación del texto (no es UTF-8 / EUC-KR / Latin-1)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de l'ouverture : impossible de déterminer l'encodage du texte (ni UTF-8 / EUC-KR / Latin-1)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खोलना विफल: टेक्स्ट एन्कोडिंग निर्धारित नहीं हो सकी (UTF-8 / EUC-KR / Latin-1 नहीं)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開けませんでした: テキストエンコーディングを判別できません (UTF-8 / EUC-KR / Latin-1 のいずれでもない)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "열기 실패: 텍스트 인코딩을 판별할 수 없습니다 (UTF-8 / EUC-KR / Latin-1 아님)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha ao abrir: não foi possível determinar a codificação do texto (não é UTF-8 / EUC-KR / Latin-1)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở thất bại: không xác định được bảng mã văn bản (không phải UTF-8 / EUC-KR / Latin-1)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开失败：无法确定文本编码（不是 UTF-8 / EUC-KR / Latin-1）"
           }
         }
       }
     },
     "Reloaded external change · %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمت إعادة تحميل التغيير الخارجي · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Externe Änderung neu geladen · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambio externo recargado · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modification externe rechargée · %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बाहरी बदलाव रीलोड किया · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部での変更を再読み込み · %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "외부 변경 반영 · %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alteração externa recarregada · %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tải lại thay đổi bên ngoài · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已载入外部更改 · %@"
           }
         }
       }
     },
     "Save failed: %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فشل الحفظ: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sichern fehlgeschlagen: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error al guardar: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de l'enregistrement : %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सहेजना विफल: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存に失敗: %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "저장 실패: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha ao salvar: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưu thất bại: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储失败：%@"
           }
         }
       }
     },
     "Saved · %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم الحفظ · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesichert · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré · %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सहेजा गया · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存しました · %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "저장됨 · %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvo · %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã lưu · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已存储 · %@"
           }
         }
       }
     },
     "Saved · %@ · converted to UTF-8 because the original encoding cannot represent some characters": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم الحفظ · %@ · تم التحويل إلى UTF-8 لأن الترميز الأصلي لا يمكنه تمثيل بعض الأحرف"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesichert · %@ · in UTF-8 umgewandelt, weil die ursprüngliche Codierung einige Zeichen nicht darstellen kann"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado · %@ · convertido a UTF-8 porque la codificación original no puede representar algunos caracteres"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré · %@ · converti en UTF-8 car l'encodage d'origine ne peut pas représenter certains caractères"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सहेजा गया · %@ · UTF-8 में बदला गया क्योंकि मूल एन्कोडिंग कुछ वर्णों को नहीं दर्शा सकती"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存しました · %@ · 元のエンコーディングで表せない文字があるため UTF-8 に変換"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "저장됨 · %@ · 원 인코딩에 없는 문자가 있어 UTF-8 로 변환 저장"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvo · %@ · convertido para UTF-8 porque a codificação original não representa alguns caracteres"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã lưu · %@ · đã chuyển sang UTF-8 vì bảng mã gốc không biểu diễn được một số ký tự"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已存储 · %@ · 原编码无法表示部分字符，已转换为 UTF-8"
           }
         }
       }

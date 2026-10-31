@@ -390,7 +390,8 @@ struct RibbonSmallButton: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: systemImage).font(.system(size: 11)).frame(width: 16)
-                if !compact { Text(title).font(.system(size: 11)).lineLimit(1) }
+                // l10n: 폭이 고정이라 긴 번역(독일어·포르투갈어 …)은 잘리는 대신 최대 25% 까지 줄여서 다 보이게 한다
+                if !compact { Text(title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.75) }
             }
             .padding(.horizontal, 5)
             .frame(width: compact ? 26 : 128, height: 20, alignment: .leading)
@@ -419,7 +420,7 @@ struct RibbonSmallToggle: View {
                 Image(systemName: systemImage).font(.system(size: 11)).frame(width: 16)
                     .foregroundStyle(compact && isOn ? theme.accent.color : theme.foreground.color)
                 if !compact {
-                    Text(title).font(.system(size: 11)).lineLimit(1)
+                    Text(title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.75)   // l10n: 긴 번역은 줄여서 표시
                     Spacer(minLength: 0)
                     if isOn { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.accent.color) }
                 }

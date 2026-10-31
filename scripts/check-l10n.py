@@ -13,8 +13,14 @@ Swift 소스에서 현지화 API 에 넘긴 문자열 리터럴을 찾아 String
 
 보간 `\\(…)` 은 `specifier:` 가 있으면 그 서식, 없으면 %lld 또는 %@ 후보로 바꿔 카탈로그 키와 맞춘다.
 
-종료 코드 1: 코드에 쓰인 키가 카탈로그에 없을 때. ko 번역 누락과 코드에서 안 쓰는 키는 경고로만 출력한다.
-사용: python3 scripts/check-l10n.py [-v]
+번역 언어는 LANGUAGES (영어가 소스). 언어마다 누락 수를 세고, 자리표시자(%@ %lld %.2f)가 영어 키와 다르면 오류로 본다.
+리본 버튼 제목(RibbonBigButton·RibbonSmallButton·RibbonSmallToggle 의 title:)은 폭이 고정이라 번역이 길면 잘린다 → 추정 폭으로 LONG 경고.
+언어 목록이 Apps/mac/AppLanguage.swift 의 `supported`, 사용자 가이드(docs/guide/USER_GUIDE.<code>.md), 환영문(Resources/Welcome/welcome.<code>.md)과
+맞는지도 검사한다.
+
+종료 코드 1: 코드에 쓰인 키가 카탈로그에 없을 때, 자리표시자 불일치, 언어 목록·가이드·환영문 불일치. 번역 누락과 코드에서 안 쓰는 키는 경고
+(`--strict` 를 주면 번역 누락도 오류 — 릴리스 전 검사용).
+사용: python3 scripts/check-l10n.py [-v] [--strict]
 """
 from __future__ import annotations
 
@@ -26,6 +32,15 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VERBOSE = "-v" in sys.argv
+STRICT = "--strict" in sys.argv
+
+# 번역 언어 (소스 언어 en 제외). Apps/mac/AppLanguage.swift 의 `supported` 와 같아야 한다 — main() 이 대조한다.
+LANGUAGES = ["ko", "zh-Hans", "ja", "vi", "hi", "de", "fr", "es", "pt", "ar"]
+LANGUAGE_NAMES = {"en": "English", "ko": "한국어", "zh-Hans": "简体中文", "ja": "日本語", "vi": "Tiếng Việt", "hi": "हिन्दी",
+                  "de": "Deutsch", "fr": "Français", "es": "Español", "pt": "Português (Brasil)", "ar": "العربية"}
+APP_LANGUAGE_SWIFT = ROOT / "Apps/mac/AppLanguage.swift"
+GUIDE_DIR = ROOT / "docs/guide"
+WELCOME_DIR = ROOT / "Packages/HyperCore/Sources/HyperCore/Resources/Welcome"
 
 # 소스 집합 → 카탈로그. 개발 전용 파일(셀프테스트·성능 로그·디버그)은 검사하지 않는다.
 TARGETS = [
@@ -206,8 +221,8 @@ def enclosing_context(src: str, lits: list[tuple[int, int, str, bool]], start: i
     return None
 
 
-def collect_keys(path: pathlib.Path) -> list[tuple[list[str], int]]:
-    """파일에서 현지화 키 후보 목록 [(후보들, 줄 번호)]."""
+def collect_keys(path: pathlib.Path) -> list[tuple[list[str], int, str]]:
+    """파일에서 현지화 키 후보 목록 [(후보들, 줄 번호, 문맥)]. 문맥은 호출 이름("Button", ".help", "String(localized:)", "RibbonSmallButton.title" …)."""
     raw = path.read_text(encoding="utf-8")
     src = strip_comments(raw)
     lits = literals(src)
@@ -221,19 +236,109 @@ def collect_keys(path: pathlib.Path) -> list[tuple[list[str], int]]:
         if m:                                  # 이름 인자
             arg = m.group(1)
             if arg in NAMED_ARGS_ANY:
-                found.append((format_candidates(body), line_no))
+                found.append((format_candidates(body), line_no, "String(localized:)"))
             elif arg in NAMED_ARGS_IN:
                 ctx = enclosing_context(src, lits, start)
                 if ctx and ctx[0] in NAMED_ARG_CALLERS:
-                    found.append((format_candidates(body), line_no))
+                    found.append((format_candidates(body), line_no, f"{ctx[0]}.{arg}"))
             continue
         ctx = enclosing_context(src, lits, start)
         if ctx is None:
             continue
         name, index = ctx
         if name == "LocalizedStringKey" or (name in POSITIONAL_APIS and index in POSITIONAL_APIS[name]):
-            found.append((format_candidates(body), line_no))
+            found.append((format_candidates(body), line_no, name))
     return found
+
+
+# ── 자리표시자 · 리본 라벨 폭 ─────────────────────────────────────────────────────────────────────
+
+PLACEHOLDER_RE = re.compile(r"%(\d+\$)?(lld|ld|d|@|\.\d+f|f|%)")
+
+
+def placeholders(s: str) -> tuple[list[str], bool]:
+    """서식 지정자 목록(정렬, 위치 번호 제외)과 위치 번호(%1$@) 사용 여부. %% 는 제외."""
+    specs, positional = [], False
+    for m in PLACEHOLDER_RE.finditer(s):
+        if m.group(2) == "%":
+            continue
+        specs.append(m.group(2))
+        positional = positional or bool(m.group(1))
+    return sorted(specs), positional
+
+
+def placeholder_problem(key: str, value: str) -> str | None:
+    """번역의 자리표시자가 키와 다르면 설명, 같으면 None."""
+    k, _ = placeholders(key)
+    v, pos = placeholders(value)
+    if k != v:
+        return f"placeholders {k} → {v}"
+    if pos and len(set(re.findall(r"%(\d+)\$", value))) != len(v):
+        return "mixed positional / non-positional placeholders"
+    return None
+
+
+def estimate_width(text: str, size: float) -> float:
+    """시스템 글꼴 기준의 대략적인 표시 폭(pt). CJK 1em, 데바나가리 결합 기호 0, 그 외 자모 0.62em, 라틴 소문자 0.52em 등 — 스크린샷 검증을 대신하지 않는 어림값."""
+    w = 0.0
+    for ch in text:
+        o = ord(ch)
+        if 0x0900 <= o <= 0x097F:                      # Devanagari
+            w += 0 if (0x093A <= o <= 0x094F or 0x0951 <= o <= 0x0957 or o in (0x0962, 0x0963, 0x0901, 0x0902)) else 0.62
+        elif 0x0600 <= o <= 0x06FF:                    # Arabic (연결체라 글자당 폭이 좁다; 하라카트 등 결합 기호는 0)
+            w += 0 if (0x064B <= o <= 0x065F or o == 0x0670 or 0x06D6 <= o <= 0x06ED) else 0.5
+        elif 0x1100 <= o <= 0x11FF or 0x2E80 <= o <= 0x9FFF or 0xAC00 <= o <= 0xD7AF or 0xF900 <= o <= 0xFAFF or 0xFF00 <= o <= 0xFF60:
+            w += 1.0                                   # 한글·한자·가나·전각
+        elif ch == " ":
+            w += 0.28
+        elif ch in ".,:;'|!il":
+            w += 0.3
+        elif ch in "…·-–":
+            w += 0.5
+        elif ch.isdigit():
+            w += 0.58
+        elif ch.isupper():
+            w += 0.68
+        elif ch.islower():
+            w += 0.52
+        else:
+            w += 0.6
+    return w * size
+
+
+# 리본 구성 요소의 글자 폭 한계 (RibbonView.swift 의 고정 프레임에서 아이콘·패딩을 뺀 값)
+RIBBON_LIMITS = {
+    "RibbonBigButton.title": ("ribbon-big", 10.5),     # 60pt × 2줄 — 단어 하나가 58pt 를 넘으면 글자 단위로 잘린다
+    "RibbonBigToggle.title": ("ribbon-big", 10.5),
+    "RibbonSmallButton.title": ("ribbon-small", 11),   # 128 − 패딩 10 − 아이콘 16 − 간격 5 = 97pt
+    "RibbonSmallToggle.title": ("ribbon-toggle", 11),  # 위에서 체크 표시 14pt 를 더 뺀 83pt
+}
+
+
+def ribbon_kind(contexts: set[str]) -> str | None:
+    kinds = [RIBBON_LIMITS[c][0] for c in contexts if c in RIBBON_LIMITS]
+    if not kinds:
+        return None
+    for k in ("ribbon-big", "ribbon-toggle", "ribbon-small"):   # 가장 엄격한 것
+        if k in kinds:
+            return k
+    return kinds[0]
+
+
+def label_overflow(text: str, kind: str) -> str | None:
+    """리본 라벨이 프레임을 넘을 것 같으면 설명, 아니면 None."""
+    if kind == "ribbon-big":
+        words = text.split()
+        longest = max((estimate_width(w, 10.5) for w in words), default=0)
+        total = estimate_width(text, 10.5)
+        if longest > 58:
+            return f"word ≈{longest:.0f}pt > 58pt (big button is 60pt wide)"
+        if total > 112:
+            return f"≈{total:.0f}pt > 2 lines of a 60pt big button"
+        return None
+    limit = 83 if kind == "ribbon-toggle" else 97
+    w = estimate_width(text, 11)
+    return f"≈{w:.0f}pt > {limit}pt ({kind})" if w > limit else None
 
 
 def load_catalog(path: pathlib.Path) -> dict:
@@ -246,39 +351,124 @@ def load_catalog(path: pathlib.Path) -> dict:
     return data.get("strings", {})
 
 
+def translation(entry: dict, lang: str) -> str:
+    return entry.get("localizations", {}).get(lang, {}).get("stringUnit", {}).get("value", "") or ""
+
+
+def key_contexts(target: dict) -> dict[str, dict]:
+    """타깃의 소스에서 키 → {"where": {문맥}, "files": {파일 이름}} (scripts/l10n-export.py 가 번역 문맥 파일을 만들 때 쓴다)."""
+    strings = load_catalog(target["catalog"])
+    out: dict[str, dict] = {}
+    for f in target["sources"]:
+        if f.name in target["skip"]:
+            continue
+        for candidates, line, ctx in collect_keys(f):
+            hit = next((c for c in candidates if c in strings), None)
+            if hit is None:
+                continue
+            e = out.setdefault(hit, {"where": set(), "files": set()})
+            e["where"].add(ctx)
+            e["files"].add(f.name)
+    return out
+
+
+def swift_supported_languages() -> list[str]:
+    """Apps/mac/AppLanguage.swift 의 `case` 선언에서 언어 코드를 읽는다 (system 제외)."""
+    if not APP_LANGUAGE_SWIFT.exists():
+        return []
+    src = APP_LANGUAGE_SWIFT.read_text(encoding="utf-8")
+    body = src.split("enum AppLanguage", 1)[1].split("static let supported", 1)[0]
+    codes: list[str] = []
+    for m in re.finditer(r"^\s*case\s+([^\n]+)$", body, re.M):
+        for part in m.group(1).split(","):
+            part = part.strip()
+            raw = re.search(r'=\s*"([^"]+)"', part)
+            name = part.split("=")[0].strip()
+            codes.append(raw.group(1) if raw else name)
+    return [c for c in codes if c != "system"]
+
+
 def main() -> int:
-    missing_total = 0
+    errors = 0
     for t in TARGETS:
         strings = load_catalog(t["catalog"])
         used: set[str] = set()
+        contexts: dict[str, set[str]] = {}
         missing: list[tuple[str, str, int]] = []
         for f in t["sources"]:
             if f.name in t["skip"]:
                 continue
-            for candidates, line in collect_keys(f):
+            for candidates, line, ctx in collect_keys(f):
                 hit = next((c for c in candidates if c in strings), None)
                 if hit is None:
                     missing.append((str(f.relative_to(ROOT)), candidates[0], line))
                 else:
                     used.add(hit)
+                    contexts.setdefault(hit, set()).add(ctx)
                     if VERBOSE:
-                        print(f"   {f.name}:{line}  {hit!r}")
-        no_ko = sorted(k for k, v in strings.items()
-                       if not v.get("localizations", {}).get("ko", {}).get("stringUnit", {}).get("value"))
+                        print(f"   {f.name}:{line}  {hit!r}  [{ctx}]")
         unused = sorted(set(strings) - used)
+        untranslated = {lang: sorted(k for k, v in strings.items() if not translation(v, lang)) for lang in LANGUAGES}
+        bad_placeholders: list[tuple[str, str, str]] = []
+        long_labels: list[tuple[str, str, str]] = []
+        for k, v in strings.items():
+            kind = ribbon_kind(contexts.get(k, set()))
+            for lang in LANGUAGES:
+                val = translation(v, lang)
+                if not val:
+                    continue
+                if (p := placeholder_problem(k, val)):
+                    bad_placeholders.append((lang, k, p))
+                if kind and (p := label_overflow(val, kind)):
+                    long_labels.append((lang, k, f"{val!r} {p}"))
+            if kind and (p := label_overflow(k, kind)):
+                long_labels.append(("en", k, p))
         rel = t["catalog"].relative_to(ROOT)
-        print(f"[{t['name']}] {rel}: 키 {len(strings)}개 · 코드에서 사용 {len(used)}개 · 누락 {len(missing)}개 · ko 없음 {len(no_ko)}개 · 미사용 {len(unused)}개")
+        coverage = " · ".join(f"{lang} {len(strings) - len(untranslated[lang])}/{len(strings)}" for lang in LANGUAGES)
+        print(f"[{t['name']}] {rel}: 키 {len(strings)}개 · 코드에서 사용 {len(used)}개 · 누락 {len(missing)}개 · 미사용 {len(unused)}개")
+        print(f"   번역: {coverage}")
         for file, key, line in missing:
             print(f"  MISSING  {file}:{line}  {key!r}")
-        for k in no_ko:
-            print(f"  NO-KO    {k!r}")
+        for lang, key, prob in bad_placeholders:
+            print(f"  PLACEHOLDER [{lang}] {key!r}: {prob}")
+        for lang, key, prob in long_labels:
+            print(f"  LONG [{lang}] {key!r}: {prob}")
+        for lang in LANGUAGES:
+            keys = untranslated[lang]
+            if not keys:
+                continue
+            shown = keys if (VERBOSE or len(keys) <= 15) else keys[:15]
+            for k in shown:
+                print(f"  NO-{lang}  {k!r}")
+            if len(shown) < len(keys):
+                print(f"  NO-{lang}  … {len(keys) - len(shown)}개 더 (-v 로 전부)")
         for k in unused:
             print(f"  UNUSED   {k!r}")
-        missing_total += len(missing)
-    if missing_total:
-        print(f"\n{missing_total}개 키가 카탈로그에 없습니다. Localizable.xcstrings 에 영어 키와 ko 번역을 추가하세요.")
+        errors += len(missing) + len(bad_placeholders)
+        if STRICT:
+            errors += sum(len(v) for v in untranslated.values())
+
+    # 언어 목록 · 가이드 · 환영문 일치
+    swift_langs = swift_supported_languages()
+    expected = ["en"] + LANGUAGES
+    if swift_langs != expected:
+        print(f"!! AppLanguage.swift 의 언어 {swift_langs} 가 LANGUAGES {expected} 와 다릅니다")
+        errors += 1
+    for code in expected:
+        guide = GUIDE_DIR / ("USER_GUIDE.md" if code == "en" else f"USER_GUIDE.{code}.md")
+        if not guide.exists() or guide.stat().st_size < 2000:
+            print(f"!! 사용자 가이드 없음/너무 짧음: {guide.relative_to(ROOT)}")
+            errors += 1
+        welcome = WELCOME_DIR / f"welcome.{code}.md"
+        if not welcome.exists() or welcome.stat().st_size < 200:
+            print(f"!! 환영문 없음/너무 짧음: {welcome.relative_to(ROOT)}")
+            errors += 1
+    print(f"언어 {len(expected)}개: {' '.join(expected)} — AppLanguage.swift · docs/guide · Resources/Welcome 일치")
+
+    if errors:
+        print(f"\n{errors}개 문제. 카탈로그 키·자리표시자·언어 파일을 확인하세요 (번역 추가: l10n/ui.<code>.json → python3 scripts/l10n-add.py).")
         return 1
-    print("\nOK — 코드의 모든 현지화 키가 카탈로그에 있습니다.")
+    print("\nOK — 코드의 모든 현지화 키가 카탈로그에 있고 자리표시자·언어 파일이 일치합니다.")
     return 0
 
 

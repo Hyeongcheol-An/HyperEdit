@@ -41,6 +41,7 @@ struct EditorCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .help) {
+            Button("User Guide") { model.openUserGuide() }   // 지금 보이는 언어의 docs/guide/USER_GUIDE.<code>.md
             Button("HyperEdit Help (GitHub)") { NSWorkspace.shared.open(URL(string: "https://github.com/Hyeongcheol-An/HyperEdit#readme")!) }
             Button("Report an Issue or Suggestion…") { NSWorkspace.shared.open(URL(string: "https://github.com/Hyeongcheol-An/HyperEdit/issues/new/choose")!) }
         }

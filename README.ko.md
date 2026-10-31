@@ -11,7 +11,9 @@
 <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-black">
 </p>
 
-<p align="center"><a href="README.md">English</a> · 한국어</p>
+<p align="center"><a href="README.md">English</a> · 한국어 · <a href="docs/guide/USER_GUIDE.zh-Hans.md">简体中文</a> · <a href="docs/guide/USER_GUIDE.ja.md">日本語</a> · <a href="docs/guide/USER_GUIDE.vi.md">Tiếng Việt</a> · <a href="docs/guide/USER_GUIDE.hi.md">हिन्दी</a> · <a href="docs/guide/USER_GUIDE.de.md">Deutsch</a> · <a href="docs/guide/USER_GUIDE.fr.md">Français</a> · <a href="docs/guide/USER_GUIDE.es.md">Español</a> · <a href="docs/guide/USER_GUIDE.pt.md">Português</a> · <a href="docs/guide/USER_GUIDE.ar.md">العربية</a></p>
+
+<p align="center"><a href="docs/guide/USER_GUIDE.ko.md">사용자 가이드</a> — 11개 언어로 제공되는 전체 설명서</p>
 
 HyperEdit는 메모·로그·코드 조각이 수만 줄 쌓인 텍스트 파일 하나를 하루 종일 끝에 덧붙이고 검색하며 쓰는 사람을 위한 에디터입니다. SwiftUI 셸 안에 TextKit 2 기반 AppKit `NSTextView`를 넣어 수 MB 파일도 작은 파일처럼 타이핑되고, 창 구성은 고전적인 리본 에디터의 레이아웃 — 리본 탭, 문서 탭 줄, 사이드바, 하단 패널, 빽빽한 상태바 — 을 따릅니다.
 
@@ -44,7 +46,7 @@ shasum -a 256 -c SHA256SUMS
 
 HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 짧은 환영 문서로 새로 만듭니다. ⌘N으로 이름과 폴더를 골라 빈 텍스트 파일을 새로 만들 수 있고, ⌘O로 다른 텍스트 파일을 열 수 있으며, 마지막으로 연 파일은 다음 실행 때 기억됩니다. 바이너리 파일(이미지·PDF·압축 파일 등)은 에디터로 불러오지 않고 기본 앱으로 엽니다.
 
-> UI는 영어와 한국어를 지원하며 시스템 언어를 따릅니다. 리본 구성과 단축키는 모든 시스템에서 같습니다 — 다른 언어 번역 기여를 환영합니다(`Apps/mac/Localizable.xcstrings`).
+> 인터페이스는 11개 언어 — 영어·한국어·중국어(간체)·일본어·베트남어·힌디어·독일어·프랑스어·스페인어·포르투갈어·아랍어(글은 오른쪽에서 왼쪽, 창 배치는 좌→우 고정) — 로 제공되며 기본은 시스템 언어를 따릅니다. **설정(⌘,) › 언어** 에서 다른 언어를 고르고 **지금 재실행** 을 누르면 바뀌고, 이 선택은 시스템 설정 › 일반 › 언어 및 지역 › 응용 프로그램 과 같은 값을 씁니다. **도움말 › 사용자 가이드** 는 현재 언어의 [사용자 가이드](docs/guide/USER_GUIDE.ko.md)를 엽니다. 번역은 `l10n/ui.<언어>.json` 에 있으며 수정 기여를 환영합니다.
 
 ## 기능
 
@@ -169,6 +171,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | 찾기 창 미리 채우기 |
 | `--column` · `--goto <line>` · `--preview` | 열 모드 켜기 / 줄로 이동 / 마크다운 미리보기 표시 |
+| `--show-settings` · `--snapshot-settings <png>` | 실행 뒤 설정 창 열기 / (`--snapshot` 과 함께) 설정 창을 PNG 로 캡처 — 언어별 스크린샷용 |
 | `--split [vertical\|horizontal]` · `--quick-append` | 편집기를 분할한 채 시작(기본 좌우) / 빠른 추가 창 열기 |
 | `--no-highlight` | 구문 색을 끈 채 시작 (스크린샷 비교용) |
 | `--fold <line>` · `--fold-all` · `--no-fold` | 해당 줄이 머리인 영역 접기 / 영역 스캔 뒤 모두 접기 / 접기 기능 끄기 |
@@ -188,8 +191,8 @@ Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.sw
 Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 테마, 폰트, 마크다운 → HTML) + 단위 테스트 137개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
-l10n/                <주제>.ko.json — 기능별로 추가한 한국어 번역, scripts/l10n-add.py 로 카탈로그에 반영
-scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-add · install-hooks
+l10n/                ui.<언어>.json — 언어별 평면 사전(scripts/l10n-export.py 로 내보내고 scripts/l10n-add.py 로 카탈로그에 병합) · context.json
+scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-export · l10n-add · install-hooks
 Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xcconfig 기본값 · Local.xcconfig.example
 .github/workflows/   ci.yml(테마, 민감 정보 검사, commitlint, macOS 빌드+테스트) · release.yml(semantic-release → DMG → GitHub Release → Homebrew cask)
 ```
@@ -202,7 +205,7 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 
 ## 로드맵과 제한
 
-- UI는 영어·한국어(시스템 언어를 따름). 다른 언어는 아직 없습니다.
+- 인터페이스는 11개 언어로 번역돼 있고, 그 밖의 시스템 언어(예: 중국어 번체)는 영어로 표시됩니다. 언어를 바꾸려면 재실행이 필요한데, 설정의 버튼이 대신 해 줍니다.
 - 구문 색은 줄 단위라 여러 줄에 걸친 주석·문자열은 시작한 줄만 칠해지고, 사용자 정의 문법은 없습니다. 마크다운 미리보기(⇧⌘P)는 현재 파일을 렌더링해 보여 주는 보기 전용 화면입니다.
 - 로컬 파일만 다룹니다. 클라우드 동기화 없음. 엔진은 iOS를 염두에 두고 만들었지만 iOS 앱은 아직 없습니다.
 - 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.

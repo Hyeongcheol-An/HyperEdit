@@ -6,6 +6,20 @@ import HyperCore
 /// TextKit 2 본문은 GPU 서피스로 그려져 cacheDisplay 로는 잡히지 않으므로 실제 화면을 캡처한다(화면 녹화 권한 필요, 없으면 .txt 에 오류).
 /// `--quit` 가 함께 있으면 저장 후 종료.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// 언어 변경 뒤 '지금 재실행': 종료 직전에 이 프로세스가 끝나기를 기다렸다가 같은 번들을 여는 셸을 띄운다 (AppLanguage.relaunch)
+    nonisolated(unsafe) static var relaunchOnQuit = false
+
+    func applicationWillTerminate(_ notification: Notification) {
+        guard Self.relaunchOnQuit else { return }
+        Self.relaunchOnQuit = false
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        // 종료 전에 열면 두 인스턴스가 겹치고 LaunchServices 가 기존 인스턴스를 앞으로 가져올 수 있다 → 프로세스가 사라진 뒤 `open -n`
+        task.arguments = ["-c", "while kill -0 \(pid) 2>/dev/null; do sleep 0.1; done; exec /usr/bin/open -n \"$0\"", Bundle.main.bundlePath]
+        do { try task.run() } catch { NSLog("relaunch failed: \(error)") }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
         Bench.launchMilestone("didFinishLaunching")   // perf bench (계측이 꺼져 있으면 비용 0)
@@ -58,6 +72,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let p = LaunchOptions.value("--snapshot-panel") {
                     if let panel = NSApp.windows.first(where: { $0 is QuickAppendPanel && $0.isVisible }) { await Self.capture(window: panel, to: p) }
                     else { try? "snapshot: no panel".write(toFile: p + ".txt", atomically: true, encoding: .utf8) }
+                }
+                // l10n: `--snapshot-settings <png>` 는 `--show-settings` 로 연 설정 창(문서 창이 아닌 두 번째 일반 창)을 따로 찍는다
+                if let p = LaunchOptions.value("--snapshot-settings") {
+                    let main = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil && !($0 is NSPanel) })
+                    if let w = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil && !($0 is QuickAppendPanel) && $0 !== main }) { await Self.capture(window: w, to: p) }
+                    else {
+                        let ws = NSApp.windows.map { "\(type(of: $0)) visible=\($0.isVisible) title='\($0.title)' frame=\($0.frame)" }.joined(separator: "\n")
+                        try? "snapshot: no settings window\n\(ws)".write(toFile: p + ".txt", atomically: true, encoding: .utf8)
+                    }
                 }
                 // 시트(스니펫 선택창 ⇧⌘I 등)는 별도 창이라 첫 창 캡처에 들어가지 않는다 — `--snapshot-sheet <png>` 로 첫 창에 붙은 시트를 따로 찍는다
                 if let p = LaunchOptions.value("--snapshot-sheet") {
@@ -120,6 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ?? String(localized: "No emergency copy could be written. Quit anyway, or cancel to keep editing?")
         alert.addButton(withTitle: String(localized: "Quit Anyway"))
         alert.addButton(withTitle: String(localized: "Cancel"))
-        return alert.runModal() == .alertFirstButtonReturn ? .terminateNow : .terminateCancel
+        if alert.runModal() == .alertFirstButtonReturn { return .terminateNow }
+        Self.relaunchOnQuit = false   // 취소했으면 예약된 재실행도 취소 (다음 ⌘Q 가 재실행이 되지 않게)
+        return .terminateCancel
     }
 }
