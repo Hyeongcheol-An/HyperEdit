@@ -162,7 +162,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | Flag | Effect |
 |---|---|
 | `--file <path>` | Open this file instead of the remembered one |
-| `--snapshot <png> [--snapshot-delay s] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | Capture the window to PNG via ScreenCaptureKit (needs Screen Recording permission); `--snapshot-panel` captures the floating Quick Append panel opened by `--quick-append`. Snapshot runs use a 1280 pt window unless a width is given |
+| `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | Capture the window to PNG via ScreenCaptureKit (needs Screen Recording permission); `--snapshot-panel` captures the floating Quick Append panel opened by `--quick-append`. Snapshot runs use a 1280 pt window unless a width is given |
 | `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | Run the built-in self-test (393 checks) on temporary files; never touches your documents. `--selftest-split-big` adds a split-editor typing-latency check that types into and restores the given file (use a copy); `--show-snippet-picker` leaves the Insert Snippet sheet open for screenshots. `--selftest-open` is a file-switching benchmark that edits the files it is pointed at — copies only |
 | `--theme <id>` · `--follow-system-theme` | Start with a palette id from `palettes.json`, e.g. `hyper-dark` / start following the system appearance |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | Select a ribbon tab |

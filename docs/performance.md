@@ -6,7 +6,7 @@ HyperEdit is judged on feel: typing, scrolling, search, file switching and launc
 
 ```sh
 scripts/bench.sh                       # Release build → cold-launch timing ×5 → in-app benchmark → bundle/binary size
-scripts/bench.sh --compare docs/bench/baseline-0.5.1.json   # same, plus Δ% against a baseline and a list of >15 % regressions
+scripts/bench.sh --compare docs/bench/baseline-0.6.0.json   # same, plus Δ% against a baseline and a list of >15 % regressions
 scripts/bench.sh --skip-build --only typing,search          # reuse the existing build, run only some phases
 scripts/bench.sh --strict                                   # exit 1 on any budget failure or regression
 ```
@@ -47,77 +47,79 @@ Benchmarks are deliberately not part of CI: GitHub-hosted runners are shared and
 
 ## Baseline
 
-Apple silicon laptop (2023, 12 cores, 64 GB), macOS 27.2, Release build, commit `36b76d9` (all optimizations below applied). **Provisional:** this table was recorded while other Xcode builds were running on the machine (1-minute load average 11–20 on 12 cores, flagged by the harness), so absolute numbers are somewhat inflated and the table and `docs/bench/baseline-0.5.1.json` will be replaced by an idle-machine run of `scripts/bench.sh` after integration. Compared with the first run on the unoptimized build (`a97fb17`, also under load), every typing metric improved by 80–95 %, undo of replace-all by 95 %, and nothing regressed; take the exact percentages with the load caveat.
+Apple silicon laptop (2023, 12 cores, 64 GB), macOS 27.2, Release build, HyperEdit 0.6.0 (all v0.6 features and optimizations). Recorded on an idle machine (1-minute load average ≈ 2.4 on 12 cores) with `scripts/bench.sh`; the JSON is `docs/bench/baseline-0.6.0.json`. Compared with the pre-optimization build (v0.5.1), typing latency dropped from 4.5 ms to 1.2 ms per keystroke, the single undo of a 5,000-match Replace All from 1.7 s to 0.32 s, and cold launch from 0.9 s to 0.59 s; file open and Replace All are a few tens of milliseconds slower because the first frame now also starts the fold-region scan, draws scrollbar markers and registers the split-editor session.
 
 <!-- BENCH TABLE START -->
-Run: v0.5.1 · 36b76d9 · 2026-10-31T09:35:52Z · load average before/after 11.0 / 19.8 (12 cores)  
+Load average (1 min) before/after: 2.4 / 2.1  
 Corpus: small 0 KB / 21 lines · medium 195 KB / 3986 lines · large 1269 KB / 25625 lines · huge 7812 KB / 158481 lines
 
 | Metric | median | p95 | n | budget | result |
 |---|---:|---:|---:|---|---|
-| Cold launch → applicationDidFinishLaunching `launch.didFinishLaunching` | 176 ms | 179 | 5 | — | PASS |
-| Cold launch → first ContentView.onAppear `launch.contentView` | 508 ms | 524 | 5 | — | PASS |
-| Cold launch → first window visible (process start → window) `launch.window` | 508 ms | 524 | 5 | 600 ms | PASS |
-| App bundle size (du -sk) `size.bundle` | 11.4 MB | 11.4 | 1 | 40.0 MB | PASS |
-| Executable size (x86_64 arm64) `size.binary` | 10.8 MB | 10.8 | 1 | 30.0 MB | PASS |
-| Idle CPU, small doc, 3 s `idle.cpu.small` | 0.4 % | 0.4 | 1 | 1.0 % | PASS |
-| Idle wakeups/s, small doc `idle.wakeups.small` | 2.0 /s | 2.0 | 1 | 30.0 /s | PASS |
-| RSS after launch (small doc) `memory.rss.launch` | 141.1 MB | 141.1 | 1 | 200.0 MB | PASS |
-| Footprint after launch `memory.footprint.launch` | 44.6 MB | 44.6 | 1 | — | PASS |
-| Launch → first window (this run, in-process) `launch.windowVisible` | 861 ms | 861 | 1 | 600 ms | over (info) |
-| Open medium: synchronous part `open.medium.sync` | 3.08 ms | 3.25 | 5 | — | PASS |
-| Open medium: + next run-loop turn `open.medium.nextTurn` | 41.30 ms | 42.47 | 5 | — | PASS |
-| Open medium: + first frame `open.medium.settled` | 44.07 ms | 54.23 | 5 | 50.00 ms | PASS |
-| Open large: synchronous part `open.large.sync` | 9.88 ms | 16.42 | 5 | — | PASS |
-| Open large: + next run-loop turn `open.large.nextTurn` | 81.50 ms | 170 | 5 | — | PASS |
-| Open large: + first frame `open.large.settled` | 83.56 ms | 172 | 5 | 150 ms | PASS |
-| Open huge: synchronous part `open.huge.sync` | 49.67 ms | 50.66 | 5 | — | PASS |
-| Open huge: + next run-loop turn `open.huge.nextTurn` | 251 ms | 253 | 5 | — | PASS |
-| Open huge: + first frame `open.huge.settled` | 252 ms | 255 | 5 | 800 ms | PASS |
-| RSS after loading huge (8 MB) `memory.rss.huge` | 203.2 MB | 203.2 | 1 | 400.0 MB | PASS |
-| Footprint after loading huge `memory.footprint.huge` | 61.7 MB | 61.7 | 1 | — | PASS |
-| RSS after 5 small↔huge switches `memory.rss.after5switches` | 203.4 MB | 203.4 | 1 | 450.0 MB | PASS |
+| Cold launch → applicationDidFinishLaunching `launch.didFinishLaunching` | 205 ms | 211 | 5 | — | PASS |
+| Cold launch → first ContentView.onAppear `launch.contentView` | 586 ms | 602 | 5 | — | PASS |
+| Cold launch → first window visible (process start → window) `launch.window` | 586 ms | 602 | 5 | 600 ms | PASS |
+| App bundle size (du -sk) `size.bundle` | 7.8 MB | 7.8 | 1 | 40.0 MB | PASS |
+| Executable size (x86_64 arm64) `size.binary` | 7.2 MB | 7.2 | 1 | 30.0 MB | PASS |
+| Idle CPU, small doc, 3 s `idle.cpu.small` | 0.0 % | 0.0 | 1 | 1.0 % | PASS |
+| Idle wakeups/s, small doc `idle.wakeups.small` | 1.7 /s | 1.7 | 1 | 30.0 /s | PASS |
+| RSS after launch (small doc) `memory.rss.launch` | 144.1 MB | 144.1 | 1 | 200.0 MB | PASS |
+| Footprint after launch `memory.footprint.launch` | 46.2 MB | 46.2 | 1 | — | PASS |
+| Launch → first window (this run, in-process) `launch.windowVisible` | 956 ms | 956 | 1 | 600 ms | over (info) |
+| Open medium: synchronous part `open.medium.sync` | 9.79 ms | 10.51 | 5 | — | PASS |
+| Open medium: + next run-loop turn `open.medium.nextTurn` | 71.70 ms | 75.34 | 5 | — | PASS |
+| Open medium: + first frame `open.medium.settled` | 73.69 ms | 77.19 | 5 | 100 ms | PASS |
+| Open large: synchronous part `open.large.sync` | 20.78 ms | 24.03 | 5 | — | PASS |
+| Open large: + next run-loop turn `open.large.nextTurn` | 108 ms | 112 | 5 | — | PASS |
+| Open large: + first frame `open.large.settled` | 111 ms | 115 | 5 | 150 ms | PASS |
+| Open huge: synchronous part `open.huge.sync` | 78.08 ms | 79.70 | 5 | — | PASS |
+| Open huge: + next run-loop turn `open.huge.nextTurn` | 283 ms | 342 | 5 | — | PASS |
+| Open huge: + first frame `open.huge.settled` | 285 ms | 344 | 5 | 800 ms | PASS |
+| RSS after loading huge (8 MB) `memory.rss.huge` | 202.1 MB | 202.1 | 1 | 400.0 MB | PASS |
+| Footprint after loading huge `memory.footprint.huge` | 59.8 MB | 59.8 | 1 | — | PASS |
+| RSS after 5 small↔huge switches `memory.rss.after5switches` | 202.3 MB | 202.3 | 1 | 450.0 MB | PASS |
 | RSS growth over 5 switches vs first huge load `memory.growth.pct` | 0.1 % | 0.1 | 1 | 20.0 % | PASS |
-| Scroll step (1/40 of doc), large `scroll.step.large` | 2.44 ms | 13.21 | 40 | 16.00 ms / p95 33.00 | PASS |
-| Go to end (⌃⌘E), large `jump.end.large` | 21.30 ms | 23.59 | 5 | 50.00 ms | PASS |
-| Go to line 1, large `jump.line1.large` | 20.57 ms | 24.45 | 5 | 50.00 ms | PASS |
-| LineIndex full build, large (background) `lineIndex.build.large` | 1.19 ms | 1.25 | 5 | 20.00 ms | PASS |
-| Search literal 'error', large (4952 hits) `search.literal.large` | 9.67 ms | 15.64 | 5 | 60.00 ms | PASS |
-| Search caseInsensitive 'Error', large (6137 hits) `search.caseInsensitive.large` | 11.27 ms | 12.82 | 5 | 60.00 ms | PASS |
-| Search regex '\d{4}-\d{2}-\d{2}', large (4035 hits) `search.regex.large` | 9.45 ms | 9.49 | 5 | 60.00 ms | PASS |
-| Search wholeWord 'the', large (8095 hits) `search.wholeWord.large` | 10.52 ms | 10.63 | 5 | 60.00 ms | PASS |
-| LineIndex full build, huge (background) `lineIndex.build.huge` | 4.46 ms | 4.86 | 5 | 120 ms | PASS |
-| Search literal 'error', huge (10000 hits) `search.literal.huge` | 13.37 ms | 14.82 | 5 | 400 ms | PASS |
-| Search caseInsensitive 'Error', huge (10000 hits) `search.caseInsensitive.huge` | 17.07 ms | 17.42 | 5 | 400 ms | PASS |
-| Search regex '\d{4}-\d{2}-\d{2}', huge (10000 hits) `search.regex.huge` | 23.09 ms | 23.22 | 5 | 400 ms | PASS |
-| Search wholeWord 'the', huge (10000 hits) `search.wholeWord.huge` | 12.77 ms | 12.89 | 5 | 400 ms | PASS |
-| Outline + timeline rescan, large (background) `outline.rescan.large` | 44.68 ms | 70.48 | 5 | 300 ms | PASS |
-| Markdown → HTML, large (background) `markdown.render.large` | 159 ms | 159 | 3 | 1500 ms | PASS |
-| Theme switch, large `theme.switch.large` | 98.09 ms | 139 | 10 | 300 ms | PASS |
-| Font size change (⌘=/⌘-), large `fontSize.change.large` | 78.68 ms | 82.17 | 10 | 300 ms | PASS |
-| Theme switch, huge `theme.switch.huge` | 249 ms | 303 | 10 | 1500 ms | PASS |
-| Font size change (⌘=/⌘-), huge `fontSize.change.huge` | 213 ms | 222 | 10 | 1500 ms | PASS |
-| Typing at end, colors on, large `typing.end.hl.large` | 1.19 ms | 3.11 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Typing in middle, colors on, large `typing.middle.hl.large` | 3.29 ms | 5.89 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Syntax colors off (⌃⌘H), large `highlight.toggle.off.large` | 65.45 ms | 65.45 | 1 | 300 ms | PASS |
-| Typing at end, colors off, large `typing.end.plain.large` | 1.26 ms | 3.66 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Typing in middle, colors off, large `typing.middle.plain.large` | 3.31 ms | 6.04 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Enter in middle (no bookmarks), large `enter.middle.large` | 5.34 ms | 8.29 | 20 | 8.00 ms / p95 16.00 | PASS |
-| Enter in middle (bookmark tracking on), large `enter.middle.bookmarked.large` | 5.69 ms | 8.72 | 20 | 8.00 ms / p95 16.00 | PASS |
-| Typing at end, colors on, huge `typing.end.hl.huge` | 1.18 ms | 4.27 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Typing in middle, colors on, huge `typing.middle.hl.huge` | 3.17 ms | 6.16 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Syntax colors off (⌃⌘H), huge `highlight.toggle.off.huge` | 114 ms | 114 | 1 | 300 ms | PASS |
-| Typing at end, colors off, huge `typing.end.plain.huge` | 1.25 ms | 4.42 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Typing in middle, colors off, huge `typing.middle.plain.huge` | 4.43 ms | 6.61 | 80 | 8.00 ms / p95 16.00 | PASS |
-| Enter in middle (no bookmarks), huge `enter.middle.huge` | 2.68 ms | 5.86 | 20 | 8.00 ms / p95 16.00 | PASS |
-| Enter in middle (bookmark tracking on), huge `enter.middle.bookmarked.huge` | 4.53 ms | 8.34 | 20 | 8.00 ms / p95 16.00 | PASS |
-| Replace all (4952 matches), large `replaceAll.5000.large` | 236 ms | 238 | 5 | 500 ms | PASS |
-| Single undo of replace-all, large `undo.replaceAll.large` | 232 ms | 250 | 5 | 500 ms | PASS |
-| save(): main-thread part, huge `save.sync.huge` | 1.41 ms | 2.23 | 5 | 30.00 ms | PASS |
-| Text snapshot copy (per index rebuild / save), huge `snapshot.copy.huge` | 1.35 ms | 1.66 | 5 | 15.00 ms | PASS |
+| Scroll step (1/40 of doc), large `scroll.step.large` | 2.12 ms | 10.65 | 40 | 16.00 ms / p95 33.00 | PASS |
+| Go to end (⌃⌘E), large `jump.end.large` | 13.37 ms | 16.66 | 5 | 50.00 ms | PASS |
+| Go to line 1, large `jump.line1.large` | 15.99 ms | 17.87 | 5 | 50.00 ms | PASS |
+| LineIndex full build, large (background) `lineIndex.build.large` | 1.35 ms | 1.94 | 5 | 20.00 ms | PASS |
+| Search literal 'error', large (4952 hits) `search.literal.large` | 10.07 ms | 16.20 | 5 | 60.00 ms | PASS |
+| Search caseInsensitive 'Error', large (6137 hits) `search.caseInsensitive.large` | 11.31 ms | 12.83 | 5 | 60.00 ms | PASS |
+| Search regex '\d{4}-\d{2}-\d{2}', large (4035 hits) `search.regex.large` | 9.51 ms | 9.73 | 5 | 60.00 ms | PASS |
+| Search wholeWord 'the', large (8095 hits) `search.wholeWord.large` | 10.64 ms | 10.70 | 5 | 60.00 ms | PASS |
+| LineIndex full build, huge (background) `lineIndex.build.huge` | 4.65 ms | 5.52 | 5 | 120 ms | PASS |
+| Search literal 'error', huge (10000 hits) `search.literal.huge` | 13.45 ms | 15.59 | 5 | 400 ms | PASS |
+| Search caseInsensitive 'Error', huge (10000 hits) `search.caseInsensitive.huge` | 16.83 ms | 17.11 | 5 | 400 ms | PASS |
+| Search regex '\d{4}-\d{2}-\d{2}', huge (10000 hits) `search.regex.huge` | 23.04 ms | 23.66 | 5 | 400 ms | PASS |
+| Search wholeWord 'the', huge (10000 hits) `search.wholeWord.huge` | 13.00 ms | 13.24 | 5 | 400 ms | PASS |
+| Outline + timeline rescan, large (background) `outline.rescan.large` | 42.58 ms | 68.73 | 5 | 300 ms | PASS |
+| Markdown → HTML, large (background) `markdown.render.large` | 162 ms | 164 | 3 | 1500 ms | PASS |
+| Theme switch, large `theme.switch.large` | 105 ms | 144 | 10 | 300 ms | PASS |
+| Font size change (⌘=/⌘-), large `fontSize.change.large` | 79.01 ms | 82.00 | 10 | 300 ms | PASS |
+| Theme switch, huge `theme.switch.huge` | 250 ms | 284 | 10 | 1500 ms | PASS |
+| Font size change (⌘=/⌘-), huge `fontSize.change.huge` | 216 ms | 225 | 10 | 1500 ms | PASS |
+| Typing at end, colors on, large `typing.end.hl.large` | 1.29 ms | 4.53 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Typing in middle, colors on, large `typing.middle.hl.large` | 2.93 ms | 5.80 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Syntax colors off (⌃⌘H), large `highlight.toggle.off.large` | 62.42 ms | 62.42 | 1 | 300 ms | PASS |
+| Typing at end, colors off, large `typing.end.plain.large` | 1.26 ms | 3.42 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Typing in middle, colors off, large `typing.middle.plain.large` | 3.26 ms | 7.09 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Enter in middle (no bookmarks), large `enter.middle.large` | 5.56 ms | 7.90 | 20 | 8.00 ms / p95 16.00 | PASS |
+| Enter in middle (bookmark tracking on), large `enter.middle.bookmarked.large` | 5.85 ms | 9.17 | 20 | 8.00 ms / p95 16.00 | PASS |
+| Typing at end, colors on, huge `typing.end.hl.huge` | 1.38 ms | 4.66 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Typing in middle, colors on, huge `typing.middle.hl.huge` | 3.24 ms | 5.88 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Syntax colors off (⌃⌘H), huge `highlight.toggle.off.huge` | 108 ms | 108 | 1 | 300 ms | PASS |
+| Typing at end, colors off, huge `typing.end.plain.huge` | 1.30 ms | 3.85 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Typing in middle, colors off, huge `typing.middle.plain.huge` | 3.11 ms | 5.80 | 80 | 8.00 ms / p95 16.00 | PASS |
+| Enter in middle (no bookmarks), huge `enter.middle.huge` | 3.97 ms | 8.58 | 20 | 8.00 ms / p95 16.00 | PASS |
+| Enter in middle (bookmark tracking on), huge `enter.middle.bookmarked.huge` | 5.71 ms | 8.38 | 20 | 8.00 ms / p95 16.00 | PASS |
+| Replace all (4952 matches), large `replaceAll.5000.large` | 313 ms | 318 | 5 | 500 ms | PASS |
+| Single undo of replace-all, large `undo.replaceAll.large` | 316 ms | 341 | 5 | 500 ms | PASS |
+| save(): main-thread part, huge `save.sync.huge` | 2.37 ms | 3.30 | 5 | 30.00 ms | PASS |
+| Text snapshot copy (per index rebuild / save), huge `snapshot.copy.huge` | 2.66 ms | 3.32 | 5 | 15.00 ms | PASS |
 | Idle CPU, huge doc, 3 s `idle.cpu.huge` | 0.0 % | 0.0 | 1 | 1.0 % | PASS |
-| Idle wakeups/s, huge doc `idle.wakeups.huge` | 1.9 /s | 1.9 | 1 | 30.0 /s | PASS |
-| RSS at end of bench (huge open) `memory.rss.end` | 254.7 MB | 254.7 | 1 | 450.0 MB | PASS |
+| Idle wakeups/s, huge doc `idle.wakeups.huge` | 1.0 /s | 1.0 | 1 | 30.0 /s | PASS |
+| RSS at end of bench (huge open) `memory.rss.end` | 250.6 MB | 250.6 | 1 | 450.0 MB | PASS |
+
+All budgets PASS.
 <!-- BENCH TABLE END -->
 
 ## What the harness found (v0.5.1) and what was changed

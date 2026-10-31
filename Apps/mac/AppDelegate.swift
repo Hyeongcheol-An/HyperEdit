@@ -35,6 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // 개발용: `--window-width <pt>` 로 첫 창 폭을 바꿔 좁은 창(리본 접힘) 상태를 스크린샷한다.
         // 스냅샷 실행은 폭을 주지 않으면 1280 으로 고정한다 (AppKit 의 창 프레임 자동 저장이 이전 실행 크기를 되살리므로).
+        // 개발용: `--snapshot-activate` 는 캡처 전에 앱을 앞으로 가져와 창이 활성(색 신호등) 상태로 찍히게 한다 (README 용; 다른 앱의 포커스를 잠시 뺏는다)
+        if args.contains("--snapshot-activate") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.activate(ignoringOtherApps: true) }
+        }
         let requested = LaunchOptions.value("--window-width").flatMap(Double.init) ?? (args.contains("--snapshot") ? 1280 : nil)
         if let width = requested {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {

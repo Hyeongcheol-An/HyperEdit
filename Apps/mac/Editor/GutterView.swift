@@ -16,6 +16,8 @@ final class GutterView: NSView {
     private var borderColor = NSColor.separatorColor
     private var lineHighlightColor = NSColor.clear
     private var lastDigits = 0
+    /// 한 번의 그리기에서 열거할 프래그먼트 상한 (보이는 줄 수백 + 접힌 높이 0 문단 수천)
+    private static let maxFragmentsPerDraw = 5_000
 
     // fold: 접기 화살표 열 (FoldController 가 설치). 문단 범위(개행 포함)의 시작 오프셋과, 필요할 때만 계산하는 끝 오프셋으로 묻는다
     enum FoldMarker { case foldable, folded }
@@ -102,12 +104,24 @@ final class GutterView: NSView {
         let curAttrs: [NSAttributedString.Key: Any] = [.font: numberFont, .foregroundColor: currentColor]
         let startPoint = CGPoint(x: 0, y: max(0, visible.minY - origin.y))
         let startLocation = lm.textLayoutFragment(for: startPoint)?.rangeInElement.location ?? lm.documentRange.location
-
+        // 보이는 영역의 끝 문단: 전체 속성 재적용 직후에는 프래그먼트 프레임이 추정값(높이 0·엉뚱한 y)이라 프레임만으로는 멈출 수 없다 —
+        // 점 질의로 끝 위치를 구해 그 문단을 지나면 멈춘다 (안 그러면 문서 끝까지 배치하며 열거해 8 MB 문서의 테마 전환이 20 s 걸린다, 실측)
+        let endPoint = CGPoint(x: 0, y: max(0, visible.maxY - origin.y))
+        let endLocation = lm.textLayoutFragment(for: endPoint)?.rangeInElement.endLocation
+        // 전체 속성 재적용 직후 프레임 y 는 추정값이라 '보이는 영역을 지났다' 판정이 안 걸릴 수 있다(실측: 5,000개까지 열거) →
+        // 시작 문단부터 누적한 높이가 보이는 높이를 넘으면 멈춘다. 추정 프레임으로 그린 번호는 TextKit 이 배치를 마친 뒤의 다음 그리기가 바로잡는다.
+        let maxAccumulatedHeight = visible.height + 4 * max(1, (tv.font?.pointSize ?? 14) * 2)
+        var visited = 0, zeroHeight = 0
+        var accumulated: CGFloat = 0
         lm.enumerateTextLayoutFragments(from: startLocation, options: [.ensuresLayout]) { frag in
+            visited += 1
+            if visited > Self.maxFragmentsPerDraw { return false }   // 안전장치: 어떤 경우에도 한 번의 그리기가 문서 전체를 배치하지 않게
+            if let end = endLocation, frag.rangeInElement.location.compare(end) != .orderedAscending { return false }
             let frame = frag.layoutFragmentFrame
-            if frame.height <= 0 { return true }   // fold: 접힌(높이 0) 문단은 번호를 건너뛴다
             let yInTextView = frame.minY + origin.y
-            if yInTextView > visible.maxY { return false }
+            if yInTextView > visible.maxY || accumulated > maxAccumulatedHeight { return false }
+            accumulated += frame.height
+            if frame.height <= 0 { zeroHeight += 1; return true }   // fold: 접힌(높이 0) 문단은 번호를 건너뛴다
             if yInTextView + frame.height < visible.minY { return true }
             let offset = cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.location)
             let line = index.lineNumber(forUTF16Offset: offset)
@@ -128,6 +142,7 @@ final class GutterView: NSView {
             }
             return true
         }
+        if Perf.enabled { Perf.log("GutterView.draw visited=\(visited) zeroHeight=\(zeroHeight)") }
     }
 
     // fold: 화살표 열 클릭 → 그 문단의 접기 토글

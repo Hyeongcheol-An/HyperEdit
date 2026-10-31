@@ -341,7 +341,8 @@ enum Bench {
         }
 
         // 2. 파일 열기 (small → target), 5회: sync / next turn / after frame
-        for (name, budget) in [("medium", 50.0), ("large", 150.0), ("huge", 800.0)] where phase("open") {
+        // medium 첫 프레임 예산 100 ms: v0.6 부터 첫 프레임에 접기 영역 스캔 시작·스크롤바 마커·분할 세션 등록이 포함된다 (유휴 머신 실측 ≈ 70 ms)
+        for (name, budget) in [("medium", 100.0), ("large", 150.0), ("huge", 800.0)] where phase("open") {
             var sync: [Double] = [], turn: [Double] = [], settled: [Double] = []
             for _ in 0..<5 {
                 model.open(url: urls["small"]!); await wait(500)

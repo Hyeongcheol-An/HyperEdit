@@ -290,14 +290,20 @@ final class HyperTextView: NSTextView {
         editObserverNames.removeAll()
     }
 
+    /// undo/redo 가 진행 중인가 (저장소 알림이 어떤 편집에서 왔는지 구분하는 데 쓴다)
+    private var undoInProgress = false
+
     @objc private func undoWillChange(_ n: Notification) {
-        guard (n.object as? UndoManager) === undoManager, onLinesWillChange != nil, needsLineTracking?() ?? true else { undoNewlineCount = nil; return }
+        guard (n.object as? UndoManager) === undoManager else { return }
+        undoInProgress = true
+        guard onLinesWillChange != nil, needsLineTracking?() ?? true else { undoNewlineCount = nil; return }
         let ns = string as NSString
         undoNewlineCount = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))
     }
 
     @objc private func undoDidChange(_ n: Notification) {
         guard (n.object as? UndoManager) === undoManager else { return }
+        undoInProgress = false
         undoNewlineCount = nil
         endSnippetSession()   // snippets: undo/redo 는 shouldChangeText 를 거치지 않아 탭스톱 범위가 낡는다 → 세션 종료
     }
@@ -306,14 +312,20 @@ final class HyperTextView: NSTextView {
     @objc private func storageDidProcessEditing(_ n: Notification) {
         guard let ts = n.object as? NSTextStorage, ts === textStorage, ts.editedMask.contains(.editedCharacters) else { return }
         if expectingTrackedEdit { expectingTrackedEdit = false; return }
+        // 추적되지 않은 편집은 undo/redo 이거나 프로그램적 전체 교체(파일 열기·다시 읽기)다. 접힘이 없고 undo 도 아니면 할 일이 없다 —
+        // 여기서 교체 문자열을 복사하면 8 MB 문서를 열 때마다 8 MB 를 복사하게 된다.
+        let foldsActive = hasFolds?() ?? false
+        guard foldsActive || undoInProgress else { return }
         let edited = ts.editedRange
         guard edited.location != NSNotFound else { return }
         let ns = ts.string as NSString
         let pre = NSRange(location: edited.location, length: max(0, edited.length - ts.changeInLength))
-        let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
-        onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
+        if foldsActive {
+            let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
+            onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
+        }
         // split: 아래는 주 편집기만, 그리고 다른 뷰가 shouldChangeText 로 추적한 편집(그 뷰의 undo 클로저가 재생한 performReplacements 등)은 그 뷰가 처리했으므로 제외
-        guard tracksUntrackedLineChanges, !Self.storagesWithTrackedEdit.contains(ObjectIdentifier(ts)) else { return }
+        guard undoInProgress, tracksUntrackedLineChanges, !Self.storagesWithTrackedEdit.contains(ObjectIdentifier(ts)) else { return }
         // undo/redo 는 didChangeText 도 부르지 않는다 — 저장소 편집 처리가 끝난 뒤 직접 불러 뷰 상태(입력 합치기 등)를 정리한다.
         // 이 호출을 빼면 undo 뒤 모든 입력이 5배쯤 느려지는 것이 실측됐다. 문서 dirty 는 MemoDocument 가 저장소 알림으로 직접 관리하며,
         // load/reload 의 전체 교체 뒤에 오는 이 호출은 MemoDocument.textDidChange() 가 (문자 편집이 없었으므로) 무시한다.
