@@ -17,6 +17,11 @@ updates:
           - "@semantic-release/*"
           - "conventional-changelog-*"
           - "@commitlint/*"
+    ignore:
+      # 10.x 는 conventional-changelog-writer@9 를 요구하지만 semantic-release 의 release-notes-generator 는 writer 8 을 번들한다
+      # (2026-10-31 릴리스 실패: "Missing helper"). semantic-release 가 writer 9 로 올라가면 이 규칙을 지울 것.
+      - dependency-name: "conventional-changelog-conventionalcommits"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
