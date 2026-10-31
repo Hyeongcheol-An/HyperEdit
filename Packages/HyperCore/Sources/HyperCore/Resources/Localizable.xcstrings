@@ -1,0 +1,96 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Blocked saving empty content (original had %lld characters). Undo (⌘Z) and save again." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빈 내용 저장을 차단했습니다 (원본 %lld자). 되돌리기(⌘Z) 후 다시 저장하세요."
+          }
+        }
+      }
+    },
+    "External change detected — saving will overwrite it (the external copy is kept as a snapshot)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "외부 변경 감지 — 저장 시 덮어씁니다 (외부본은 스냅샷 보관)"
+          }
+        }
+      }
+    },
+    "Loaded" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "불러옴"
+          }
+        }
+      }
+    },
+    "Open failed: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열기 실패: %@"
+          }
+        }
+      }
+    },
+    "Open failed: cannot determine the text encoding (not UTF-8 / EUC-KR / Latin-1)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열기 실패: 텍스트 인코딩을 판별할 수 없습니다 (UTF-8 / EUC-KR / Latin-1 아님)"
+          }
+        }
+      }
+    },
+    "Reloaded external change · %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "외부 변경 반영 · %@"
+          }
+        }
+      }
+    },
+    "Save failed: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장 실패: %@"
+          }
+        }
+      }
+    },
+    "Saved · %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장됨 · %@"
+          }
+        }
+      }
+    },
+    "Saved · %@ · converted to UTF-8 because the original encoding cannot represent some characters" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장됨 · %@ · 원 인코딩에 없는 문자가 있어 UTF-8 로 변환 저장"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

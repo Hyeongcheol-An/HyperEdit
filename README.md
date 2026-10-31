@@ -44,7 +44,7 @@ shasum -a 256 -c SHA256SUMS
 
 HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welcome text if it does not exist. ⌘N creates a new empty text file (you choose the name and folder), ⌘O opens any other text file, and the last opened file is remembered for the next launch. Binary files (images, PDFs, archives…) are never loaded into the editor; they open in their default app instead.
 
-> UI strings are Korean only in the current release. The ribbon layout and shortcuts are the same on every system, and English localization is on the roadmap — contributions are welcome.
+> The UI is available in English and Korean and follows the system language. The ribbon layout and shortcuts are the same on every system — translations for other languages are welcome (`Apps/mac/Localizable.xcstrings`).
 
 ## Features
 
@@ -166,7 +166,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 
 ## Roadmap and limitations
 
-- UI strings are Korean only; English localization is planned.
+- UI in English and Korean (follows the system language); no other languages yet.
 - Plain text only: no syntax highlighting and no Markdown preview yet.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
 - Planned editing tools — comment toggle, inline calculator, table alignment, JSON tidy, Markdown preview, macros, split view — are on the roadmap but not implemented yet.

@@ -23,6 +23,8 @@ jobs:
         run: git diff --exit-code -- themes/dist/hyperedit-themes.json docs/theme-preview.html Packages/HyperCore/Sources/HyperCore/Resources/palettes.json || (echo '::error::themes/dist 또는 docs/theme-preview.html 이 palettes.json 과 어긋남. 로컬에서 python3 themes/build_zed_theme.py && python3 themes/build_preview.py 후 커밋' && exit 1)
       - name: 테마 스키마 검증
         run: python3 themes/validate.py
+      - name: 문자열 카탈로그 검사
+        run: python3 scripts/check-l10n.py
   sensitive:
     name: 개인정보·비밀 검사
     runs-on: ubuntu-latest

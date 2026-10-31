@@ -3,19 +3,31 @@ import AppKit
 import Combine
 import HyperCore
 
+// 탭 이름 등 UI 문자열은 영어 키(LocalizedStringKey) + Apps/mac/Localizable.xcstrings 의 한국어 번역으로 표시한다.
 enum RibbonTab: String, CaseIterable, Identifiable {
-    case home = "홈", edit = "편집", layout = "레이아웃", advanced = "고급", window = "창"
+    case home, edit, layout, advanced, window
     var id: String { rawValue }
     /// 실행 인자(`--ribbon <key>`)용 영문 키
     var key: String {
         switch self { case .home: "home"; case .edit: "edit"; case .layout: "layout"; case .advanced: "advanced"; case .window: "window" }
     }
+    /// 탭 제목
+    var label: LocalizedStringKey {
+        switch self { case .home: "Home"; case .edit: "Edit"; case .layout: "Layout"; case .advanced: "Advanced"; case .window: "Window" }
+    }
+    /// 보기 메뉴의 "리본: …" 항목
+    var menuLabel: LocalizedStringKey {
+        switch self { case .home: "Ribbon: Home"; case .edit: "Ribbon: Edit"; case .layout: "Ribbon: Layout"; case .advanced: "Ribbon: Advanced"; case .window: "Ribbon: Window" }
+    }
 }
 
 enum BottomTab: String, CaseIterable, Identifiable {
-    case findResults = "찾기 결과", bookmarks = "북마크", output = "출력"
+    case findResults, bookmarks, output
     var id: String { rawValue }
     var key: String { switch self { case .findResults: "find"; case .bookmarks: "bookmarks"; case .output: "output" } }
+    var label: LocalizedStringKey {
+        switch self { case .findResults: "Find Results"; case .bookmarks: "Bookmarks"; case .output: "Output" }
+    }
     var systemImage: String {
         switch self { case .findResults: "magnifyingglass"; case .bookmarks: "bookmark"; case .output: "terminal" }
     }
@@ -53,23 +65,31 @@ enum EditorCommand {
 }
 
 enum LeftTab: String, CaseIterable, Identifiable {
-    case fileView = "파일", outline = "아웃라인", timeline = "타임라인"
+    case fileView, outline, timeline
     var id: String { rawValue }
     var key: String { switch self { case .fileView: "files"; case .outline: "outline"; case .timeline: "timeline" } }
+    var label: LocalizedStringKey {
+        switch self { case .fileView: "Files"; case .outline: "Outline"; case .timeline: "Timeline" }
+    }
     var systemImage: String {
         switch self { case .fileView: "folder"; case .outline: "list.bullet.indent"; case .timeline: "calendar" }
     }
 }
 
 enum FindScope: String, CaseIterable, Identifiable {
-    case document = "현재 문서", files = "파일에서"
+    case document, files
     var id: String { rawValue }
+    var label: LocalizedStringKey {
+        switch self { case .document: "Document"; case .files: "In Files" }
+    }
 }
 
 struct OutputLine: Identifiable {
     let id = UUID()
     let time: Date
     let text: String
+    /// 출력 패널에서 빨간색으로 표시 (문서 오류)
+    var isError = false
 }
 
 /// 키 입력마다 바뀌는 상태만 따로 발행 — 상태바·아웃라인·타임라인만 구독하고 리본/패널은 다시 그리지 않는다
@@ -99,7 +119,7 @@ final class AppModel: ObservableObject {
     @Published var showBottomPanel: Bool { didSet { AppDefaults.store.set(showBottomPanel, forKey: "ui.showBottomPanel") } }
     @Published var bottomTab: BottomTab = .findResults
     @Published var leftTab: LeftTab = .fileView
-    @Published var columnMode = false { didSet { editorCommands.send(.setColumnMode(columnMode)); log(columnMode ? "열 모드 켬 (⇧방향키/드래그로 블록 선택)" : "열 모드 끔") } }
+    @Published var columnMode = false { didSet { editorCommands.send(.setColumnMode(columnMode)); log(columnMode ? String(localized: "Column mode on (⇧arrows / drag to select a block)") : String(localized: "Column mode off")) } }
     @Published var showInsertNumber = false
     @Published var insertNumberStart = "1"
     @Published var insertNumberStep = "1"
@@ -161,7 +181,7 @@ final class AppModel: ObservableObject {
         doc.load()
         bind()
         Self.current = self
-        log("HyperEdit 시작 · \(doc.url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))")
+        log(String(localized: "HyperEdit started · \(doc.url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))"))
         applyLaunchOptions()
     }
 
@@ -179,7 +199,7 @@ final class AppModel: ObservableObject {
         document.$status.removeDuplicates().filter { !$0.isEmpty }
             .sink { [weak self] s in self?.log(s) }.store(in: &cancellables)
         document.$errorMessage.compactMap { $0 }.removeDuplicates()
-            .sink { [weak self] e in self?.log("오류: " + e) }.store(in: &cancellables)
+            .sink { [weak self] e in self?.log(String(localized: "Error: \(e)"), isError: true) }.store(in: &cancellables)
         document.$lineIndex
             .debounce(for: .milliseconds(1200), scheduler: RunLoop.main)
             .sink { [weak self] _ in
@@ -206,8 +226,8 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func log(_ text: String) {
-        output.append(OutputLine(time: Date(), text: text))
+    func log(_ text: String, isError: Bool = false) {
+        output.append(OutputLine(time: Date(), text: text, isError: isError))
         if output.count > 500 { output.removeFirst(output.count - 500) }
     }
 
@@ -220,7 +240,7 @@ final class AppModel: ObservableObject {
     /// (스토리지 교체 반복 시 TextKit 2 가 퇴화하는 문제 + 창 전체 재구성을 피함).
     func open(url: URL) {
         guard TextFileDetector.isLikelyText(url) else {
-            log("텍스트 파일이 아니라 기본 앱으로 엽니다 · \(url.lastPathComponent)")
+            log(String(localized: "Not a text file — opening in its default app · \(url.lastPathComponent)"))
             NSWorkspace.shared.open(url)
             return
         }
@@ -233,7 +253,7 @@ final class AppModel: ObservableObject {
             if !searchHits.isEmpty { searchHits = [] }
             if searchError != nil { searchError = nil }
             rescanStructure()
-            log("열기 · \(document.url.path)")
+            log(String(localized: "Opened · \(document.url.path)"))
         }
     }
 
@@ -248,7 +268,7 @@ final class AppModel: ObservableObject {
         let p = NSOpenPanel()
         p.canChooseFiles = true; p.canChooseDirectories = false; p.allowsMultipleSelection = false
         p.directoryURL = rootDirectory
-        p.message = "열 텍스트 파일을 고르세요"
+        p.message = String(localized: "Choose a text file to open")
         if p.runModal() == .OK, let u = p.url { open(url: u) }
     }
 
@@ -257,8 +277,8 @@ final class AppModel: ObservableObject {
         let p = NSSavePanel()
         p.directoryURL = rootDirectory
         p.nameFieldStringValue = "untitled.md"
-        p.title = "새 문서"
-        p.message = "새 텍스트 파일의 이름과 위치"
+        p.title = String(localized: "New Document")
+        p.message = String(localized: "Name and location of the new text file")
         p.canCreateDirectories = true
         guard p.runModal() == .OK, let u = p.url else { return }
         if !FileManager.default.fileExists(atPath: u.path) { FileManager.default.createFile(atPath: u.path, contents: Data()) }
@@ -272,7 +292,7 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.open(dir)
     }
     func saveNow() { document.save() }
-    func reloadFromDisk() { document.reloadFromDisk(); log("디스크에서 다시 읽음") }
+    func reloadFromDisk() { document.reloadFromDisk(); log(String(localized: "Reloaded from disk")) }
 
     // MARK: 검색
 
@@ -292,14 +312,14 @@ final class AppModel: ObservableObject {
             // 줄 인덱스는 같은 스냅샷에서 새로 만든다 — 편집 직후 250ms 안에는 document.lineIndex 가 낡아 범위 밖 접근으로 크래시할 수 있다
             let outcome: ([SearchHit], String?) = await Task.detached(priority: .userInitiated) {
                 do { return (try SearchEngine.search(q, in: text, index: LineIndex(text: text), options: opts), nil) }
-                catch SearchError.invalidRegex(let m) { return ([], "정규식 오류: \(m)") }
+                catch SearchError.invalidRegex(let m) { return ([], String(localized: "Regex error: \(m)")) }
                 catch { return ([], error.localizedDescription) }
             }.value
             guard let self, !Task.isCancelled else { return }
             self.isSearching = false
             self.searchHits = outcome.0
             self.searchError = outcome.1
-            self.log("찾기 '\(q)' · \(outcome.0.count)건" + (outcome.1.map { " · " + $0 } ?? ""))
+            self.log(String(localized: "Find '\(q)' · \(outcome.0.count) hits") + (outcome.1.map { " · " + $0 } ?? ""))
         }
     }
 
@@ -320,7 +340,7 @@ final class AppModel: ObservableObject {
         let p = NSOpenPanel()
         p.canChooseFiles = false; p.canChooseDirectories = true; p.allowsMultipleSelection = false
         p.directoryURL = fileSearchDirectory
-        p.message = "검색할 폴더"
+        p.message = String(localized: "Folder to search")
         if p.runModal() == .OK, let u = p.url { fileSearchDirectory = u }
     }
 
@@ -329,14 +349,14 @@ final class AppModel: ObservableObject {
         let q = searchQuery, opts = searchOptions, dir = fileSearchDirectory, mask = fileMask
         guard !q.isEmpty else { fileHits = []; fileSearchSummary = ""; return }
         isFileSearching = true
-        fileSearchSummary = "검색 중…"
+        fileSearchSummary = String(localized: "Searching…")
         fileSearchTask = Task { [weak self] in
             // detached 작업 안의 Task.isCancelled 는 바깥 작업의 취소를 모른다 → 플래그로 전달해 폴더 순회를 실제로 멈춘다
             let flag = CancelFlag()
             let outcome: (FileSearchResult?, String?) = await withTaskCancellationHandler {
                 await Task.detached(priority: .userInitiated) {
                     do { return (try FileSearch.search(q, in: dir, mask: mask, options: opts, isCancelled: { flag.isSet }), nil) }
-                    catch SearchError.invalidRegex(let m) { return (nil, "정규식 오류: \(m)") }
+                    catch SearchError.invalidRegex(let m) { return (nil, String(localized: "Regex error: \(m)")) }
                     catch { return (nil, error.localizedDescription) }
                 }.value
             } onCancel: { flag.set() }
@@ -344,14 +364,16 @@ final class AppModel: ObservableObject {
             self.isFileSearching = false
             if let r = outcome.0 {
                 self.fileHits = r.hits
-                self.fileSearchSummary = "\(r.hits.count)건 · \(r.filesMatched)/\(r.filesScanned) 파일" + (r.truncated ? " · 일부만 표시" : "")
+                let summary = String(localized: "\(r.hits.count) hits · \(r.filesMatched)/\(r.filesScanned) files")
+                self.fileSearchSummary = r.truncated ? String(localized: "\(summary) · partial results") : summary
                 self.searchError = nil
             } else {
                 self.fileHits = []
                 self.fileSearchSummary = ""
                 self.searchError = outcome.1
             }
-            self.log("파일에서 찾기 '\(q)' @ \(dir.lastPathComponent)\(mask.isEmpty ? "" : " [\(mask)]") · \(self.fileSearchSummary)")
+            let maskPart = mask.isEmpty ? "" : " [\(mask)]"
+            self.log(String(localized: "Find in files '\(q)' @ \(dir.lastPathComponent)\(maskPart) · \(self.fileSearchSummary)"))
         }
     }
 
@@ -380,7 +402,7 @@ final class AppModel: ObservableObject {
               let m = re.firstMatch(in: text, options: [.anchored, .withTransparentBounds, .withoutAnchoringBounds], range: sel), m.range == sel else { findNext(); return }
         let repl = SearchEngine.replacement(for: sel, in: text, query: searchQuery, options: searchOptions, template: replaceText)
         editorCommands.send(.replaceRanges([Replacement(range: sel, string: repl)]))
-        log("바꾸기 · \(caretLine)줄")
+        log(String(localized: "Replace · line \(caretLine)"))
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: 350_000_000)
             guard let self else { return }
@@ -393,11 +415,11 @@ final class AppModel: ObservableObject {
     func replaceAll() {
         let text = document.textStorage.string
         guard let hits = try? SearchEngine.search(searchQuery, in: text, index: LineIndex(text: text), options: searchOptions, limit: 1_000_000), !hits.isEmpty else {
-            log("모두 바꾸기 · 매치 없음"); return
+            log(String(localized: "Replace all · no matches")); return
         }
         let reps = hits.map { Replacement(range: $0.range, string: SearchEngine.replacement(for: $0.range, in: text, query: searchQuery, options: searchOptions, template: replaceText)) }
         editorCommands.send(.replaceRanges(reps))
-        log("모두 바꾸기 '\(searchQuery)' → '\(replaceText)' · \(reps.count)건")
+        log(String(localized: "Replace all '\(searchQuery)' → '\(replaceText)' · \(reps.count) hits"))
         Task { [weak self] in try? await Task.sleep(nanoseconds: 400_000_000); self?.runSearch() }
     }
 
@@ -405,7 +427,7 @@ final class AppModel: ObservableObject {
     func selectAllMatches() {
         guard !searchHits.isEmpty else { return }
         editorCommands.send(.selectRanges(searchHits.map(\.range)))
-        log("매치 \(searchHits.count)개를 멀티 선택")
+        log(String(localized: "Selected \(searchHits.count) matches as multiple carets"))
     }
 
     func insertColumnNumbers() {
@@ -451,7 +473,7 @@ final class AppModel: ObservableObject {
         let safe = NSIntersectionRange(r, NSRange(location: 0, length: ns.length))
         let preview = String(ns.substring(with: safe).trimmingCharacters(in: .whitespaces).prefix(60))
         let added = bookmarks.toggle(line: line, preview: preview)
-        log(added ? "북마크 추가 · \(line)줄" : "북마크 제거 · \(line)줄")
+        log(added ? String(localized: "Bookmark added · line \(line)") : String(localized: "Bookmark removed · line \(line)"))
     }
 
     func nextBookmark() {

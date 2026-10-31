@@ -11,13 +11,13 @@ struct RibbonView: View {
             HStack(spacing: 0) {
                 Color.clear.frame(width: 6)    // 탭 줄은 제목 표시줄(신호등) 아래에 놓이므로 큰 여백이 필요 없다
                 ForEach(RibbonTab.allCases) { tab in
-                    RibbonTabButton(title: tab.rawValue, selected: model.ribbonTab == tab, theme: theme) { model.ribbonTab = tab }
+                    RibbonTabButton(title: tab.label, selected: model.ribbonTab == tab, theme: theme) { model.ribbonTab = tab }
                 }
                 Spacer()
                 HStack(spacing: 2) {
-                    QuickButton(systemImage: "square.and.arrow.down", help: "저장 (⌘S)", theme: theme) { model.saveNow() }
-                    QuickButton(systemImage: "arrow.uturn.backward", help: "실행 취소 (⌘Z)", theme: theme) { model.send(.undo) }
-                    QuickButton(systemImage: "arrow.uturn.forward", help: "다시 실행 (⇧⌘Z)", theme: theme) { model.send(.redo) }
+                    QuickButton(systemImage: "square.and.arrow.down", help: "Save (⌘S)", theme: theme) { model.saveNow() }
+                    QuickButton(systemImage: "arrow.uturn.backward", help: "Undo (⌘Z)", theme: theme) { model.send(.undo) }
+                    QuickButton(systemImage: "arrow.uturn.forward", help: "Redo (⇧⌘Z)", theme: theme) { model.send(.redo) }
                 }
                 .padding(.trailing, 6)
                 // 문서 이름은 문서 탭에 있으므로 여기엔 폴더를 보여 준다 (전체 경로는 툴팁)
@@ -51,48 +51,50 @@ struct RibbonView: View {
 }
 
 // MARK: - 탭 내용
+// title/help 는 LocalizedStringKey — 영어 리터럴이 카탈로그 키, 한국어는 Localizable.xcstrings 의 번역.
+// 작은 버튼은 128pt 한 줄이므로 영어 제목은 16자 안팎으로 유지한다.
 
 private struct HomeTab: View {
     @EnvironmentObject var model: AppModel
     let theme: Theme
     var body: some View {
-        RibbonGroup(title: "클립보드", theme: theme) {
-            RibbonBigButton(title: "붙여넣기", systemImage: "doc.on.clipboard", help: "⌘V", theme: theme) { model.send(.paste) }
+        RibbonGroup(title: "Clipboard", theme: theme) {
+            RibbonBigButton(title: "Paste", systemImage: "doc.on.clipboard", help: "⌘V", theme: theme) { model.send(.paste) }
             RibbonStack {
-                RibbonSmallButton(title: "잘라내기", systemImage: "scissors", help: "⌘X", theme: theme) { model.send(.cut) }
-                RibbonSmallButton(title: "복사", systemImage: "doc.on.doc", help: "⌘C", theme: theme) { model.send(.copy) }
-                RibbonSmallButton(title: "모두 선택", systemImage: "selection.pin.in.out", help: "⌘A", theme: theme) { model.send(.selectAll) }
+                RibbonSmallButton(title: "Cut", systemImage: "scissors", help: "⌘X", theme: theme) { model.send(.cut) }
+                RibbonSmallButton(title: "Copy", systemImage: "doc.on.doc", help: "⌘C", theme: theme) { model.send(.copy) }
+                RibbonSmallButton(title: "Select All", systemImage: "selection.pin.in.out", help: "⌘A", theme: theme) { model.send(.selectAll) }
             }
         }
-        RibbonGroup(title: "찾기", theme: theme) {
-            RibbonBigButton(title: "찾기", systemImage: "magnifyingglass", help: "⌘F — 하단 '찾기 결과' 창에 결과 목록", theme: theme) { model.findInEditor() }
+        RibbonGroup(title: "Find", theme: theme) {
+            RibbonBigButton(title: "Find", systemImage: "magnifyingglass", help: "⌘F — results are listed in the 'Find Results' panel below", theme: theme) { model.findInEditor() }
             RibbonStack {
-                RibbonSmallButton(title: "바꾸기", systemImage: "arrow.left.arrow.right", help: "⌘R", theme: theme) { model.showReplace() }
-                RibbonSmallButton(title: "파일에서 찾기", systemImage: "doc.text.magnifyingglass", help: "⇧⌘F — 폴더·마스크", theme: theme) { model.showFindInFiles() }
-                RibbonSmallButton(title: "줄로 이동", systemImage: "arrow.right.to.line", help: "⌘L", theme: theme) { model.showGoToLine = true }
+                RibbonSmallButton(title: "Replace", systemImage: "arrow.left.arrow.right", help: "⌘R", theme: theme) { model.showReplace() }
+                RibbonSmallButton(title: "Find in Files", systemImage: "doc.text.magnifyingglass", help: "⇧⌘F — folder and file mask", theme: theme) { model.showFindInFiles() }
+                RibbonSmallButton(title: "Go to Line", systemImage: "arrow.right.to.line", help: "⌘L", theme: theme) { model.showGoToLine = true }
             }
         }
-        RibbonGroup(title: "삽입", theme: theme) {
-            RibbonBigButton(title: "날짜/시간", systemImage: "calendar.badge.clock", help: "타임스탬프 헤딩 삽입 — ## 2026-10-30 (금) 14:05 (F7)", theme: theme) { model.insertTimestamp() }
+        RibbonGroup(title: "Insert", theme: theme) {
+            RibbonBigButton(title: "Date/Time", systemImage: "calendar.badge.clock", help: "Insert a timestamp heading — ## 2026-10-30 (Fri) 14:05 (F7)", theme: theme) { model.insertTimestamp() }
             RibbonStack {
-                RibbonSmallButton(title: "북마크 토글", systemImage: "bookmark", help: "현재 줄 북마크 켜기/끄기 (⌘F2)", theme: theme) { model.toggleBookmarkAtCaret() }
-                RibbonSmallButton(title: "다음 북마크", systemImage: "bookmark.fill", help: "다음 북마크로 (F2)", theme: theme) { model.nextBookmark() }
-                RibbonSmallButton(title: "이전 북마크", systemImage: "bookmark.slash", help: "이전 북마크로 (⌥F2)", theme: theme) { model.previousBookmark() }
+                RibbonSmallButton(title: "Toggle Bookmark", systemImage: "bookmark", help: "Bookmark the current line on/off (⌘F2)", theme: theme) { model.toggleBookmarkAtCaret() }
+                RibbonSmallButton(title: "Next Bookmark", systemImage: "bookmark.fill", help: "Go to the next bookmark (F2)", theme: theme) { model.nextBookmark() }
+                RibbonSmallButton(title: "Prev. Bookmark", systemImage: "bookmark.slash", help: "Go to the previous bookmark (⌥F2)", theme: theme) { model.previousBookmark() }
             }
         }
-        RibbonGroup(title: "모드", theme: theme) {
-            RibbonBigToggle(title: "열 모드", systemImage: "rectangle.split.3x1", help: "⌥C — 드래그/⇧방향키로 사각형 선택, 입력은 모든 줄에", isOn: $model.columnMode, theme: theme)
+        RibbonGroup(title: "Mode", theme: theme) {
+            RibbonBigToggle(title: "Column Mode", systemImage: "rectangle.split.3x1", help: "⌥C — drag or ⇧arrows select a rectangle; typing applies to every line", isOn: $model.columnMode, theme: theme)
             RibbonStack {
-                RibbonSmallToggle(title: "자동 줄바꿈", systemImage: "text.word.spacing", help: "자동 줄바꿈 (⌥Z)", isOn: $model.wordWrap, theme: theme)
-                RibbonSmallToggle(title: "줄 번호", systemImage: "list.number", help: "줄 번호 거터 (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
+                RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
+                RibbonSmallToggle(title: "Line Numbers", systemImage: "list.number", help: "Line number gutter (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
             }
         }
-        RibbonGroup(title: "파일", theme: theme) {
-            RibbonBigButton(title: "저장", systemImage: "square.and.arrow.down", help: "지금 저장 (⌘S) — 입력을 멈추면 2초 뒤 자동 저장", theme: theme) { model.saveNow() }
+        RibbonGroup(title: "File", theme: theme) {
+            RibbonBigButton(title: "Save", systemImage: "square.and.arrow.down", help: "Save now (⌘S) — autosaves 2 seconds after you stop typing", theme: theme) { model.saveNow() }
             RibbonStack {
-                RibbonSmallButton(title: "새 문서…", systemImage: "doc.badge.plus", help: "빈 텍스트 파일을 만들어 연다 (⌘N)", theme: theme) { model.newDocument() }
-                RibbonSmallButton(title: "열기…", systemImage: "folder", help: "텍스트 파일 열기 (⌘O)", theme: theme) { model.presentOpenPanel() }
-                RibbonSmallButton(title: "Finder에서 보기", systemImage: "macwindow", help: "현재 파일을 Finder 에서 선택", theme: theme) { model.revealInFinder() }
+                RibbonSmallButton(title: "New Document…", systemImage: "doc.badge.plus", help: "Create and open an empty text file (⌘N)", theme: theme) { model.newDocument() }
+                RibbonSmallButton(title: "Open…", systemImage: "folder", help: "Open a text file (⌘O)", theme: theme) { model.presentOpenPanel() }
+                RibbonSmallButton(title: "Reveal in Finder", systemImage: "macwindow", help: "Select the current file in Finder", theme: theme) { model.revealInFinder() }
             }
         }
     }
@@ -102,54 +104,54 @@ private struct EditTab: View {
     @EnvironmentObject var model: AppModel
     let theme: Theme
     var body: some View {
-        RibbonGroup(title: "줄", theme: theme) {
-            RibbonBigButton(title: "줄 삭제", systemImage: "trash", help: "⇧⌘K", theme: theme) { model.textTool(.deleteLine) }
+        RibbonGroup(title: "Lines", theme: theme) {
+            RibbonBigButton(title: "Delete Line", systemImage: "trash", help: "⇧⌘K", theme: theme) { model.textTool(.deleteLine) }
             RibbonStack {
-                RibbonSmallButton(title: "줄 복제", systemImage: "plus.square.on.square", help: "⇧⌘D", theme: theme) { model.textTool(.duplicateLine) }
-                RibbonSmallButton(title: "위로 이동", systemImage: "arrow.up", help: "⌥↑", theme: theme) { model.textTool(.moveLineUp) }
-                RibbonSmallButton(title: "아래로 이동", systemImage: "arrow.down", help: "⌥↓", theme: theme) { model.textTool(.moveLineDown) }
+                RibbonSmallButton(title: "Duplicate Line", systemImage: "plus.square.on.square", help: "⇧⌘D", theme: theme) { model.textTool(.duplicateLine) }
+                RibbonSmallButton(title: "Move Up", systemImage: "arrow.up", help: "⌥↑", theme: theme) { model.textTool(.moveLineUp) }
+                RibbonSmallButton(title: "Move Down", systemImage: "arrow.down", help: "⌥↓", theme: theme) { model.textTool(.moveLineDown) }
             }
             RibbonStack {
-                RibbonSmallButton(title: "줄 합치기", systemImage: "arrow.triangle.merge", help: "선택 줄을 한 줄로 (선택이 없으면 현재 줄 + 다음 줄) (⇧⌘J)", theme: theme) { model.textTool(.joinLines) }
-                RibbonSmallButton(title: "줄 번호 붙이기", systemImage: "list.number", help: "선택 줄 앞에 1. 2. 3. 번호", theme: theme) { model.textTool(.numberLines) }
-                RibbonSmallButton(title: "역순", systemImage: "arrow.up.arrow.down", help: "선택 줄 순서 뒤집기", theme: theme) { model.textTool(.reverseLines) }
-            }
-        }
-        RibbonGroup(title: "대소문자", theme: theme) {
-            RibbonStack {
-                RibbonSmallButton(title: "대문자", systemImage: "textformat.size.larger", help: "선택(없으면 현재 줄)을 대문자로", theme: theme) { model.textTool(.upper) }
-                RibbonSmallButton(title: "소문자", systemImage: "textformat.size.smaller", help: "선택(없으면 현재 줄)을 소문자로", theme: theme) { model.textTool(.lower) }
-                RibbonSmallButton(title: "첫 글자 대문자", systemImage: "textformat", help: "단어 첫 글자만 대문자로", theme: theme) { model.textTool(.capitalize) }
-            }
-            RibbonStack {
-                RibbonSmallButton(title: "대소문자 반전", systemImage: "arrow.2.squarepath", help: "대문자 ↔ 소문자 뒤집기", theme: theme) { model.textTool(.invertCase) }
+                RibbonSmallButton(title: "Join Lines", systemImage: "arrow.triangle.merge", help: "Join the selected lines into one (with no selection: current line + next line) (⇧⌘J)", theme: theme) { model.textTool(.joinLines) }
+                RibbonSmallButton(title: "Number Lines", systemImage: "list.number", help: "Prefix the selected lines with 1. 2. 3.", theme: theme) { model.textTool(.numberLines) }
+                RibbonSmallButton(title: "Reverse", systemImage: "arrow.up.arrow.down", help: "Reverse the order of the selected lines", theme: theme) { model.textTool(.reverseLines) }
             }
         }
-        RibbonGroup(title: "정렬", theme: theme) {
-            RibbonBigButton(title: "오름차순", systemImage: "arrow.up.arrow.down.square", help: "선택 줄을 가나다·ABC 순으로 정렬", theme: theme) { model.textTool(.sortAsc) }
+        RibbonGroup(title: "Case", theme: theme) {
             RibbonStack {
-                RibbonSmallButton(title: "내림차순", systemImage: "arrow.down.square", help: "선택 줄을 역순으로 정렬", theme: theme) { model.textTool(.sortDesc) }
-                RibbonSmallButton(title: "숫자 정렬", systemImage: "number.square", help: "줄 앞 숫자 크기 기준 정렬", theme: theme) { model.textTool(.sortNumeric) }
-                RibbonSmallButton(title: "중복 줄 제거", systemImage: "rectangle.stack.badge.minus", help: "같은 줄은 첫 번째만 남김", theme: theme) { model.textTool(.dedupe) }
+                RibbonSmallButton(title: "Uppercase", systemImage: "textformat.size.larger", help: "Selection (or current line) to uppercase", theme: theme) { model.textTool(.upper) }
+                RibbonSmallButton(title: "Lowercase", systemImage: "textformat.size.smaller", help: "Selection (or current line) to lowercase", theme: theme) { model.textTool(.lower) }
+                RibbonSmallButton(title: "Capitalize", systemImage: "textformat", help: "Capitalize the first letter of each word", theme: theme) { model.textTool(.capitalize) }
+            }
+            RibbonStack {
+                RibbonSmallButton(title: "Invert Case", systemImage: "arrow.2.squarepath", help: "Swap uppercase ↔ lowercase", theme: theme) { model.textTool(.invertCase) }
             }
         }
-        RibbonGroup(title: "공백", theme: theme) {
+        RibbonGroup(title: "Sort", theme: theme) {
+            RibbonBigButton(title: "Ascending", systemImage: "arrow.up.arrow.down.square", help: "Sort the selected lines alphabetically", theme: theme) { model.textTool(.sortAsc) }
             RibbonStack {
-                RibbonSmallButton(title: "뒤 공백 제거", systemImage: "text.alignleft", help: "줄 끝의 공백·탭 제거", theme: theme) { model.textTool(.trimTrailing) }
-                RibbonSmallButton(title: "앞뒤 공백 제거", systemImage: "text.aligncenter", help: "줄 앞뒤의 공백·탭 제거", theme: theme) { model.textTool(.trimBoth) }
-                RibbonSmallButton(title: "빈 줄 제거", systemImage: "rectangle.compress.vertical", help: "비어 있거나 공백뿐인 줄 삭제", theme: theme) { model.textTool(.removeBlank) }
-            }
-            RibbonStack {
-                RibbonSmallButton(title: "탭 → 공백", systemImage: "arrow.right.to.line.compact", help: "탭을 공백 4칸으로", theme: theme) { model.textTool(.tabsToSpaces) }
-                RibbonSmallButton(title: "공백 → 탭", systemImage: "arrow.left.to.line.compact", help: "줄 앞 공백 4칸을 탭으로", theme: theme) { model.textTool(.spacesToTabs) }
+                RibbonSmallButton(title: "Descending", systemImage: "arrow.down.square", help: "Sort the selected lines in reverse order", theme: theme) { model.textTool(.sortDesc) }
+                RibbonSmallButton(title: "Numeric Sort", systemImage: "number.square", help: "Sort by the number at the start of each line", theme: theme) { model.textTool(.sortNumeric) }
+                RibbonSmallButton(title: "Deduplicate", systemImage: "rectangle.stack.badge.minus", help: "Keep only the first of identical lines", theme: theme) { model.textTool(.dedupe) }
             }
         }
-        RibbonGroup(title: "열·멀티 커서", theme: theme) {
-            RibbonBigButton(title: "숫자 채우기", systemImage: "number.square", help: "Insert Number — 열 선택(⌥C 후 ⇧↓)의 각 줄에 순번", theme: theme) { model.showInsertNumber = true }
+        RibbonGroup(title: "Whitespace", theme: theme) {
             RibbonStack {
-                RibbonSmallToggle(title: "열 모드", systemImage: "rectangle.split.3x1", help: "⌥C", isOn: $model.columnMode, theme: theme)
-                RibbonSmallButton(title: "다음 매치 추가", systemImage: "plus.magnifyingglass", help: "⌘D — 선택과 같은 글자의 다음 등장을 커서에 추가", theme: theme) { model.send(.addNextOccurrence) }
-                RibbonSmallButton(title: "매치 모두 선택", systemImage: "checkmark.circle", help: "⌥⌘A — 찾기 결과 전부를 멀티 커서로", enabled: !model.searchHits.isEmpty, theme: theme) { model.selectAllMatches() }
+                RibbonSmallButton(title: "Trim Trailing", systemImage: "text.alignleft", help: "Remove spaces and tabs at the end of lines", theme: theme) { model.textTool(.trimTrailing) }
+                RibbonSmallButton(title: "Trim Both Ends", systemImage: "text.aligncenter", help: "Remove spaces and tabs at both ends of lines", theme: theme) { model.textTool(.trimBoth) }
+                RibbonSmallButton(title: "Remove Blanks", systemImage: "rectangle.compress.vertical", help: "Delete empty or whitespace-only lines", theme: theme) { model.textTool(.removeBlank) }
+            }
+            RibbonStack {
+                RibbonSmallButton(title: "Tabs → Spaces", systemImage: "arrow.right.to.line.compact", help: "Tabs to 4 spaces", theme: theme) { model.textTool(.tabsToSpaces) }
+                RibbonSmallButton(title: "Spaces → Tabs", systemImage: "arrow.left.to.line.compact", help: "Leading groups of 4 spaces to tabs", theme: theme) { model.textTool(.spacesToTabs) }
+            }
+        }
+        RibbonGroup(title: "Column & Multi-Caret", theme: theme) {
+            RibbonBigButton(title: "Insert Number", systemImage: "number.square", help: "Insert Number — a sequence number on each line of the column selection (⌥C then ⇧↓)", theme: theme) { model.showInsertNumber = true }
+            RibbonStack {
+                RibbonSmallToggle(title: "Column Mode", systemImage: "rectangle.split.3x1", help: "⌥C", isOn: $model.columnMode, theme: theme)
+                RibbonSmallButton(title: "Add Next Match", systemImage: "plus.magnifyingglass", help: "⌘D — add the next occurrence of the selection as a caret", theme: theme) { model.send(.addNextOccurrence) }
+                RibbonSmallButton(title: "Select Matches", systemImage: "checkmark.circle", help: "⌥⌘A — turn every find result into a caret", enabled: !model.searchHits.isEmpty, theme: theme) { model.selectAllMatches() }
             }
         }
     }
@@ -159,20 +161,20 @@ private struct LayoutTab: View {
     @EnvironmentObject var model: AppModel
     let theme: Theme
     var body: some View {
-        RibbonGroup(title: "테마", theme: theme) {
+        RibbonGroup(title: "Theme", theme: theme) {
             Menu {
                 Button { model.themes.setFollowsSystem(true) } label: {
-                    if model.themes.followsSystem { Label("시스템 외형 따르기 (Hyper Light / Dark)", systemImage: "checkmark") } else { Text("시스템 외형 따르기 (Hyper Light / Dark)") }
+                    if model.themes.followsSystem { Label("Follow System Appearance (Hyper Light / Dark)", systemImage: "checkmark") } else { Text("Follow System Appearance (Hyper Light / Dark)") }
                 }
                 Divider()
-                Section("라이트") {
+                Section("Light") {
                     ForEach(model.themes.lightThemes) { t in
                         Button { model.themes.select(id: t.id) } label: {
                             if t.id == theme.id { Label(t.name, systemImage: "checkmark") } else { Text(t.name) }
                         }
                     }
                 }
-                Section("다크") {
+                Section("Dark") {
                     ForEach(model.themes.darkThemes) { t in
                         Button { model.themes.select(id: t.id) } label: {
                             if t.id == theme.id { Label(t.name, systemImage: "checkmark") } else { Text(t.name) }
@@ -182,39 +184,39 @@ private struct LayoutTab: View {
             } label: {
                 VStack(spacing: 3) {
                     Image(systemName: "paintpalette").font(.system(size: 22)).frame(height: 30)
-                    Text("테마").font(.system(size: 10.5))
+                    Text("Theme").font(.system(size: 10.5))
                 }
                 .frame(width: 60, height: 64)
             }
             .menuStyle(.borderlessButton).menuIndicator(.hidden)
             .foregroundStyle(theme.foreground.color)
             RibbonStack {
-                RibbonSmallButton(title: "다음 테마", systemImage: "chevron.right", help: "다음 테마 (⌥⌘])", theme: theme) { model.themes.selectNext(step: 1) }
-                RibbonSmallButton(title: "이전 테마", systemImage: "chevron.left", help: "이전 테마 (⌥⌘[)", theme: theme) { model.themes.selectNext(step: -1) }
-                Text(theme.name + (model.themes.followsSystem ? " · 시스템" : "")).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color).frame(width: 118, alignment: .leading).lineLimit(1)
+                RibbonSmallButton(title: "Next Theme", systemImage: "chevron.right", help: "Next theme (⌥⌘])", theme: theme) { model.themes.selectNext(step: 1) }
+                RibbonSmallButton(title: "Previous Theme", systemImage: "chevron.left", help: "Previous theme (⌥⌘[)", theme: theme) { model.themes.selectNext(step: -1) }
+                Text(model.themes.followsSystem ? String(localized: "\(theme.name) · System") : theme.name).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color).frame(width: 118, alignment: .leading).lineLimit(1)
             }
         }
-        RibbonGroup(title: "패널", theme: theme) {
+        RibbonGroup(title: "Panels", theme: theme) {
             RibbonStack {
-                RibbonSmallToggle(title: "사이드바", systemImage: "sidebar.left", help: "사이드바 — 파일·아웃라인·타임라인 (⌘1)", isOn: $model.showFileView, theme: theme)
-                RibbonSmallToggle(title: "하단 패널", systemImage: "rectangle.bottomthird.inset.filled", help: "하단 패널 — 찾기 결과·북마크·출력 (⌘2)", isOn: $model.showBottomPanel, theme: theme)
-                RibbonSmallToggle(title: "줄 번호", systemImage: "list.number", help: "줄 번호 거터 (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
+                RibbonSmallToggle(title: "Sidebar", systemImage: "sidebar.left", help: "Sidebar — Files, Outline, Timeline (⌘1)", isOn: $model.showFileView, theme: theme)
+                RibbonSmallToggle(title: "Bottom Panel", systemImage: "rectangle.bottomthird.inset.filled", help: "Bottom panel — Find Results, Bookmarks, Output (⌘2)", isOn: $model.showBottomPanel, theme: theme)
+                RibbonSmallToggle(title: "Line Numbers", systemImage: "list.number", help: "Line number gutter (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
             }
             RibbonStack {
-                RibbonSmallButton(title: "파일 보기", systemImage: "folder", help: "현재 문서 폴더의 파일 트리 (⌘1)", theme: theme) { model.leftTab = .fileView; model.showFileView = true }
-                RibbonSmallButton(title: "아웃라인", systemImage: "list.bullet.indent", help: "헤딩·[제목]·가나다·번호 항목 (⌘3)", theme: theme) { model.showOutline() }
-                RibbonSmallButton(title: "타임라인", systemImage: "calendar", help: "타임스탬프·날짜 줄을 월별로 (⌘4)", theme: theme) { model.showTimeline() }
+                RibbonSmallButton(title: "File View", systemImage: "folder", help: "File tree of the current document's folder (⌘1)", theme: theme) { model.leftTab = .fileView; model.showFileView = true }
+                RibbonSmallButton(title: "Outline", systemImage: "list.bullet.indent", help: "Headings, [Title] lines, 가./나. and numbered items (⌘3)", theme: theme) { model.showOutline() }
+                RibbonSmallButton(title: "Timeline", systemImage: "calendar", help: "Timestamp and date lines grouped by month (⌘4)", theme: theme) { model.showTimeline() }
             }
             RibbonStack {
-                RibbonSmallToggle(title: "자동 줄바꿈", systemImage: "text.word.spacing", help: "자동 줄바꿈 (⌥Z)", isOn: $model.wordWrap, theme: theme)
+                RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
             }
         }
-        RibbonGroup(title: "글꼴", theme: theme) {
-            RibbonBigButton(title: "크게", systemImage: "textformat.size.larger", help: "글자 크게 (⌘=)", theme: theme) { model.adjustFontSize(1) }
+        RibbonGroup(title: "Font Size", theme: theme) {
+            RibbonBigButton(title: "Larger", systemImage: "textformat.size.larger", help: "Larger text (⌘=)", theme: theme) { model.adjustFontSize(1) }
             RibbonStack {
-                RibbonSmallButton(title: "작게", systemImage: "textformat.size.smaller", help: "글자 작게 (⌘-)", theme: theme) { model.adjustFontSize(-1) }
-                RibbonSmallButton(title: "기본 크기 (14pt)", systemImage: "1.magnifyingglass", help: "기본 크기로 (⌘0)", theme: theme) { model.resetFontSize() }
-                RibbonSmallButton(title: "글꼴 설정…", systemImage: "gearshape", help: "글꼴·한글 폭 보정 설정 (⌘,)", theme: theme) { model.openSettings() }
+                RibbonSmallButton(title: "Smaller", systemImage: "textformat.size.smaller", help: "Smaller text (⌘-)", theme: theme) { model.adjustFontSize(-1) }
+                RibbonSmallButton(title: "Default (14pt)", systemImage: "1.magnifyingglass", help: "Reset to the default size (⌘0)", theme: theme) { model.resetFontSize() }
+                RibbonSmallButton(title: "Font Settings…", systemImage: "gearshape", help: "Font and Hangul width settings (⌘,)", theme: theme) { model.openSettings() }
             }
         }
     }
@@ -224,12 +226,12 @@ private struct AdvancedTab: View {
     @EnvironmentObject var model: AppModel
     let theme: Theme
     var body: some View {
-        RibbonGroup(title: "설정", theme: theme) {
-            RibbonBigButton(title: "설정", systemImage: "gearshape", help: "환경설정 (⌘,)", theme: theme) { model.openSettings() }
+        RibbonGroup(title: "Settings", theme: theme) {
+            RibbonBigButton(title: "Settings", systemImage: "gearshape", help: "Preferences (⌘,)", theme: theme) { model.openSettings() }
             RibbonStack {
-                RibbonSmallButton(title: "스냅샷 폴더", systemImage: "clock.arrow.circlepath", help: "저장 전 자동 백업이 쌓이는 폴더 열기", theme: theme) { model.openSnapshotFolder() }
-                RibbonSmallButton(title: "디스크에서 다시 읽기", systemImage: "arrow.clockwise", help: "파일을 다시 읽음 — 저장 안 한 변경은 버림", theme: theme) { model.reloadFromDisk() }
-                RibbonSmallButton(title: "기본 문서 열기", systemImage: "house", help: "~/Documents/HyperEdit/notes.md 열기", theme: theme) { model.openDefaultDocument() }
+                RibbonSmallButton(title: "Snapshot Folder", systemImage: "clock.arrow.circlepath", help: "Open the folder of automatic pre-save backups", theme: theme) { model.openSnapshotFolder() }
+                RibbonSmallButton(title: "Reload from Disk", systemImage: "arrow.clockwise", help: "Re-read the file — unsaved changes are discarded", theme: theme) { model.reloadFromDisk() }
+                RibbonSmallButton(title: "Default Document", systemImage: "house", help: "Open ~/Documents/HyperEdit/notes.md", theme: theme) { model.openDefaultDocument() }
             }
         }
     }
@@ -239,12 +241,12 @@ private struct WindowTab: View {
     @EnvironmentObject var model: AppModel
     let theme: Theme
     var body: some View {
-        RibbonGroup(title: "창", theme: theme) {
-            RibbonBigButton(title: "전체 화면", systemImage: "arrow.up.left.and.arrow.down.right", help: "전체 화면 전환 (⌃⌘F)", theme: theme) { model.toggleFullScreen() }
+        RibbonGroup(title: "Window", theme: theme) {
+            RibbonBigButton(title: "Full Screen", systemImage: "arrow.up.left.and.arrow.down.right", help: "Toggle full screen (⌃⌘F)", theme: theme) { model.toggleFullScreen() }
             RibbonStack {
-                RibbonSmallToggle(title: "사이드바", systemImage: "sidebar.left", help: "사이드바 (⌘1)", isOn: $model.showFileView, theme: theme)
-                RibbonSmallToggle(title: "하단 패널", systemImage: "rectangle.bottomthird.inset.filled", help: "하단 패널 (⌘2)", isOn: $model.showBottomPanel, theme: theme)
-                RibbonSmallToggle(title: "줄 번호", systemImage: "list.number", help: "줄 번호 거터 (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
+                RibbonSmallToggle(title: "Sidebar", systemImage: "sidebar.left", help: "Sidebar (⌘1)", isOn: $model.showFileView, theme: theme)
+                RibbonSmallToggle(title: "Bottom Panel", systemImage: "rectangle.bottomthird.inset.filled", help: "Bottom panel (⌘2)", isOn: $model.showBottomPanel, theme: theme)
+                RibbonSmallToggle(title: "Line Numbers", systemImage: "list.number", help: "Line number gutter (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
             }
         }
     }
@@ -253,7 +255,7 @@ private struct WindowTab: View {
 // MARK: - 구성 요소
 
 struct RibbonTabButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let selected: Bool
     let theme: Theme
     let action: () -> Void
@@ -273,7 +275,7 @@ struct RibbonTabButton: View {
 
 struct QuickButton: View {
     let systemImage: String
-    let help: String
+    let help: LocalizedStringKey
     let theme: Theme
     let action: () -> Void
     var body: some View {
@@ -285,7 +287,7 @@ struct QuickButton: View {
 }
 
 struct RibbonGroup<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let theme: Theme
     @ViewBuilder let content: () -> Content
     var body: some View {
@@ -306,9 +308,9 @@ struct RibbonStack<Content: View>: View {
 }
 
 struct RibbonBigButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
-    var help: String = ""
+    var help: LocalizedStringKey = ""
     var enabled: Bool = true
     let theme: Theme
     let action: () -> Void
@@ -332,9 +334,9 @@ struct RibbonBigButton: View {
 }
 
 struct RibbonSmallButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
-    var help: String = ""
+    var help: LocalizedStringKey = ""
     var enabled: Bool = true
     let theme: Theme
     let action: () -> Void
@@ -359,9 +361,9 @@ struct RibbonSmallButton: View {
 }
 
 struct RibbonSmallToggle: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
-    var help: String = ""
+    var help: LocalizedStringKey = ""
     @Binding var isOn: Bool
     let theme: Theme
     @State private var hover = false
@@ -387,9 +389,9 @@ struct RibbonSmallToggle: View {
 
 
 struct RibbonBigToggle: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
-    var help: String = ""
+    var help: LocalizedStringKey = ""
     @Binding var isOn: Bool
     let theme: Theme
     @State private var hover = false

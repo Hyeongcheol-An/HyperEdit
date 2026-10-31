@@ -92,7 +92,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             guard let decoded = Self.decode(data) else {
                 // 어떤 인코딩으로도 손실 없이 읽을 수 없음 → 열지 않는다 (손실 디코딩 후 자동 저장하면 파일이 망가진다)
                 isLoaded = false
-                errorMessage = "열기 실패: 텍스트 인코딩을 판별할 수 없습니다 (UTF-8 / EUC-KR / Latin-1 아님)"
+                errorMessage = String(localized: "Open failed: cannot determine the text encoding (not UTF-8 / EUC-KR / Latin-1)", bundle: .module)
                 return
             }
             encoding = decoded.encoding
@@ -101,11 +101,11 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             isDirty = false
             isLoaded = true
             errorMessage = nil
-            status = "불러옴" + (encoding == .utf8 ? "" : " · \(encodingName)")
+            status = String(localized: "Loaded", bundle: .module) + (encoding == .utf8 ? "" : " · \(encodingName)")
             startWatching()
         } catch {
             isLoaded = false
-            errorMessage = "열기 실패: \(error.localizedDescription)"
+            errorMessage = String(localized: "Open failed: \(error.localizedDescription)", bundle: .module)
         }
     }
 
@@ -209,7 +209,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         if isSaving { saveRequestedWhileSaving = true; return }
         let copyText = immutableSnapshot()
         if copyText.length == 0 && loadedLength > 0 {
-            errorMessage = "빈 내용 저장을 차단했습니다 (원본 \(loadedLength)자). 되돌리기(⌘Z) 후 다시 저장하세요."
+            errorMessage = String(localized: "Blocked saving empty content (original had \(loadedLength) characters). Undo (⌘Z) and save again.", bundle: .module)
             return
         }
         if !snapshotTaken {
@@ -238,7 +238,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         ourLastWrite = Date()
         if let e = error {
             isDirty = true
-            errorMessage = "저장 실패: \(e.localizedDescription)"
+            errorMessage = String(localized: "Save failed: \(e.localizedDescription)", bundle: .module)
         } else {
             lastSaved = Date()
             loadedLength = length
@@ -246,9 +246,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             errorMessage = nil
             if convertedToUTF8 {
                 encoding = .utf8; hasBOM = false
-                status = "저장됨 · " + Self.timeString(lastSaved!) + " · 원 인코딩에 없는 문자가 있어 UTF-8 로 변환 저장"
+                status = String(localized: "Saved · \(Self.timeString(lastSaved!)) · converted to UTF-8 because the original encoding cannot represent some characters", bundle: .module)
             } else {
-                status = "저장됨 · " + Self.timeString(lastSaved!)
+                status = String(localized: "Saved · \(Self.timeString(lastSaved!))", bundle: .module)
             }
             startWatching()   // 교체 쓰기로 inode 가 바뀌므로 감시 재시작
         }
@@ -265,14 +265,14 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         let url = self.url
         var err: Error?
         Self.writeQueue.sync { do { try Self.atomicReplace(built.data, at: url) } catch { err = error } }
-        if let e = err { isDirty = true; errorMessage = "저장 실패: \(e.localizedDescription)"; return false }
+        if let e = err { isDirty = true; errorMessage = String(localized: "Save failed: \(e.localizedDescription)", bundle: .module); return false }
         isDirty = false; saveRequestedWhileSaving = false; isSaving = false
         fileGeneration += 1   // 큐에 남아 있던 비동기 저장의 완료 콜백은 무시된다 (내용은 이 쓰기 이전에 이미 디스크에 반영됨)
         lastSaved = Date(); ourLastWrite = lastSaved
         loadedLength = textStorage.length; fileSize = built.data.count
         if built.convertedToUTF8 { encoding = .utf8; hasBOM = false }
         errorMessage = nil
-        status = "저장됨 · " + Self.timeString(lastSaved!)
+        status = String(localized: "Saved · \(Self.timeString(lastSaved!))", bundle: .module)
         startWatching()
         return true
     }
@@ -357,7 +357,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         externalChange = Date()
         if isDirty {
             _ = try? snapshot(tag: "external")
-            status = "외부 변경 감지 — 저장 시 덮어씁니다 (외부본은 스냅샷 보관)"
+            status = String(localized: "External change detected — saving will overwrite it (the external copy is kept as a snapshot)", bundle: .module)
         } else {
             reloadFromDisk()
         }
@@ -370,7 +370,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         hasBOM = decoded.bom
         replaceAll(with: decoded.text)
         isDirty = false
-        status = "외부 변경 반영 · " + Self.timeString(Date())
+        status = String(localized: "Reloaded external change · \(Self.timeString(Date()))", bundle: .module)
     }
 
     // MARK: - NSTextStorageDelegate (한글 폭 보정)

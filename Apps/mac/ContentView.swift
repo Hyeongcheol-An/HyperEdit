@@ -32,19 +32,19 @@ struct ContentView: View {
         .preferredColorScheme(theme.isDark ? .dark : .light)
         // 주의: .ignoresSafeArea(.top) 로 리본 탭 줄을 제목 표시줄 영역에 올리면 hiddenTitleBar 의 제목 표시줄이 탭을 가린다(실측) — 탭 줄은 그 아래에 둔다
         .frame(minWidth: 900, minHeight: 560)
-        .alert("줄로 이동", isPresented: $model.showGoToLine) {
+        .alert("Go to Line", isPresented: $model.showGoToLine) {
             TextField("1 ~ \(model.document.lineIndex.lineCount)", text: $model.goToLineText)
                 .onSubmit { model.submitGoToLine() }
-            Button("이동") { model.submitGoToLine() }
-            Button("취소", role: .cancel) {}
+            Button("Go") { model.submitGoToLine() }
+            Button("Cancel", role: .cancel) {}
         }
-        .alert("숫자 채우기 (Insert Number)", isPresented: $model.showInsertNumber) {
-            TextField("시작 값", text: $model.insertNumberStart)
-            TextField("증가 값", text: $model.insertNumberStep)
-            Button("채우기") { model.insertColumnNumbers() }
-            Button("취소", role: .cancel) {}
+        .alert("Insert Sequence Numbers", isPresented: $model.showInsertNumber) {
+            TextField("Start value", text: $model.insertNumberStart)
+            TextField("Step", text: $model.insertNumberStep)
+            Button("Fill") { model.insertColumnNumbers() }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("열 선택(또는 멀티 커서)의 각 줄에 순번을 넣습니다. 자릿수는 0으로 맞춥니다.")
+            Text("Inserts a sequence number on each line of the column selection (or at each caret). Numbers are zero-padded to the same width.")
         }
         // 종료 시 저장은 AppDelegate.applicationShouldTerminate 가 동기로 처리한다 (willTerminate 시점의 비동기 저장은 실행될 기회가 없다)
         .task { if SelfTest.enabled { await SelfTest.run(model: model) } }
@@ -74,9 +74,9 @@ struct DocumentTabBar: View {
             .foregroundStyle(theme.foreground.color)
             .help(doc.url.path)
             Button { model.newDocument() } label: { Image(systemName: "plus").font(.system(size: 11)) }
-                .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.horizontal, 10).help("새 문서… (⌘N)")
+                .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.horizontal, 10).help("New Document… (⌘N)")
             Button { model.presentOpenPanel() } label: { Image(systemName: "folder").font(.system(size: 11)) }
-                .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 10).help("파일 열기… (⌘O)")
+                .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 10).help("Open File… (⌘O)")
             Spacer()
         }
         .frame(height: 26)
@@ -94,30 +94,31 @@ struct StatusBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            // 셀 문자열은 String 이므로 String(localized:) 로 카탈로그를 거친다 (Ln/Col 처럼 두 언어가 같은 것도 키로 둔다)
             cell(caret.selectionLength > 0
-                 ? "Ln \(fmt(caret.line)), Col \(fmt(caret.column)), Sel \(fmt(caret.selectionLength))"
-                 : "Ln \(fmt(caret.line)), Col \(fmt(caret.column))", width: 210)
-                .help("문자 오프셋 \(fmt(caret.offset))")
-            cell(doc.lineEnding, width: 50).help("줄바꿈 종류")
-            cell(doc.encodingName, width: doc.hasBOM ? 90 : 64).help("파일 인코딩 — 읽은 그대로 저장합니다")
+                 ? String(localized: "Ln \(fmt(caret.line)), Col \(fmt(caret.column)), Sel \(fmt(caret.selectionLength))")
+                 : String(localized: "Ln \(fmt(caret.line)), Col \(fmt(caret.column))"), width: 210)
+                .help("Character offset \(fmt(caret.offset))")
+            cell(doc.lineEnding, width: 50).help("Line ending")
+            cell(doc.encodingName, width: doc.hasBOM ? 90 : 64).help("File encoding — saved exactly as it was read")
             cell("COL", width: 44).foregroundStyle(model.columnMode ? theme.accent.color : theme.foregroundDim.color)
-                .help(model.columnMode ? "열 모드 켜짐 (⌥C 로 끄기)" : "열 모드 꺼짐 (⌥C 로 켜기)")
+                .help(model.columnMode ? "Column mode on (⌥C to turn off)" : "Column mode off (⌥C to turn on)")
             if caret.multiCaretCount > 1 {
-                cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "열 블록" : "멀티 커서")
+                cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")
             }
-            cell("\(fmt(doc.lineIndex.lineCount))줄 · \(sizeString(doc.fileSize))", width: 150)
+            cell(String(localized: "\(fmt(doc.lineIndex.lineCount)) lines · \(sizeString(doc.fileSize))"), width: 165)
             if let e = doc.errorMessage {
                 cell(e, width: nil).foregroundStyle(theme.errorColor.color)
             } else {
-                cell(doc.status, width: nil).help("입력을 멈추면 2초 뒤 자동 저장됩니다 (⌘S 즉시 저장)")
+                cell(doc.status, width: nil).help("Autosaves 2 seconds after you stop typing (⌘S saves now)")
             }
             if doc.externalChange != nil && doc.isDirty {
-                cell("⚠ 외부 변경", width: 80).foregroundStyle(theme.warningColor.color)
+                cell(String(localized: "⚠ External change"), width: nil).foregroundStyle(theme.warningColor.color)
             }
             Spacer(minLength: 0)
             Menu {
                 Button { model.themes.setFollowsSystem(true) } label: {
-                    if model.themes.followsSystem { Label("시스템 외형 따르기", systemImage: "checkmark") } else { Text("시스템 외형 따르기") }
+                    if model.themes.followsSystem { Label("Follow System Appearance", systemImage: "checkmark") } else { Text("Follow System Appearance") }
                 }
                 Divider()
                 ForEach(model.themes.themes) { t in
@@ -126,9 +127,9 @@ struct StatusBar: View {
                     }
                 }
             } label: {
-                Label(theme.name + (model.themes.followsSystem ? " · 시스템" : ""), systemImage: "paintpalette")
+                Label(model.themes.followsSystem ? String(localized: "\(theme.name) · System") : theme.name, systemImage: "paintpalette")
             }
-            .help("테마 — 시스템 외형 따르기를 켜면 라이트/다크에 맞춰 Hyper Light/Dark 로 자동 전환")
+            .help("Theme — with Follow System Appearance on, Hyper Light/Dark follow the system light/dark setting")
             .menuStyle(.borderlessButton).fixedSize().padding(.horizontal, 8)
             cell("\(model.zoomPercent)%", width: 54)
         }

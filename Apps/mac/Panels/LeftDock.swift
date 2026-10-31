@@ -13,7 +13,7 @@ struct LeftDock: View {
                     Button { model.leftTab = tab } label: {
                         HStack(spacing: 4) {
                             Image(systemName: tab.systemImage).font(.system(size: 10))
-                            Text(tab.rawValue).font(.system(size: 11, weight: model.leftTab == tab ? .semibold : .regular))
+                            Text(tab.label).font(.system(size: 11, weight: model.leftTab == tab ? .semibold : .regular))
                         }
                         .padding(.horizontal, 8).frame(height: 24)
                         .foregroundStyle(model.leftTab == tab ? theme.foreground.color : theme.foregroundMuted.color)
@@ -24,7 +24,7 @@ struct LeftDock: View {
                 }
                 Spacer()
                 Button { model.showFileView = false } label: { Image(systemName: "xmark").font(.system(size: 10)) }
-                    .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 8).help("사이드바 닫기 (⌘1)")
+                    .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 8).help("Close sidebar (⌘1)")
             }
             .frame(height: 24)
             .background(theme.backgroundAlt.color)
@@ -54,8 +54,8 @@ struct OutlinePanel: View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "line.3.horizontal.decrease").font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
-                TextField("아웃라인 필터", text: $filter).textFieldStyle(.plain).font(.system(size: 11))
-                Text("\(items.count)").font(.system(size: 10, design: .monospaced)).foregroundStyle(theme.foregroundDim.color)
+                TextField("Filter outline", text: $filter).textFieldStyle(.plain).font(.system(size: 11))
+                Text(verbatim: "\(items.count)").font(.system(size: 10, design: .monospaced)).foregroundStyle(theme.foregroundDim.color)
             }
             .padding(.horizontal, 8).frame(height: 24)
             ScrollViewReader { proxy in
@@ -64,7 +64,7 @@ struct OutlinePanel: View {
                         Image(systemName: icon(item.kind)).font(.system(size: 9)).foregroundStyle(theme.foregroundDim.color).frame(width: 12)
                         Text(item.title).font(.system(size: 11.5, weight: item.level <= 2 ? .semibold : .regular)).lineLimit(1)
                         Spacer(minLength: 4)
-                        Text("\(item.line)").font(.system(size: 10, design: .monospaced)).foregroundStyle(theme.foregroundDim.color)
+                        Text(verbatim: "\(item.line)").font(.system(size: 10, design: .monospaced)).foregroundStyle(theme.foregroundDim.color)
                     }
                     .padding(.leading, CGFloat(max(0, item.level - 1)) * 10)
                     .foregroundStyle(theme.foreground.color)
@@ -78,7 +78,7 @@ struct OutlinePanel: View {
                 .onChange(of: current) { _, c in if let c, filter.isEmpty { withAnimation { proxy.scrollTo(c, anchor: .center) } } }
             }
             if model.outline.isEmpty {
-                Text("헤딩(##), [제목], 가./나., 1) 항목이 아웃라인에 표시됩니다.")
+                Text("Headings (##), [Title] lines, 가./나. items and 1) items appear in the outline.")
                     .font(.system(size: 10.5)).foregroundStyle(theme.foregroundMuted.color).padding(8)
             }
         }
@@ -105,9 +105,9 @@ struct TimelinePanel: View {
         let current = model.timeline.lastIndexedLine(atOrBefore: caret.line)
         VStack(spacing: 0) {
             HStack {
-                Text("\(model.timeline.count)개 · \(groups.count)개월").font(.system(size: 10.5, design: .monospaced)).foregroundStyle(theme.foregroundMuted.color)
+                Text("\(model.timeline.count) entries · \(groups.count) months").font(.system(size: 10.5, design: .monospaced)).foregroundStyle(theme.foregroundMuted.color)
                 Spacer()
-                Button("타임스탬프 삽입") { model.insertTimestamp() }.controlSize(.small).help("F7 — 캐럿 위치에 `## 날짜 (요일) 시:분` 헤딩 삽입").tint(theme.accent.color)
+                Button("Insert Timestamp") { model.insertTimestamp() }.controlSize(.small).help("F7 — insert a `## date (weekday) hh:mm` heading at the caret").tint(theme.accent.color)
             }
             .padding(.horizontal, 8).frame(height: 24)
             List {
@@ -122,10 +122,10 @@ struct TimelinePanel: View {
                                     }
                                     .frame(width: 40, alignment: .trailing)
                                     .foregroundStyle(item.id == current ? theme.foreground.color : (item.precise ? theme.accent.color : theme.foregroundMuted.color))
-                                    Text(item.preview.isEmpty ? "(내용 없음)" : item.preview).font(.system(size: 11)).lineLimit(2)
+                                    Text(item.preview.isEmpty ? String(localized: "(no content)") : item.preview).font(.system(size: 11)).lineLimit(2)
                                         .foregroundStyle(theme.foreground.color)
                                     Spacer(minLength: 2)
-                                    Text("\(item.line)").font(.system(size: 9.5, design: .monospaced)).foregroundStyle(theme.foregroundDim.color)
+                                    Text(verbatim: "\(item.line)").font(.system(size: 9.5, design: .monospaced)).foregroundStyle(theme.foregroundDim.color)
                                 }
                                 .contentShape(Rectangle())
                                 .onTapGesture { model.jump(toLine: item.line) }
@@ -140,7 +140,7 @@ struct TimelinePanel: View {
                             HStack {
                                 Image(systemName: collapsed.contains(g.key) ? "chevron.right" : "chevron.down").font(.system(size: 9))
                                 Text(g.key).font(.system(size: 11, weight: .bold, design: .monospaced))
-                                Text("\(g.items.count)").font(.system(size: 10)).foregroundStyle(theme.foregroundDim.color)
+                                Text(verbatim: "\(g.items.count)").font(.system(size: 10)).foregroundStyle(theme.foregroundDim.color)
                                 Spacer()
                             }
                             .foregroundStyle(theme.foregroundMuted.color)
@@ -151,7 +151,7 @@ struct TimelinePanel: View {
             }
             .listStyle(.plain).scrollContentBackground(.hidden)
             if model.timeline.isEmpty {
-                Text("F7 로 넣은 `## 2026-10-30 (금) 14:05` 헤딩과 날짜로 시작하는 줄이 여기에 모입니다.")
+                Text("Timestamp headings inserted with F7 (`## 2026-10-30 (Fri) 14:05`) and lines that start with a date are collected here.")
                     .font(.system(size: 10.5)).foregroundStyle(theme.foregroundMuted.color).padding(8)
             }
         }
