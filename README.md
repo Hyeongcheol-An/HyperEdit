@@ -52,6 +52,8 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - Tuned for big files: about 3 ms per keystroke on a 1.3 MB / 34,000-line file, with viewport-based TextKit 2 layout.
 - Line-number gutter, current-line highlight, word wrap (⌥Z), line numbers (⌥⌘L), zoom (⌘= / ⌘- / ⌘0).
 - Last caret and scroll position restored per file; ⌃⌘E jumps to the end; ⌘L goes to a line.
+- **Code folding (⌥⌘← / ⌥⌘→, all regions ⌥⇧⌘← / ⌥⇧⌘→):** a line folds the lines indented under it (blank lines ignored), a Markdown `#` heading folds everything up to the next heading of the same or higher level (fenced code blocks fold too), and in code a line ending in `{`, `[` or `(` folds through its closing bracket line. Click the gutter chevron or the `⋯ N lines` pill to toggle. Moving the caret into a folded line (find, go to line, bookmarks, undo) unfolds it; ↑ / ↓ skip over folds. Folds follow edits — typing in the header, inserting or deleting lines above, undo — and last for the session.
+- **Scrollbar markers:** a 12 pt strip at the editor's right edge shows search matches (accent ticks), bookmarks (warning color), the caret line and folded headers at their relative positions; hidden when the document fits on one screen. View menu → Scrollbar Markers, or the Layout tab's Panels group.
 - F7 inserts a timestamp heading such as `## 2026-10-30 (Fri) 14:05`. The weekday follows the system locale, e.g. `(금)` on Korean systems.
 - **Syntax colors (⌃⌘H)**, chosen by file extension and shown in the status bar. Notes and Markdown get a deliberately light rule set — URLs, ISO dates and times, `#` headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 code languages (Swift, Python, JavaScript/TypeScript, JSON, shell, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI) get comments, strings, numbers, keywords, function and type names. Colors come from the theme's `syntax` palette and are applied as TextKit 2 rendering attributes to visible lines only, so they never touch the file, undo history or typing speed. Tokenization is line-based: a block comment or string that spans lines is colored only where it opens.
 
@@ -110,6 +112,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
 | ⌘, | Settings | ⇧⌘P | Markdown preview |
 | ⌃⌘H | Syntax colors | | |
+| ⌥⌘← / ⌥⌘→ | Fold / unfold | ⌥⇧⌘← / ⌥⇧⌘→ | Fold all / unfold all |
 
 ## Themes
 
@@ -156,6 +159,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
+| `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |
 | `--ephemeral` | Use throwaway preferences (theme, panels, remembered file) for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 
