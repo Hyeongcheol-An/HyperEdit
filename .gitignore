@@ -31,3 +31,5 @@ node_modules/
 AuthKey_*
 # 개인 서명 설정
 /Config/Local.xcconfig
+# Claude Code 에이전트 워크트리·로컬 설정
+.claude/
