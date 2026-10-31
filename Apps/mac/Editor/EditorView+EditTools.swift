@@ -61,6 +61,9 @@ extension EditorView.Coordinator {
             }
             if minify {
                 model.log(String(localized: "Minified JSON · \(len) characters"))
+                if len > 200_000 {   // 한 줄이 아주 길면 TextKit 2 가 문단 전체를 배치하느라 캐럿 이동·열기가 느려진다
+                    model.log(String(localized: "Very long single line — caret moves and reopening may be slow; use Format JSON to restore line breaks"), isError: true)
+                }
             } else {
                 let lines = result.utf8.reduce(0) { $0 + ($1 == 10 ? 1 : 0) } + (result.hasSuffix("\n") ? 0 : 1)
                 model.log(String(localized: "Formatted JSON · \(lines) lines"))

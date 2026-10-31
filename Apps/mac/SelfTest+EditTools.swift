@@ -19,6 +19,8 @@ extension SelfTest {
         }
         func selectTail(_ count: Int) { model.send(.perform { tv in let n = (tv.string as NSString).length; tv.setSelectedRange(NSRange(location: n - count, length: count)) }) }
         let originalLength = text().length
+        // 앞 단계의 검색이 남아 있으면 편집 1.2 s 뒤 자동 재검색 로그가 출력 패널 마지막 줄 검사에 끼어든다 → 비운다
+        if !model.searchQuery.isEmpty { model.searchQuery = ""; model.runSearch(); await wait(200) }
 
         // 1. 주석 토글 — sample.md 는 마크다운이라 `<!-- … -->` 를 줄마다 감싼다. 두 줄 선택 → 토글(기호는 가장 얕은 들여쓰기 = 0열에 정렬) → 다시 토글하면 원문
         append("\nalpha\n  beta"); await wait(200)

@@ -119,7 +119,19 @@ final class HyperTextView: NSTextView {
     }
 
     /// 문서 오프셋의 캐럿 사각형 (텍스트 뷰 좌표)
+    /// 이보다 긴 문단(한 줄)에서는 캐럿 사각형을 구하지 않는다 — TextKit 2 는 세그먼트 하나를 얻으려고 문단 전체를 배치하므로
+    /// 1.6M 자짜리 한 줄(압축 JSON)에서는 캐럿을 옮길 때마다 수십 초가 걸린다. 현재 줄 강조·멀티 캐럿 그리기만 빠질 뿐 편집은 그대로다.
+    static let hugeParagraphLength = 20_000
+
+    /// `offset` 이 든 문단이 `hugeParagraphLength` 보다 긴가 (문단 경계 탐색은 memchr 수준이라 싸다)
+    func isInHugeParagraph(_ offset: Int) -> Bool {
+        let ns = string as NSString
+        guard ns.length > Self.hugeParagraphLength else { return false }
+        return ns.paragraphRange(for: NSRange(location: min(offset, ns.length), length: 0)).length > Self.hugeParagraphLength
+    }
+
     func caretRect(at offset: Int) -> NSRect? {
+        guard !isInHugeParagraph(offset) else { return nil }
         guard let lm = textLayoutManager, let cs = textContentStorage,
               let loc = cs.location(cs.documentRange.location, offsetBy: min(offset, (textStorage?.length ?? 0))) else { return nil }
         var rect: CGRect?

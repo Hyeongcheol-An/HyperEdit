@@ -306,8 +306,9 @@ extension SelfTest {
         t = CFAbsoluteTimeGetCurrent()
         model.textTool(.minifyJSON)
         let minifyMs = (CFAbsoluteTimeGetCurrent() - t) * 1000
-        await wait(500)
-        check(text() as String == "[" + (0..<1_000).map(element).joined(separator: ",") + "]" && model.document.lineIndex.lineCount <= 2, "minify 120 KB → one line (\(text().length) chars)")
+        // 줄 인덱스는 편집 250 ms 뒤 백그라운드에서 다시 만들어지고 거대 한 줄의 배치가 메인 스레드를 잠시 잡으므로, 갱신될 때까지 (최대 3 s) 기다린다
+        for _ in 0..<30 where model.document.lineIndex.lineCount > 2 { await wait(100) }
+        check(text() as String == "[" + (0..<1_000).map(element).joined(separator: ",") + "]" && model.document.lineIndex.lineCount <= 2, "minify 120 KB → one line (\(text().length) chars, lines=\(model.document.lineIndex.lineCount))")
         t = CFAbsoluteTimeGetCurrent()
         model.send(.perform { tv in tv.setSelectedRange(NSRange(location: (tv.string as NSString).length / 2, length: 0)) })
         let caretMs = (CFAbsoluteTimeGetCurrent() - t) * 1000

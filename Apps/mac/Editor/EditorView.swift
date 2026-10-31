@@ -743,6 +743,7 @@ struct EditorView: NSViewRepresentable {
         private func centerCaretImpl() {
             guard let tv = textView, let sv = scrollView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
             let loc = tv.selectedRange().location
+            guard !tv.isInHugeParagraph(loc) else { return }   // 거대 한 줄: 세그먼트 계산이 문단 전체 배치라 건너뛴다 (scrollRangeToVisible 만으로 충분)
             guard let tl = cs.location(cs.documentRange.location, offsetBy: loc) else { return }
             var rect: CGRect?
             lm.enumerateTextSegments(in: NSTextRange(location: tl), type: .standard, options: [.rangeNotRequired]) { _, f, _, _ in
