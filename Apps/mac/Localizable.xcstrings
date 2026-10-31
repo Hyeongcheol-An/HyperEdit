@@ -131,6 +131,26 @@
         }
       }
     },
+    "Align Columns": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "열 맞춤"
+          }
+        }
+      }
+    },
+    "Aligned %lld lines": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld줄의 열을 맞췄습니다"
+          }
+        }
+      }
+    },
     "Ascending": {
       "localizations": {
         "ko": {
@@ -227,6 +247,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "하단 패널 — 찾기 결과·북마크·출력 (⌘2)"
+          }
+        }
+      }
+    },
+    "Calculate": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계산"
           }
         }
       }
@@ -617,6 +647,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "오류: %@"
+          }
+        }
+      }
+    },
+    "Evaluate the selection or current line and append ⇒ result (⌃⌘=)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택 영역 또는 현재 줄을 계산해 끝에 ⇒ 결과를 붙입니다 (⌃⌘=)"
           }
         }
       }
@@ -1661,12 +1701,32 @@
         }
       }
     },
+    "No tab- or pipe-separated columns to align": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "맞출 탭·| 구분 열이 없습니다"
+          }
+        }
+      }
+    },
     "Not a text file — opening in its default app · %@": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "텍스트 파일이 아니라 기본 앱으로 엽니다 · %@"
+          }
+        }
+      }
+    },
+    "Not a valid expression": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "유효한 수식이 아닙니다"
           }
         }
       }
@@ -1807,6 +1867,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "출력"
+          }
+        }
+      }
+    },
+    "Pad tab- or pipe-separated columns so they line up (⌃⌘T)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "탭 또는 | 로 구분된 열을 공백으로 채워 나란히 맞춥니다 (⌃⌘T)"
           }
         }
       }
@@ -2581,6 +2651,66 @@
         }
       }
     },
+    "Syntax Colors": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구문 색"
+          }
+        }
+      }
+    },
+    "Syntax colors by file type — URLs, dates, headings and tags in notes; keywords, strings and comments in code (⌃⌘H)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "파일 종류별 구문 색 — 메모에서는 URL·날짜·헤딩·태그, 코드에서는 키워드·문자열·주석 (⌃⌘H)"
+          }
+        }
+      }
+    },
+    "Syntax colors off": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구문 색 끔"
+          }
+        }
+      }
+    },
+    "Syntax colors on · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구문 색 켬 · %@"
+          }
+        }
+      }
+    },
+    "Syntax highlighting language": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구문 강조 언어"
+          }
+        }
+      }
+    },
+    "Syntax highlighting language (colors are off — ⌃⌘H)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구문 강조 언어 (색 꺼짐 — ⌃⌘H)"
+          }
+        }
+      }
+    },
     "Tabs to 4 spaces": {
       "localizations": {
         "ko": {
@@ -2667,6 +2797,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "전체 화면 전환 (⌃⌘F)"
+          }
+        }
+      }
+    },
+    "Tools": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "도구"
           }
         }
       }
