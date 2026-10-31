@@ -250,6 +250,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             loadedLength = length
             fileSize = bytes
             errorMessage = nil
+            externalChange = nil   // 우리 저장이 외부본을 덮어썼다 — 다음 편집에서 ⚠ 외부 변경 경고가 되살아나지 않도록
             if convertedToUTF8 {
                 encoding = .utf8; hasBOM = false
                 status = String(localized: "Saved · \(Self.timeString(lastSaved!)) · converted to UTF-8 because the original encoding cannot represent some characters", bundle: .module)
@@ -275,6 +276,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         isDirty = false; saveRequestedWhileSaving = false; isSaving = false
         fileGeneration += 1   // 큐에 남아 있던 비동기 저장의 완료 콜백은 무시된다 (내용은 이 쓰기 이전에 이미 디스크에 반영됨)
         lastSaved = Date(); ourLastWrite = lastSaved
+        externalChange = nil
         loadedLength = textStorage.length; fileSize = built.data.count
         if built.convertedToUTF8 { encoding = .utf8; hasBOM = false }
         errorMessage = nil
