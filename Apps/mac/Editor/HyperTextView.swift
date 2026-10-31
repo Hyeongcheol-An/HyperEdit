@@ -14,6 +14,12 @@ final class HyperTextView: NSTextView {
     var currentLineColor: NSColor?
     var onDidMoveToWindow: (() -> Void)?
     var onMultiChange: ((MultiSelection?) -> Void)?
+    /// 북마크 줄 추적: 편집으로 줄 수가 바뀌기 직전에 (기준 줄, 증감) 을 알린다 — 기준 줄보다 뒤의 줄이 delta 만큼 이동한다.
+    /// 줄 머리에서 시작하는 편집(줄 앞 Enter, 줄 삭제)은 기준 줄을 하나 앞당겨 그 줄 자체도 밀리거나 지워지게 한다.
+    var onLinesWillChange: ((_ atLine: Int, _ delta: Int) -> Void)?
+    /// false 를 돌려주면(북마크 없음) 줄 번호 계산을 건너뛴다
+    var needsLineTracking: (() -> Bool)?
+    private var lineChangeDepth = 0
 
     /// 열 모드 (UltraEdit Alt+C): 켜져 있으면 드래그와 ⇧방향키가 사각형 블록을 만든다
     var columnModeEnabled = false {
@@ -147,6 +153,45 @@ final class HyperTextView: NSTextView {
         }
         scrollRangeToVisible(ranges[p])
         needsDisplay = true
+    }
+
+    // MARK: - 줄 수 변화 통지
+    // 모든 편집 — 입력·붙여넣기·텍스트 도구·멀티 편집, 그리고 undo/redo(AppKit 이 범위마다 shouldChangeText(in:) 를 다시 부른다) — 가 이 길을 지난다.
+    // AppKit 의 shouldChangeText(in:) 는 안에서 shouldChangeText(inRanges:) 를 부르므로 depth 로 한 번만 알린다.
+
+    override func shouldChangeText(in affectedCharRange: NSRange, replacementString: String?) -> Bool {
+        lineChangeDepth += 1
+        defer { lineChangeDepth -= 1 }
+        guard super.shouldChangeText(in: affectedCharRange, replacementString: replacementString) else { return false }
+        if lineChangeDepth == 1, let s = replacementString { notifyLineChanges([(affectedCharRange, s)]) }
+        return true
+    }
+
+    override func shouldChangeText(inRanges affectedRanges: [NSValue], replacementStrings: [String]?) -> Bool {
+        lineChangeDepth += 1
+        defer { lineChangeDepth -= 1 }
+        guard super.shouldChangeText(inRanges: affectedRanges, replacementStrings: replacementStrings) else { return false }
+        if lineChangeDepth == 1, let strs = replacementStrings, strs.count == affectedRanges.count {
+            notifyLineChanges(Array(zip(affectedRanges.map(\.rangeValue), strs)))
+        }
+        return true
+    }
+
+    /// 편집 전 텍스트 기준으로 범위별 개행 증감을 계산해 뒤 범위부터 알린다 (앞 범위의 이동이 뒤 범위의 줄 번호를 흔들지 않도록).
+    /// 줄 번호는 문서 인덱스(250 ms 지연 갱신) 대신 현재 문자열을 직접 세어 구한다 — 개행이 바뀌는 편집에서만 드는 비용.
+    private func notifyLineChanges(_ edits: [(NSRange, String)]) {
+        guard let hook = onLinesWillChange, needsLineTracking?() ?? true else { return }
+        let ns = string as NSString
+        for (range, str) in edits.sorted(by: { $0.0.location > $1.0.location }) {
+            guard range.location != NSNotFound, NSMaxRange(range) <= ns.length else { continue }
+            let oldNL = LineIndex.countNewlines(in: ns, range: range)
+            let newNL = str.utf16.reduce(0) { $0 + ($1 == 10 ? 1 : 0) }
+            let delta = newNL - oldNL
+            guard delta != 0 else { continue }
+            var pivot = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: range.location)) + 1
+            if range.location == 0 || ns.character(at: range.location - 1) == 10 { pivot -= 1 }
+            hook(pivot, delta)
+        }
     }
 
     // MARK: - 멀티 편집

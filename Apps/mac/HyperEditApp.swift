@@ -104,6 +104,9 @@ struct EditorCommands: Commands {
                 Button("Spaces → Tabs") { model.textTool(.spacesToTabs) }
             }
             Button("Number Lines") { model.textTool(.numberLines) }
+            Divider()
+            Button("Calculate") { model.textTool(.calculate) }.keyboardShortcut("=", modifiers: [.control, .command])
+            Button("Align Columns") { model.textTool(.alignColumns) }.keyboardShortcut("t", modifiers: [.control, .command])
         }
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")

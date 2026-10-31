@@ -68,7 +68,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - **Find (⌘F):** type a query and press Enter to list every match with line numbers, with the matches highlighted in the editor while the list is open; toggles for regex `.*`, case `Aa` and whole word `W`; F3 / ⇧F3 step through matches; ⌥⌘A turns all matches into multi-carets.
 - **Replace (⌘R):** replace current or replace all, with regex templates such as `$1`. Replace All is a single undo step.
 - **Find in Files (⇧⌘F):** pick a folder and optional masks like `*.md;*.txt`; binary files are skipped; click a hit to open the file at that line.
-- **Bookmarks:** ⌘F2 toggles, F2 / ⌥F2 jump next / previous, optional names. Stored per document under `~/Library/Application Support/HyperEdit/bookmarks/`, so nothing is written next to your files; a legacy `.<filename>.bookmarks.json` sidecar from older versions is read once and migrated.
+- **Bookmarks:** ⌘F2 toggles, F2 / ⌥F2 jump next / previous, optional names. Bookmarks follow their lines as you edit — inserting or deleting lines above moves them, deleting a bookmarked line removes it, and undo/redo moves them back. Stored per document under `~/Library/Application Support/HyperEdit/bookmarks/`, so nothing is written next to your files; a legacy `.<filename>.bookmarks.json` sidecar from older versions is read once and migrated.
 
 ### Column mode and multi-caret
 - **Column mode (⌥C):** ⌥-drag or ⇧+arrows select a rectangle; typing and deleting apply to every line; short lines are padded with virtual space; copy and paste work line-wise; **Insert Number (⌥⌘N)** fills a sequence.
@@ -76,6 +76,9 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 
 ### Text tools (Edit tab and the Line menu)
 Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · join ⇧⌘J · reverse · number lines · sort ascending / descending / numeric · remove duplicate lines · remove blank lines · trim trailing / both · tabs → spaces · spaces → tabs · UPPER / lower / Capitalize / iNVERT case.
+
+- **Calculate (⌃⌘=):** evaluates the selection, or the current line (the part after the last `=` if there is one), and appends ` ⇒ result` — `3+0.5+0.25` becomes `3+0.5+0.25 ⇒ 3.75`; running it again on an edited line replaces the old result. Plain arithmetic only: `+ - * / % ^`, parentheses, `1,234` / `1_000` numbers, `sqrt abs round floor ceil min max`, `pi` and `e`. Invalid expressions are reported in the Output panel and leave the text alone.
+- **Align Columns (⌃⌘T):** pads tab-separated columns (the selected lines, or the block of tab lines around the caret) so every column starts at the same display column, counting Hangul / CJK as two cells. Lines that all contain `|` are treated as a Markdown table instead: cells are padded inside ` | `, `---` rows are redrawn and `--:` columns right-aligned.
 
 ### Saving
 - Autosave 2 seconds after typing stops. On quit, window close and when switching files the document is saved synchronously, so there is no 2-second loss window. Every write is atomic.
@@ -99,6 +102,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌘F2 | Toggle bookmark | F2 / ⌥F2 | Next / previous bookmark |
 | ⇧⌘K | Delete line | ⇧⌘D | Duplicate line |
 | ⌥↑ / ⌥↓ | Move line up / down | ⇧⌘J | Join lines |
+| ⌃⌘= | Calculate (append ⇒ result) | ⌃⌘T | Align columns |
 | ⌘1 | Sidebar | ⌘2 | Bottom panel |
 | ⌘3 | Outline | ⌘4 | Timeline |
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
@@ -174,7 +178,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 - UI in English and Korean (follows the system language); no other languages yet.
 - Plain text only: no syntax highlighting. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
-- Planned editing tools — comment toggle, inline calculator, table alignment, JSON tidy, macros, split view — are on the roadmap but not implemented yet.
+- Planned editing tools — comment toggle, JSON tidy, macros, split view — are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math).
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).
 

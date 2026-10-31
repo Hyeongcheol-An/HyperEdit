@@ -159,6 +159,12 @@ private struct EditTab: View {
                 RibbonSmallButton(title: "Select Matches", systemImage: "checkmark.circle", help: "⌥⌘A — turn every find result into a caret", enabled: !model.searchHits.isEmpty, theme: theme) { model.selectAllMatches() }
             }
         }
+        RibbonGroup(title: "Tools", theme: theme) {
+            RibbonBigButton(title: "Calculate", systemImage: "plus.forwardslash.minus", help: "Evaluate the selection or current line and append ⇒ result (⌃⌘=)", theme: theme) { model.textTool(.calculate) }
+            RibbonStack {
+                RibbonSmallButton(title: "Align Columns", systemImage: "tablecells", help: "Pad tab- or pipe-separated columns so they line up (⌃⌘T)", theme: theme) { model.textTool(.alignColumns) }
+            }
+        }
     }
 }
 

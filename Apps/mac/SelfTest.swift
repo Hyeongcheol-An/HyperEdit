@@ -215,6 +215,60 @@ enum SelfTest {
         check(model.showMarkdownPreview, "markdown preview toggled on")
         model.showMarkdownPreview = false; await wait(200)
 
+        // 10. 북마크 줄 추적: 10줄 북마크 → 위에 2줄 삽입 → 12 → undo → 10 → redo → 12 → undo → 10 → 줄 삭제 → 제거
+        func bm() -> [Int] { model.bookmarks.bookmarks.map(\.line) }
+        model.jump(toLine: 10); await wait(300)
+        model.toggleBookmarkAtCaret()
+        check(bm() == [10] && lineText(10) == "## Real heading", "bookmark line 10 '\(lineText(10))'")
+        // 앞 단계의 프로그램적 insertText 들이 한 '입력' undo 그룹으로 합쳐져 있으므로 끊고 시작 (실제 타이핑은 캐럿 이동이 끊어 준다)
+        model.send(.perform { tv in tv.breakUndoCoalescing(); tv.insertText("x\ny\n", replacementRange: NSRange(location: 0, length: 0)) }); await wait(300)
+        check(bm() == [12] && lineText(12) == "## Real heading", "insert 2 lines above → bookmark \(bm())")
+        model.send(.undo); await wait(300)
+        check(bm() == [10] && lineText(10) == "## Real heading", "undo → bookmark \(bm()) line10='\(lineText(10))'")
+        model.send(.redo); await wait(300)
+        check(bm() == [12] && lineText(12) == "## Real heading", "redo → bookmark \(bm())")
+        model.send(.undo); await wait(400)
+        check(bm() == [10] && lineText(10) == "## Real heading", "undo again → bookmark \(bm())")
+        model.jump(toLine: 10); await wait(300)
+        model.textTool(.deleteLine); await wait(300)
+        check(bm().isEmpty && lineText(10) == "가. 한글 항목", "delete bookmarked line → bookmarks \(bm()), line 10 '\(lineText(10))'")
+        model.send(.undo); await wait(400)
+        // 줄은 돌아오지만 북마크 제거는 undo 대상이 아니다. (NSTextView 는 redo 뒤 프로그램적 입력 그룹을 다시 합치기도 해 전체 줄 수는 고정하지 않는다)
+        check(lineText(10) == "## Real heading" && bm().isEmpty, "undo delete → line10='\(lineText(10))' bookmarks \(bm())")
+
+        // 11. 즉석 계산: 줄 끝에 ⇒ 결과, 다시 실행해도 같음, 수식이 아니면 그대로 두고 출력에 알림
+        func lastLine() -> String { (text() as String).components(separatedBy: "\n").last ?? "" }
+        model.goToEnd(); await wait(300)
+        model.send(.perform { tv in tv.insertText("\n3+0.5+0.25", replacementRange: tv.selectedRange()) }); await wait(200)
+        model.textTool(.calculate); await wait(300)
+        check(lastLine() == "3+0.5+0.25 ⇒ 3.75", "calculate → '\(lastLine())'")
+        model.textTool(.calculate); await wait(300)
+        check(lastLine() == "3+0.5+0.25 ⇒ 3.75", "calculate again → '\(lastLine())'")
+        model.send(.perform { tv in tv.insertText("\ntotal = 2*(3+4)", replacementRange: tv.selectedRange()) }); await wait(200)
+        model.textTool(.calculate); await wait(300)
+        check(lastLine() == "total = 2*(3+4) ⇒ 14", "calculate after '=' → '\(lastLine())'")
+        model.send(.perform { tv in tv.insertText("\nhello world", replacementRange: tv.selectedRange()) }); await wait(200)
+        let outputCount = model.output.count
+        model.textTool(.calculate); await wait(300)
+        let lastOut = model.output.last?.text ?? ""
+        check(lastLine() == "hello world" && model.output.count == outputCount + 1 && (lastOut.contains("Not a valid expression") || lastOut.contains("유효한 수식")),
+              "invalid expression untouched, output '\(lastOut)'")
+
+        // 12. 열 맞춤: 한글 셀이 있는 탭 표 3줄 → 열이 같은 표시 열에서 시작
+        model.send(.perform { tv in tv.insertText("\nname\tqty\tnote\n홍길동\t3\tok\nab\t12345\tx", replacementRange: tv.selectedRange()) }); await wait(200)
+        model.send(.perform { tv in tv.setSelectedRange(NSRange(location: (tv.string as NSString).length - 3, length: 0)) })   // 선택 없이 마지막 줄에서
+        model.textTool(.alignColumns); await wait(300)
+        let table = Array((text() as String).components(separatedBy: "\n").suffix(3))
+        func start(_ line: String, _ cell: String) -> Int {
+            guard let r = line.range(of: cell) else { return -1 }
+            return TextTools.displayWidth(String(line[..<r.lowerBound]))
+        }
+        let col2 = Set([start(table[0], "qty"), start(table[1], "3"), start(table[2], "12345")])
+        let col3 = Set([start(table[0], "note"), start(table[1], "ok"), start(table[2], "x")])
+        check(table == ["name    qty    note", "홍길동  3      ok", "ab      12345  x"] && col2 == [8] && col3 == [15],
+              "align columns → \(table) starts \(col2.sorted()) / \(col3.sorted())")
+        check(!(text() as String).contains("\tqty"), "tabs replaced by padding")
+
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
         model.showTimeline()

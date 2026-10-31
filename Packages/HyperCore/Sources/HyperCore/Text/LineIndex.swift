@@ -57,4 +57,24 @@ public struct LineIndex: Sendable, Equatable {
         let o = max(0, min(offset, utf16Count))
         return o - lineStarts[lineNumber(forUTF16Offset: o) - 1] + 1
     }
+
+    /// 범위 안의 개행(\n) 수. 인덱스 없이 문자열을 직접 세므로 편집 직후(인덱스가 250 ms 뒤에 갱신되기 전)에도 정확하다.
+    public static func countNewlines(in ns: NSString, range: NSRange) -> Int {
+        let r = NSIntersectionRange(range, NSRange(location: 0, length: ns.length))
+        guard r.length > 0 else { return 0 }
+        let chunk = 65_536
+        var buf = [unichar](repeating: 0, count: min(chunk, r.length))
+        var count = 0, pos = r.location
+        let end = NSMaxRange(r)
+        while pos < end {
+            let len = min(chunk, end - pos)
+            buf.withUnsafeMutableBufferPointer { p in ns.getCharacters(p.baseAddress!, range: NSRange(location: pos, length: len)) }
+            buf.withUnsafeBufferPointer { p in
+                var i = 0
+                while i < len { if p[i] == 10 { count += 1 }; i += 1 }
+            }
+            pos += len
+        }
+        return count
+    }
 }
