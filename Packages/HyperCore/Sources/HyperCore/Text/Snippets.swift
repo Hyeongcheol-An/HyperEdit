@@ -114,7 +114,8 @@ public final class SnippetStore: ObservableObject {
             .appendingPathComponent("HyperEdit", isDirectory: true)
     }
 
-    public static let defaults: [Snippet] = [
+    /// 기본 스니펫 (값 타입 상수 — 어느 격리에서나 읽을 수 있게 nonisolated; 테스트가 메인 액터 밖에서 참조한다)
+    public nonisolated static let defaults: [Snippet] = [
         Snippet(trigger: "date", title: "Date", body: "${date}"),
         Snippet(trigger: "time", title: "Time", body: "${time}"),
         Snippet(trigger: "now", title: "Date and time", body: "${datetime}"),
