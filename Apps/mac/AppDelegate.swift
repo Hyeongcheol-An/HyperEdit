@@ -32,6 +32,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             dump("didFinishLaunching")
             for i in 1...4 { DispatchQueue.main.asyncAfter(deadline: .now() + Double(i)) { dump("+\(i)s") } }
         }
+        // 개발용: `--window-width <pt>` 로 첫 창 폭을 바꿔 좁은 창(리본 접힘) 상태를 스크린샷한다.
+        // 스냅샷 실행은 폭을 주지 않으면 1280 으로 고정한다 (AppKit 의 창 프레임 자동 저장이 이전 실행 크기를 되살리므로).
+        let requested = LaunchOptions.value("--window-width").flatMap(Double.init) ?? (args.contains("--snapshot") ? 1280 : nil)
+        if let width = requested {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                guard let win = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil }) else { return }
+                var f = win.frame; f.size.width = max(900, CGFloat(width)); win.setFrame(f, display: true)
+            }
+        }
         guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }
         let path = args[i + 1]
         let quit = args.contains("--quit")

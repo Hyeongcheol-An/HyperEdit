@@ -30,18 +30,23 @@ struct RibbonView: View {
             .frame(height: 30)
             .background(theme.backgroundAlt.color)
 
-            ScrollView(.horizontal, showsIndicators: true) {
-                HStack(alignment: .top, spacing: 0) {
-                    switch model.ribbonTab {
-                    case .home: HomeTab(theme: theme)
-                    case .edit: EditTab(theme: theme)
-                    case .layout: LayoutTab(theme: theme)
-                    case .advanced: AdvancedTab(theme: theme)
-                    case .window: WindowTab(theme: theme)
+            // 창이 좁아 탭 내용이 다 들어가지 않으면 작은 버튼을 아이콘만 남기는 '접힘(compact)' 모드로 전환한다
+            GeometryReader { geo in
+                let compact = geo.size.width < model.ribbonTab.requiredWidth
+                ScrollView(.horizontal, showsIndicators: true) {
+                    HStack(alignment: .top, spacing: 0) {
+                        switch model.ribbonTab {
+                        case .home: HomeTab(theme: theme)
+                        case .edit: EditTab(theme: theme)
+                        case .layout: LayoutTab(theme: theme)
+                        case .advanced: AdvancedTab(theme: theme)
+                        case .window: WindowTab(theme: theme)
+                        }
                     }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .environment(\.ribbonCompact, compact)
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 4)
             }
             .frame(height: 96)
             .background(theme.background.color)
@@ -341,14 +346,15 @@ struct RibbonSmallButton: View {
     let theme: Theme
     let action: () -> Void
     @State private var hover = false
+    @Environment(\.ribbonCompact) private var compact
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: systemImage).font(.system(size: 11)).frame(width: 16)
-                Text(title).font(.system(size: 11)).lineLimit(1)
+                if !compact { Text(title).font(.system(size: 11)).lineLimit(1) }
             }
             .padding(.horizontal, 5)
-            .frame(width: 128, height: 20, alignment: .leading)
+            .frame(width: compact ? 26 : 128, height: 20, alignment: .leading)
             .background(hover && enabled ? theme.backgroundElevated.color : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 3))
         }
@@ -356,7 +362,7 @@ struct RibbonSmallButton: View {
         .foregroundStyle(enabled ? theme.foreground.color : theme.foregroundDim.color)
         .disabled(!enabled)
         .onHover { hover = $0 }
-        .help(help)
+        .help(compact ? title : help)   // 접힘 모드에서는 제목이 툴팁이 된다
     }
 }
 
@@ -367,23 +373,51 @@ struct RibbonSmallToggle: View {
     @Binding var isOn: Bool
     let theme: Theme
     @State private var hover = false
+    @Environment(\.ribbonCompact) private var compact
     var body: some View {
         Button { isOn.toggle() } label: {
             HStack(spacing: 5) {
                 Image(systemName: systemImage).font(.system(size: 11)).frame(width: 16)
-                Text(title).font(.system(size: 11)).lineLimit(1)
-                Spacer(minLength: 0)
-                if isOn { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.accent.color) }
+                    .foregroundStyle(compact && isOn ? theme.accent.color : theme.foreground.color)
+                if !compact {
+                    Text(title).font(.system(size: 11)).lineLimit(1)
+                    Spacer(minLength: 0)
+                    if isOn { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.accent.color) }
+                }
             }
             .padding(.horizontal, 5)
-            .frame(width: 128, height: 20, alignment: .leading)
+            .frame(width: compact ? 26 : 128, height: 20, alignment: .leading)
             .background(isOn ? theme.accent.color.opacity(0.18) : (hover ? theme.backgroundElevated.color : Color.clear))
             .clipShape(RoundedRectangle(cornerRadius: 3))
         }
         .buttonStyle(.plain)
         .foregroundStyle(theme.foreground.color)
         .onHover { hover = $0 }
-        .help(help)
+        .help(compact ? title : help)
+    }
+}
+
+// MARK: - 접힘(compact) 모드
+
+private struct RibbonCompactKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    /// 리본 폭이 탭 내용보다 좁을 때 true — 작은 버튼이 아이콘만 표시한다
+    var ribbonCompact: Bool {
+        get { self[RibbonCompactKey.self] }
+        set { self[RibbonCompactKey.self] = newValue }
+    }
+}
+
+extension RibbonTab {
+    /// 탭 내용이 접히지 않고 다 보이는 데 필요한 폭(pt). 그룹을 추가하면 갱신할 것 (스크린샷에서 마지막 그룹 오른쪽 끝 + 여유 20).
+    var requiredWidth: CGFloat {
+        switch self {
+        case .home: 1060
+        case .edit: 1290
+        case .layout: 840
+        case .advanced: 260
+        case .window: 260
+        }
     }
 }
 
