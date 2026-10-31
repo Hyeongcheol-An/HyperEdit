@@ -60,5 +60,10 @@ targets:
         Release:
           # 배포 빌드에 get-task-allow(디버거 허용) 엔타이틀먼트가 주입되면 공증이 거절된다
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+          # 바이너리 크기: 미사용 코드 제거 + 심볼 스트립 (xcodebuild build 에서도 스트립이 돌도록 DEPLOYMENT_POSTPROCESSING)
+          DEAD_CODE_STRIPPING: YES
+          DEPLOYMENT_POSTPROCESSING: YES
+          STRIP_INSTALLED_PRODUCT: YES
+          STRIP_STYLE: all
     scheme:
       testTargets: []
