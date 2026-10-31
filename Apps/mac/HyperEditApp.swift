@@ -8,8 +8,8 @@ struct HyperEditApp: App {
     @StateObject private var model = AppModel()
 
     init() {
-        // 스크린샷·셀프테스트 실행은 사용자 설정(테마·패널·마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다
-        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") {
+        // 스크린샷·셀프테스트 실행은 사용자 설정(테마·패널·마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다 (`--ephemeral` 은 수동 테스트 실행용)
+        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--ephemeral") {
             AppDefaults.useEphemeral()
         }
     }
