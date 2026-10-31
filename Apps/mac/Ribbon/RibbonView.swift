@@ -234,7 +234,7 @@ private struct LayoutTab: View {
                 // split: 토글 + 방향 전환 (같은 스택이라 그룹 폭은 그대로)
                 RibbonSmallToggle(title: "Split Editor", systemImage: "rectangle.split.2x1", help: "Show the document in two editors (⌘\\)", isOn: Binding(get: { model.session.splitMode != .none }, set: { _ in model.toggleSplit() }), theme: theme)
                 RibbonSmallButton(title: "Split Direction", systemImage: "rectangle.split.1x2", help: "Switch between side-by-side and stacked split", theme: theme) { model.cycleSplitOrientation() }
-                RibbonSmallToggle(title: "Scroll Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)   // markers
+                RibbonSmallToggle(title: "Scrollbar Markers", systemImage: "ruler", help: "Search matches, bookmarks, the caret line and folded headers on the editor's right edge", isOn: $model.showScrollMarkers, theme: theme)   // markers
             }
         }
         RibbonGroup(title: "Folding", theme: theme) {   // fold
