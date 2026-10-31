@@ -217,6 +217,9 @@ final class HyperTextView: NSTextView {
     }
 
     private var expectingTrackedEdit = false
+    /// 어떤 뷰가 shouldChangeText 로 추적 중인 편집의 저장소 (분할 보기: 다른 뷰는 같은 저장소 알림을 '추적되지 않은' 편집으로 보지만,
+    /// 북마크·dirty 는 추적한 뷰가 이미 처리했으므로 접힘만 통지해야 한다 — 보조 편집기의 performReplacements 를 되돌릴 때 북마크가 두 번 밀리던 문제)
+    private static var storagesWithTrackedEdit = Set<ObjectIdentifier>()
     private var editObserversInstalled = false
     /// 이 뷰가 직접 등록한 알림 구독. `NotificationCenter.removeObserver(self)` 로 통째로 지우면 AppKit 이 NSTextView 내부에 건 구독까지
     /// 사라져 보관 중인 뷰의 레이아웃 매니저가 편집마다 문서 전체를 다시 배치하는 것이 실측됐다 → 반드시 이것만 해제한다.
@@ -229,7 +232,12 @@ final class HyperTextView: NSTextView {
 
     private func trackedEdits(_ edits: [(NSRange, String)]) {
         expectingTrackedEdit = true
-        DispatchQueue.main.async { [weak self] in self?.expectingTrackedEdit = false }   // 편집이 취소돼 저장소 알림이 안 오면 다음 턴에 해제
+        let storageID = textStorage.map { ObjectIdentifier($0) }
+        if let id = storageID { Self.storagesWithTrackedEdit.insert(id) }
+        DispatchQueue.main.async { [weak self] in   // 편집이 취소돼 저장소 알림이 안 오면 다음 턴에 해제
+            self?.expectingTrackedEdit = false
+            if let id = storageID { Self.storagesWithTrackedEdit.remove(id) }
+        }
         onTextWillChange?(edits, false)   // fold
         notifyLineChanges(edits)
         snippetTextWillChange(edits)      // snippets: 탭스톱 범위 보정 (편집 전 좌표)
@@ -292,7 +300,8 @@ final class HyperTextView: NSTextView {
         let pre = NSRange(location: edited.location, length: max(0, edited.length - ts.changeInLength))
         let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
         onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
-        guard tracksUntrackedLineChanges else { return }   // split: 아래는 주 편집기만
+        // split: 아래는 주 편집기만, 그리고 다른 뷰가 shouldChangeText 로 추적한 편집(그 뷰의 undo 클로저가 재생한 performReplacements 등)은 그 뷰가 처리했으므로 제외
+        guard tracksUntrackedLineChanges, !Self.storagesWithTrackedEdit.contains(ObjectIdentifier(ts)) else { return }
         // undo/redo 는 didChangeText 도 부르지 않는다 — 저장소 편집 처리가 끝난 뒤 직접 불러 뷰 상태(입력 합치기 등)를 정리한다.
         // 이 호출을 빼면 undo 뒤 모든 입력이 5배쯤 느려지는 것이 실측됐다. 문서 dirty 는 MemoDocument 가 저장소 알림으로 직접 관리하며,
         // load/reload 의 전체 교체 뒤에 오는 이 호출은 MemoDocument.textDidChange() 가 (문자 편집이 없었으므로) 무시한다.

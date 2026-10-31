@@ -721,6 +721,7 @@ struct EditorView: NSViewRepresentable {
             let len = document.textStorage.length
             let loc = min(range.location, len)
             let r = NSRange(location: loc, length: min(range.length, len - loc))
+            foldController?.reveal(range: r)   // fold: 목적지가 접힌 안이면 먼저 펼친다 (검색 매치처럼 길이 있는 선택은 selectionDidChange 가 펼치지 않는다)
             Perf.measure("  select.setSelectedRange") { tv.setSelectedRange(r) }
             Perf.measure("  select.scrollRangeToVisible loc=\(loc)") { tv.scrollRangeToVisible(r) }
             if focus { tv.window?.makeFirstResponder(tv) }

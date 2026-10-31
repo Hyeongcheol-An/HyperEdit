@@ -325,6 +325,7 @@ enum SelfTest {
         await runQASplit(model: model, check: check, log: log)   // split · quick append · 문서 무결성 QA (SelfTest+QASplit.swift)
         await runMacro(model: model, check: check, log: log)   // macro
         await runFold(model: model, check: check, log: log)
+        await runQAFold(model: model, check: check, log: log)   // QA: 접기·마커·undo 추적 경계 사례
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
