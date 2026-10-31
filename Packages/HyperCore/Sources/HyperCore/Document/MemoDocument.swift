@@ -169,7 +169,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     /// 텍스트 뷰의 사용자 편집 후 호출.
     public func textDidChange() {
-        isDirty = true
+        // 같은 값을 다시 대입해도 @Published 는 objectWillChange 를 보낸다 → 키 입력마다 문서를 구독하는 모든 SwiftUI 뷰(탭 바·상태바·EditorView.updateNSView)가
+        // 다시 평가됐다 (타이핑 지연의 약 1/3). 첫 편집에서만 바꾼다.
+        if !isDirty { isDirty = true }
         scheduleIndexRebuild()
         scheduleAutosave()
     }
