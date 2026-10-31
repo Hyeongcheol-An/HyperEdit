@@ -42,7 +42,7 @@ struct ContentView: View {
         .background(theme.background.color)
         .preferredColorScheme(theme.isDark ? .dark : .light)
         // 주의: .ignoresSafeArea(.top) 로 리본 탭 줄을 제목 표시줄 영역에 올리면 hiddenTitleBar 의 제목 표시줄이 탭을 가린다(실측) — 탭 줄은 그 아래에 둔다
-        .frame(minWidth: 900, minHeight: 560)
+        .frame(minWidth: model.session.splitMode == .vertical ? 1180 : 900, minHeight: 560)   // split: 좌우 분할은 편집기 둘(각 280+)과 사이드바가 들어갈 폭
         .alert("Go to Line", isPresented: $model.showGoToLine) {
             TextField("1 ~ \(model.document.lineIndex.lineCount)", text: $model.goToLineText)
                 .onSubmit { model.submitGoToLine() }

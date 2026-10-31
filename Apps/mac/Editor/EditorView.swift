@@ -525,8 +525,7 @@ struct EditorView: NSViewRepresentable {
                 document.textDidChange()
                 gutter?.needsDisplay = true
             case .perform(let action):
-                action(tv)
-                document.textDidChange()
+                action(tv)   // 문자 변경이 있었다면 MemoDocument.didProcessEditing 이 dirty·자동 저장을 건다 (읽기 전용 perform 은 문서를 더럽히지 않는다)
             case .fold, .unfold, .foldAll, .unfoldAll, .toggleFold:   // fold
                 foldController?.handle(cmd)
             }

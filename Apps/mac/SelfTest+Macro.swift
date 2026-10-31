@@ -129,7 +129,7 @@ extension SelfTest {
         check(rec.store.macros.map(\.name) == ["Find needle"] && FileManager.default.fileExists(atPath: storeURL.path), "saved macro listed and persisted · \(storeURL.path)")
         check(storeURL.path.contains("hyperedit-macros-"), "self-test macro store lives in a temp folder")
         let again = MacroStore(directory: rec.store.directory)
-        check(again.macros == rec.store.macros && again.lastRecorded == rec.lastRecorded, "store reload from disk matches")
+        check(again.macros == rec.store.macros && again.lastRecorded == nil, "store reload from disk matches (last recording stays in memory only)")
         if let id = rec.store.macros.first?.id { model.deleteMacro(id: id) }
         check(rec.store.macros.isEmpty && lastOutput("Macro deleted", "매크로 삭제"), "macro deleted · '\(model.output.suffix(2).map(\.text).joined(separator: " | "))'")
 

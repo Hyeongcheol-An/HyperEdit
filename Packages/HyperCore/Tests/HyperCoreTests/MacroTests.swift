@@ -75,11 +75,11 @@ final class MacroStoreTests: XCTestCase {
         XCTAssertEqual(fallback.name, "Macro 2")
 
         let again = MacroStore(directory: dir)
-        XCTAssertEqual(again.lastRecorded, recorded)
+        XCTAssertNil(again.lastRecorded, "마지막 기록은 디스크에 저장하지 않는다 (개인정보)")
         XCTAssertEqual(again.macros, [named, fallback])
         XCTAssertNil(again.loadError)
         let json = (try? String(contentsOf: again.fileURL, encoding: .utf8)) ?? ""
-        XCTAssertTrue(json.contains("\"lastRecorded\"") && json.contains("\"macros\"") && json.contains("\"type\" : \"insert\""), json)
+        XCTAssertTrue(!json.contains("\"lastRecorded\"") && json.contains("\"macros\"") && json.contains("\"type\" : \"insert\""), json)
     }
 
     func testRenameAndDeletePersist() {

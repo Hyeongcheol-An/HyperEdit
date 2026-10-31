@@ -17,7 +17,5 @@ extension SelfTest {
         check(gone && model.document.isDirty, "undo after save → text reverted (\(gone)) and document dirty (\(model.document.isDirty))")
         model.saveNow(); await wait(600)
         check(!disk().contains(marker), "save after undo → marker removed from disk")
-        // 원상복구: redo 로 마커를 되살리지 않는다 (샘플 끝 상태는 이후 검사에 영향 없음)
-        _ = marker
     }
 }

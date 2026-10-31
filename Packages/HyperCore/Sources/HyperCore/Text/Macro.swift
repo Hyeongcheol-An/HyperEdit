@@ -92,17 +92,17 @@ public final class MacroStore: ObservableObject {
         load()
     }
 
+    /// 디스크 형식. 저장한 매크로 목록만 둔다 — `lastRecorded` 는 메모리에만 (기록 중 친 비밀번호 같은 문자열이 파일에 남지 않도록;
+    /// 재시작 뒤에도 쓰려면 "Save Last Macro As…" 로 저장). 예전 파일의 `lastRecorded` 키는 무시된다.
     private struct File: Codable {
         var macros: [Macro]
-        var lastRecorded: Macro?
     }
 
     public func macro(id: UUID) -> Macro? { macros.first { $0.id == id } }
 
-    /// 방금 기록한 매크로 (재시작 뒤에도 "재생" 이 되도록 함께 저장)
+    /// 방금 기록한 매크로 — 메모리에만 둔다 (디스크에 쓰지 않음)
     public func setLastRecorded(_ macro: Macro?) {
         lastRecorded = macro
-        save()
     }
 
     /// 매크로를 이름을 붙여 목록에 추가한다 (새 id). 이름이 비면 `Macro N`
@@ -144,7 +144,6 @@ public final class MacroStore: ObservableObject {
         do {
             let f = try dec.decode(File.self, from: data)
             macros = f.macros
-            lastRecorded = f.lastRecorded
         } catch {
             loadError = error.localizedDescription
         }
@@ -154,7 +153,7 @@ public final class MacroStore: ObservableObject {
         let fm = FileManager.default
         try? fm.createDirectory(at: directory, withIntermediateDirectories: true)
         let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]; enc.dateEncodingStrategy = .iso8601
-        if let data = try? enc.encode(File(macros: macros, lastRecorded: lastRecorded)) {
+        if let data = try? enc.encode(File(macros: macros)) {
             try? data.write(to: fileURL, options: [.atomic])
         }
     }

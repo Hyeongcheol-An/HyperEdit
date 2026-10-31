@@ -248,7 +248,9 @@ final class HyperTextView: NSTextView {
     }
 
     @objc private func undoDidChange(_ n: Notification) {
-        if (n.object as? UndoManager) === undoManager { undoNewlineCount = nil }
+        guard (n.object as? UndoManager) === undoManager else { return }
+        undoNewlineCount = nil
+        endSnippetSession()   // snippets: undo/redo 는 shouldChangeText 를 거치지 않아 탭스톱 범위가 낡는다 → 세션 종료
     }
 
     /// shouldChangeText 를 거치지 않은 문자 편집(undo/redo)을 사후에 통지한다. editedRange 는 편집 후 범위, changeInLength 로 편집 전 범위를 되짚는다.
