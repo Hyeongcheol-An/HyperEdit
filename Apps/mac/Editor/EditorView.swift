@@ -98,6 +98,8 @@ struct EditorView: NSViewRepresentable {
             model.session.register(self)
         }
 
+        deinit { Perf.log("EditorView.Coordinator deinit role=\(role)") }   // split: 보조 편집기 해제 추적 (--debug-perf)
+
         /// 보조 편집기가 사라질 때 (SwiftUI dismantle). 세션에서 빼고 구독을 끊는다 — 텍스트 뷰는 공유 undo 항목이 참조할 수 있어 세션이 보관한다.
         func tearDown() {
             saveStateTask?.cancel()

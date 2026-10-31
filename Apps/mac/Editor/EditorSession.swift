@@ -47,7 +47,17 @@ final class EditorSession: ObservableObject {
     func register(_ c: EditorView.Coordinator) {
         entries.removeAll { $0.coordinator == nil || $0.coordinator === c }
         entries.append(Entry(coordinator: c))
+        registry.append(Entry(coordinator: c))
     }
+
+    // MARK: 진단 (셀프테스트 · --debug-perf) — 분할을 여닫을 때 코디네이터·텍스트 뷰가 새는지 센다. 약한 참조뿐이라 비용은 없다.
+
+    /// 지금까지 등록된 모든 코디네이터의 약한 참조 (해제된 항목은 셀 때 걷어낸다)
+    private var registry: [Entry] = []
+    func liveCoordinatorCount() -> Int { registry.removeAll { $0.coordinator == nil }; return registry.count }
+    func liveTextViewCount() -> Int { registry.compactMap(\.coordinator).filter { $0.textView != nil }.count }
+    /// 공유 undo 항목 때문에 보관 중인 닫힌 보조 편집기 수
+    var retiredCount: Int { retired.count }
 
     /// 살아 있는 편집기들 (주 편집기 먼저)
     var coordinators: [EditorView.Coordinator] { entries.compactMap(\.coordinator).filter { $0.textView != nil } }
