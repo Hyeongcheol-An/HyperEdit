@@ -205,6 +205,16 @@ enum SelfTest {
             tv.insertText("", replacementRange: NSRange(location: ns.length - 80, length: 80))
         }); await wait(200)
 
+        // 9. 마크다운 미리보기: HTML 렌더(데이터 줄 번호·헤딩·목록) + 토글 (WKWebView 로드는 비동기라 HTML 결과만 검사)
+        let html = MarkdownHTML.html(for: sample, theme: model.themes.current, baseURL: dir)
+        // 6번째 줄 'third line' 은 목록 항목의 느슨한 이어짐(lazy continuation)이라 <li> 안에 같이 들어간다 → 접두사만 본다
+        check(html.contains("<h1 data-line=\"1\">HyperEdit self-test sample</h1>") && html.contains("<li data-line=\"5\">NEEDLE second") && html.contains("<base href=\"file://"),
+              "markdown html: h1 + list item + base href")
+        check(!MarkdownHTML.body(for: "<script>x</script>").contains("<script>"), "markdown raw html escaped")
+        model.showMarkdownPreview = true; await wait(600)
+        check(model.showMarkdownPreview, "markdown preview toggled on")
+        model.showMarkdownPreview = false; await wait(200)
+
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
         model.showTimeline()

@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import HyperCore
 
-/// UltraEdit(v26+ 리본) 레이아웃: 리본 → 문서 탭 → [File View | 편집기 / 하단 결과창] → 상태바
+/// UltraEdit(v26+ 리본) 레이아웃: 리본 → 문서 탭 → [File View | (편집기 | 마크다운 미리보기) / 하단 결과창] → 상태바
 struct ContentView: View {
     @EnvironmentObject var model: AppModel
 
@@ -17,8 +17,19 @@ struct ContentView: View {
                         .frame(minWidth: 190, idealWidth: 250, maxWidth: 460)
                 }
                 VSplitView {
-                    EditorView(document: model.document, theme: theme, font: model.font)
-                        .frame(minHeight: 160)
+                    // 편집기는 항상 HSplitView 안에 둔다 — 미리보기를 켜고 끌 때 EditorView 의 정체성이 유지되어 텍스트 뷰·undo 스택이 다시 만들어지지 않는다
+                    GeometryReader { geo in
+                        HSplitView {
+                            EditorView(document: model.document, theme: theme, font: model.font)
+                                .frame(minWidth: 320)
+                            if model.showMarkdownPreview {
+                                MarkdownPreviewView(document: model.document, caret: model.caret, theme: theme)
+                                    .frame(minWidth: 280, idealWidth: max(280, geo.size.width * 0.45))
+                            }
+                        }
+                        .frame(width: geo.size.width, height: geo.size.height)
+                    }
+                    .frame(minHeight: 160)
                     if model.showBottomPanel {
                         BottomPanel(theme: theme)
                             .frame(minHeight: 110, idealHeight: 210, maxHeight: 520)
@@ -103,6 +114,9 @@ struct StatusBar: View {
             cell(doc.encodingName, width: doc.hasBOM ? 90 : 64).help("File encoding — saved exactly as it was read")
             cell("COL", width: 44).foregroundStyle(model.columnMode ? theme.accent.color : theme.foregroundDim.color)
                 .help(model.columnMode ? "Column mode on (⌥C to turn off)" : "Column mode off (⌥C to turn on)")
+            if model.showMarkdownPreview {
+                cell("MD", width: 40).foregroundStyle(theme.accent.color).help("Markdown preview on (⇧⌘P)")
+            }
             if caret.multiCaretCount > 1 {
                 cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")
             }

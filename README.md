@@ -54,6 +54,11 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - Last caret and scroll position restored per file; ⌃⌘E jumps to the end; ⌘L goes to a line.
 - F7 inserts a timestamp heading such as `## 2026-10-30 (Fri) 14:05`. The weekday follows the system locale, e.g. `(금)` on Korean systems.
 
+### Markdown preview
+- **⇧⌘P** splits the editor: the rendered GFM view of the current file appears on the right (headings, lists and task lists, tables, fenced code, block quotes, links, images) styled from the active theme, with the system font for prose and the editor's monospace stack for code.
+- The preview follows the editor's scroll position and re-renders 300 ms after you stop typing, keeping its own scroll position. Links open in the default browser; raw HTML in the source is shown escaped, never executed; relative image paths resolve against the file's folder. Files over 2 MB show a short notice instead of a preview.
+- Rendered with Apple's [swift-markdown](https://github.com/swiftlang/swift-markdown) (Apache-2.0). The status bar shows **MD** while the preview is on.
+
 ### Ribbon and panels
 - Ribbon tabs **Home / Edit / Layout / Advanced / Window**, a document tab bar with New (⌘N) and Open (⌘O) buttons, and quick-access Save / Undo / Redo.
 - **Sidebar (⌘1)** — **Files** (folder tree of the current file's folder; a single click opens a file), **Outline** (⌘3: `##` headings, `[Title]` lines, Korean `가./나.` items and `1)` numbered items, with a filter box and the current item highlighted; `# …` lines that look like code comments are excluded), **Timeline** (⌘4: `## YYYY-MM-DD (weekday) HH:MM` timestamp headings plus loose date-prefixed lines, grouped by month, newest first).
@@ -98,7 +103,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌘3 | Outline | ⌘4 | Timeline |
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
-| ⌘, | Settings | | |
+| ⌘, | Settings | ⇧⌘P | Markdown preview |
 
 ## Themes
 
@@ -121,7 +126,7 @@ Requires Xcode 16 or later on macOS 15 and [XcodeGen](https://github.com/yonasko
 ```sh
 brew install xcodegen
 scripts/bootstrap.sh                                   # generates HyperEdit.xcodeproj (git-ignored)
-scripts/build-mac.sh --run                             # Release build, then launch
+scripts/build-mac.sh --run                             # Release build, then launch (the first build fetches swift-markdown)
 scripts/build-mac.sh Debug --run --file path/to/file   # Debug is much slower on big files
 swift test --package-path Packages/HyperCore           # engine unit tests
 scripts/install-mac.sh --open                          # install to ~/Applications
@@ -143,14 +148,14 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | Select a ribbon tab |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` | Show a sidebar / bottom-panel tab |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
-| `--column` · `--goto <line>` | Turn column mode on / jump to a line |
+| `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 
 ## Project layout
 
 ```
-Apps/mac/            SwiftUI shell: ribbon, panels, settings, and the AppKit editor in Editor/
-Packages/HyperCore/  Engine (document, search, text tools, column-block math, outline/timeline, themes, fonts) + tests
+Apps/mac/            SwiftUI shell: ribbon, panels, settings, the AppKit editor in Editor/ and the WKWebView Markdown preview in Markdown/
+Packages/HyperCore/  Engine (document, search, text tools, column-block math, outline/timeline, themes, fonts, Markdown → HTML) + tests
 themes/              palettes.json (single source), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                features.md · fonts.md · zed.md · design.ko.md · theme-preview.html · screenshots/ · sample/
 scripts/             bootstrap · build-mac · install-mac · make-dmg · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · install-hooks
@@ -167,9 +172,9 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 ## Roadmap and limitations
 
 - UI in English and Korean (follows the system language); no other languages yet.
-- Plain text only: no syntax highlighting and no Markdown preview yet.
+- Plain text only: no syntax highlighting. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
-- Planned editing tools — comment toggle, inline calculator, table alignment, JSON tidy, Markdown preview, macros, split view — are on the roadmap but not implemented yet.
+- Planned editing tools — comment toggle, inline calculator, table alignment, JSON tidy, macros, split view — are on the roadmap but not implemented yet.
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).
 
@@ -184,3 +189,5 @@ HyperEdit's layout is inspired by the classic UltraEdit ribbon. UltraEdit is a t
 ## License
 
 [MIT](LICENSE) © 2026 Hyeongcheol An
+
+The Markdown preview is built with [swift-markdown](https://github.com/swiftlang/swift-markdown) and its [swift-cmark](https://github.com/swiftlang/swift-cmark) (cmark-gfm) dependency, both © Apple Inc. and contributors, licensed under the [Apache License 2.0](https://github.com/swiftlang/swift-markdown/blob/main/LICENSE.txt). They are fetched by Swift Package Manager at build time and linked into the app.

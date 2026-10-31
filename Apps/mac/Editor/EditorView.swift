@@ -132,6 +132,11 @@ struct EditorView: NSViewRepresentable {
             NotificationCenter.default.publisher(for: NSView.boundsDidChangeNotification, object: scrollView.contentView)
                 .sink { [weak self] _ in self?.gutter?.needsDisplay = true }
                 .store(in: &cancellables)
+            // 보이는 첫 줄 → EditorCaret.firstVisibleLine (마크다운 미리보기 스크롤 동기화). 스크롤 이벤트는 초당 수백 번이라 60 ms 로 묶는다
+            NotificationCenter.default.publisher(for: NSView.boundsDidChangeNotification, object: scrollView.contentView)
+                .throttle(for: .milliseconds(60), scheduler: RunLoop.main, latest: true)
+                .sink { [weak self] _ in self?.publishFirstVisibleLine() }
+                .store(in: &cancellables)
             NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
                 .sink { [weak self] _ in self?.saveViewStateNow() }
                 .store(in: &cancellables)
@@ -155,6 +160,7 @@ struct EditorView: NSViewRepresentable {
                 .sink { [weak self] _ in
                     self?.gutter?.updateThickness()
                     self?.gutter?.needsDisplay = true
+                    self?.publishFirstVisibleLine()   // 편집으로 줄 번호가 밀렸을 수 있다
                 }
                 .store(in: &docCancellables)
             // 같은 문서 객체가 다른 파일로 전환됨: 이전 파일의 위치 저장 예약 취소, undo 비우기, 새 파일 위치 복원 준비
@@ -275,6 +281,18 @@ struct EditorView: NSViewRepresentable {
             ts.endEditing()
             highlightedRanges = []
             highlightKey = ""
+        }
+
+        /// 보이는 영역의 첫 레이아웃 조각이 속한 줄(1-based)을 EditorCaret 에 발행한다 — 거터와 같은 TextKit 2 질의
+        func publishFirstVisibleLine() {
+            guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
+            let visible = tv.visibleRect
+            let origin = tv.textContainerOrigin
+            let point = CGPoint(x: 0, y: max(0, visible.minY - origin.y))
+            let location = lm.textLayoutFragment(for: point)?.rangeInElement.location ?? lm.documentRange.location
+            let offset = cs.offset(from: cs.documentRange.location, to: location)
+            let line = document.lineIndex.lineNumber(forUTF16Offset: offset)
+            if model.caret.firstVisibleLine != line { model.caret.firstVisibleLine = line }
         }
 
         /// Dock·Mission Control 에 문서 이름이 보이도록 (제목 표시줄은 숨겨져 있어도 창 제목은 쓰인다)
