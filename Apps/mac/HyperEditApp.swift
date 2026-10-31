@@ -44,6 +44,8 @@ struct EditorCommands: Commands {
             Button("HyperEdit Help (GitHub)") { NSWorkspace.shared.open(URL(string: "https://github.com/Hyeongcheol-An/HyperEdit#readme")!) }
             Button("Report an Issue or Suggestion…") { NSWorkspace.shared.open(URL(string: "https://github.com/Hyeongcheol-An/HyperEdit/issues/new/choose")!) }
         }
+        // 기본 '페이지 설정…'(⇧⌘P)·'프린트…'(⌘P) 는 쓰지 않는다 — ⇧⌘P 를 마크다운 미리보기에 준다
+        CommandGroup(replacing: .printItem) {}
         CommandGroup(replacing: .newItem) {
             Button("New Document…") { model.newDocument() }.keyboardShortcut("n")
             Button("Open…") { model.presentOpenPanel() }.keyboardShortcut("o")
@@ -110,6 +112,7 @@ struct EditorCommands: Commands {
             Button("Timeline") { model.showTimeline() }.keyboardShortcut("4")
             Button(model.showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers") { model.showLineNumbers.toggle() }.keyboardShortcut("l", modifiers: [.command, .option])
             Button(model.wordWrap ? "Turn Word Wrap Off" : "Turn Word Wrap On") { model.wordWrap.toggle() }.keyboardShortcut("z", modifiers: [.option])
+            Toggle("Markdown Preview", isOn: $model.showMarkdownPreview).keyboardShortcut("p", modifiers: [.command, .shift])
             Divider()
             ForEach(RibbonTab.allCases) { tab in
                 Button(tab.menuLabel) { model.ribbonTab = tab }

@@ -101,6 +101,8 @@ final class EditorCaret: ObservableObject {
     @Published var selectionLength = 0
     @Published var multiCaretCount = 0
     @Published var columnBlockActive = false
+    /// 편집기에 보이는 첫 줄(1-based). 스크롤마다 ~60 ms 스로틀로 갱신 — 마크다운 미리보기가 따라간다
+    @Published var firstVisibleLine = 1
 }
 
 @MainActor
@@ -117,6 +119,13 @@ final class AppModel: ObservableObject {
     @Published var ribbonTab: RibbonTab = .home
     @Published var showFileView: Bool { didSet { AppDefaults.store.set(showFileView, forKey: "ui.showFileView") } }
     @Published var showBottomPanel: Bool { didSet { AppDefaults.store.set(showBottomPanel, forKey: "ui.showBottomPanel") } }
+    /// 마크다운 분할 미리보기 (⇧⌘P). 파일 확장자에 따라 자동으로 켜지 않는다 — 사용자가 마지막으로 둔 상태(기본 꺼짐)를 유지한다.
+    @Published var showMarkdownPreview: Bool {
+        didSet {
+            AppDefaults.store.set(showMarkdownPreview, forKey: "ui.markdownPreview")
+            log(showMarkdownPreview ? String(localized: "Markdown preview on") : String(localized: "Markdown preview off"))
+        }
+    }
     @Published var bottomTab: BottomTab = .findResults
     @Published var leftTab: LeftTab = .fileView
     @Published var columnMode = false { didSet { editorCommands.send(.setColumnMode(columnMode)); log(columnMode ? String(localized: "Column mode on (⇧arrows / drag to select a block)") : String(localized: "Column mode off")) } }
@@ -173,6 +182,7 @@ final class AppModel: ObservableObject {
         showBottomPanel = d.object(forKey: "ui.showBottomPanel") as? Bool ?? true
         wordWrap = d.object(forKey: "ui.wordWrap") as? Bool ?? true
         showLineNumbers = d.object(forKey: "ui.lineNumbers") as? Bool ?? true
+        showMarkdownPreview = d.object(forKey: "ui.markdownPreview") as? Bool ?? false
         let url = MemoLocation.resolveDefault()
         let doc = MemoDocument(url: url)
         document = doc
@@ -507,7 +517,7 @@ final class AppModel: ObservableObject {
 
     /// `--theme <id>` `--follow-system-theme` `--ribbon <home|edit|layout|advanced|window>` `--left <files|outline|timeline>`
     /// `--bottom <find|bookmarks|output>` `--hide-left` `--hide-bottom` `--search <q>` `--replace [--replace-with <s>]` `--find-in-files`
-    /// `--column` `--goto <line>`
+    /// `--column` `--goto <line>` `--preview`
     private func applyLaunchOptions() {
         if let t = LaunchOptions.value("--theme") { themes.select(id: t) }
         if LaunchOptions.has("--follow-system-theme") { themes.setFollowsSystem(true) }
@@ -523,6 +533,7 @@ final class AppModel: ObservableObject {
             if findScope == .files { runFindInFiles() } else { runSearch() }
         }
         if LaunchOptions.has("--column") { columnMode = true }
+        if LaunchOptions.has("--preview") { showMarkdownPreview = true }
         if let g = LaunchOptions.value("--goto"), let n = Int(g) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.jump(toLine: n) }
         }

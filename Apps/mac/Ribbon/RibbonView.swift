@@ -216,6 +216,9 @@ private struct LayoutTab: View {
                 RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
             }
         }
+        RibbonGroup(title: "Markdown", theme: theme) {
+            RibbonBigToggle(title: "Preview", systemImage: "doc.richtext", help: "Markdown preview on the right — follows the editor scroll (⇧⌘P)", isOn: $model.showMarkdownPreview, theme: theme)
+        }
         RibbonGroup(title: "Font Size", theme: theme) {
             RibbonBigButton(title: "Larger", systemImage: "textformat.size.larger", help: "Larger text (⌘=)", theme: theme) { model.adjustFontSize(1) }
             RibbonStack {
