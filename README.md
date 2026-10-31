@@ -156,6 +156,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
+| `--ephemeral` | Use throwaway preferences (theme, panels, remembered file) for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 
 ## Project layout
