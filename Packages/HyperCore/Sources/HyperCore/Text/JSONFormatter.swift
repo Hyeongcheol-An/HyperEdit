@@ -19,6 +19,10 @@ public enum JSONFormatter {
         public var description: String { "\(line):\(column) \(message)" }
     }
 
+    /// 중첩 깊이 한계. 재귀 하강 파서라 수만 단계 중첩(`[[[[…` 20 KB 면 메인 스레드 8 MB 스택도 넘친다)은 크래시 대신 문법 오류로 보고한다.
+    /// 실제 JSON 은 수십 단계를 넘지 않는다 (Python json ≈ 1000, serde_json 128, .NET 64 와 같은 종류의 한계).
+    public static let maxDepth = 512
+
     public static func format(_ s: String, indent: Indent = .spaces(2)) throws -> String {
         try run(s, indent: indent)
     }
@@ -161,6 +165,7 @@ public enum JSONFormatter {
         }
 
         mutating func object(depth: Int, into out: inout [UInt8]) throws {
+            guard depth < JSONFormatter.maxDepth else { throw error(at: pos, "Nesting too deep (more than \(JSONFormatter.maxDepth) levels)") }
             let open = pos
             pos += 1
             out.append(0x7B)
@@ -199,6 +204,7 @@ public enum JSONFormatter {
         }
 
         mutating func array(depth: Int, into out: inout [UInt8]) throws {
+            guard depth < JSONFormatter.maxDepth else { throw error(at: pos, "Nesting too deep (more than \(JSONFormatter.maxDepth) levels)") }
             let open = pos
             pos += 1
             out.append(0x5B)
