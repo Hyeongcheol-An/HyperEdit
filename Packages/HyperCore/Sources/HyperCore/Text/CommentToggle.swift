@@ -43,6 +43,11 @@ public extension TextTools {
     ///   탭·공백은 있는 그대로 유지한다. 모든 줄이 비어 있으면 그 줄들 자체에 기호를 넣는다 (빈 줄에서 ⌘/ 를 누르면 `// ` 가 생긴다).
     static func toggleLineComment(lines: [String], syntax: CommentSyntax) -> [String] {
         guard syntax.isUsable, !lines.isEmpty else { return lines }
+        // CRLF 문서: `\n` 으로 가른 줄 끝에 남는 `\r` 은 줄바꿈의 일부다 — 떼어 두고 처리한 뒤 되돌린다 (그대로 두면 `-->` 가 `\r` 뒤에 붙어 줄이 갈라진다)
+        if lines.contains(where: { $0.hasSuffix("\r") }) {
+            let out = toggleLineComment(lines: lines.map { $0.hasSuffix("\r") ? String($0.dropLast()) : $0 }, syntax: syntax)
+            return zip(out, lines).map { $1.hasSuffix("\r") ? $0 + "\r" : $0 }
+        }
         let open: String, close: String?
         if let l = syntax.line { open = l; close = nil } else { open = syntax.block!.open; close = syntax.block!.close }
 

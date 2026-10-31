@@ -59,6 +59,18 @@ final class CommentToggleTests: XCTestCase {
         XCTAssertEqual(TextTools.toggleLineComment(lines: once, syntax: slash), lines)
     }
 
+    func testCRLFLineEndingsKeptOutsideMarkers() {
+        // DOS 파일은 스토리지에 \r\n 그대로 있고 편집기는 \n 으로 가르므로 줄 끝에 \r 이 남는다 — 기호는 \r 앞에, \r 은 줄 끝에 그대로
+        let md = ["  <p>hi</p>\r", "\r", "x\r"]
+        let out = TextTools.toggleLineComment(lines: md, syntax: html)
+        XCTAssertEqual(out, ["<!--   <p>hi</p> -->\r", "\r", "<!-- x -->\r"])
+        XCTAssertEqual(TextTools.toggleLineComment(lines: out, syntax: html), md, "전부 주석이면 해제 (\\r 때문에 '주석 아님' 으로 오판하지 않는다)")
+        let code = ["a\r", "  b\r", "c"]   // 마지막 줄은 파일 끝이라 \r 없음
+        let once = TextTools.toggleLineComment(lines: code, syntax: slash)
+        XCTAssertEqual(once, ["// a\r", "//   b\r", "// c"])
+        XCTAssertEqual(TextTools.toggleLineComment(lines: once, syntax: slash), code)
+    }
+
     func testUnusableSyntaxIsNoop() {
         XCTAssertEqual(TextTools.toggleLineComment(lines: ["a"], syntax: CommentSyntax()), ["a"])
     }
