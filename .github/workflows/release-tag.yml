@@ -16,9 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
+      - name: 이미 릴리스가 있으면 종료 (semantic-release 가 만든 태그·릴리스에는 아무것도 하지 않음)
+        id: existing
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then echo "release $GITHUB_REF_NAME already exists — nothing to do"; echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
       - name: 테마 빌드·검증
+        if: steps.existing.outputs.skip != 'true'
         run: python3 themes/build_zed_theme.py && python3 themes/validate.py
       - name: Developer ID 인증서 가져오기 (임시 키체인; 시크릿이 없으면 실패)
+        if: steps.existing.outputs.skip != 'true'
         env:
           P12_B64: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -35,6 +42,7 @@ jobs:
           security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
           security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" || { echo "::error::p12 에 Developer ID Application 인증서가 없음"; exit 1; }
       - name: XcodeGen + 서명·공증 DMG
+        if: steps.existing.outputs.skip != 'true'
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -42,11 +50,11 @@ jobs:
         run: |
           brew install xcodegen && xcodegen generate
           scripts/make-dmg.sh "${GITHUB_REF_NAME#v}"
-      - name: 릴리스 생성 (없을 때만)
+      - name: 릴리스 생성
+        if: steps.existing.outputs.skip != 'true'
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           tag="${GITHUB_REF_NAME}"
-          if gh release view "$tag" >/dev/null 2>&1; then echo "release $tag already exists — skip"; exit 0; fi
           gh release create "$tag" dist/*.dmg dist/SHA256SUMS themes/dist/hyperedit-themes.json#"Zed themes (hyperedit-themes.json)" \
             --title "$tag" --notes "Manual tag release. Install: open the DMG and drag HyperEdit.app to Applications. / 수동 태그 릴리스. DMG 를 열고 HyperEdit.app 을 Applications 로 드래그하세요."
       - name: 정리
