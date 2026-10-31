@@ -2,6 +2,12 @@
 
 모든 변경은 [Conventional Commits](https://www.conventionalcommits.org/ko/) 기반으로 semantic-release가 자동 생성합니다.
 
+## [0.5.1](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.5.0...v0.5.1) (2026-10-31)
+
+### 🐛 수정
+
+* **l10n:** v0.5 신규 문자열 19키의 한국어 번역 카탈로그 커밋 누락 수정 ([8619ad6](https://github.com/Hyeongcheol-An/HyperEdit/commit/8619ad60ca71474281c4ae9db52df0df87cbfd15))
+
 ## [0.5.0](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.4.0...v0.5.0) (2026-10-31)
 
 ### ✨ 기능
