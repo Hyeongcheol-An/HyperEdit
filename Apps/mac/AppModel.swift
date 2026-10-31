@@ -54,6 +54,7 @@ enum EditorCommand {
     case textTool(TextTool)
     case setWordWrap(Bool)
     case setLineNumbers(Bool)
+    case setSyntaxHighlighting(Bool)
     case undo, redo, selectAll, cut, copy, paste
     case setColumnMode(Bool)
     case insertColumnNumbers(start: Int, step: Int, zeroPad: Bool)
@@ -152,6 +153,17 @@ final class AppModel: ObservableObject {
     private var fileSearchTask: Task<Void, Never>?
     @Published var wordWrap: Bool { didSet { AppDefaults.store.set(wordWrap, forKey: "ui.wordWrap"); editorCommands.send(.setWordWrap(wordWrap)) } }
     @Published var showLineNumbers: Bool { didSet { AppDefaults.store.set(showLineNumbers, forKey: "ui.lineNumbers"); editorCommands.send(.setLineNumbers(showLineNumbers)) } }
+    /// 구문 색 (파일 종류별 토큰 색). 렌더링 속성만 바꾸므로 문서·undo 에는 영향 없음
+    @Published var syntaxHighlighting: Bool {
+        didSet {
+            guard syntaxHighlighting != oldValue else { return }
+            AppDefaults.store.set(syntaxHighlighting, forKey: "ui.syntaxHighlighting")
+            editorCommands.send(.setSyntaxHighlighting(syntaxHighlighting))
+            log(syntaxHighlighting ? String(localized: "Syntax colors on · \(languageName)") : String(localized: "Syntax colors off"))
+        }
+    }
+    /// 현재 문서의 구문 언어 이름 (상태바) — 확장자로 결정
+    var languageName: String { GrammarRegistry.languageName(for: document.url) }
     @Published private(set) var output: [OutputLine] = []
 
     // 검색
@@ -185,6 +197,7 @@ final class AppModel: ObservableObject {
         wordWrap = d.object(forKey: "ui.wordWrap") as? Bool ?? true
         showLineNumbers = d.object(forKey: "ui.lineNumbers") as? Bool ?? true
         showMarkdownPreview = d.object(forKey: "ui.markdownPreview") as? Bool ?? false
+        syntaxHighlighting = LaunchOptions.has("--no-highlight") ? false : (d.object(forKey: "ui.syntaxHighlighting") as? Bool ?? true)
         let url = MemoLocation.resolveDefault()
         let doc = MemoDocument(url: url)
         document = doc
@@ -519,7 +532,7 @@ final class AppModel: ObservableObject {
 
     /// `--theme <id>` `--follow-system-theme` `--ribbon <home|edit|layout|advanced|window>` `--left <files|outline|timeline>`
     /// `--bottom <find|bookmarks|output>` `--hide-left` `--hide-bottom` `--search <q>` `--replace [--replace-with <s>]` `--find-in-files`
-    /// `--column` `--goto <line>` `--preview`
+    /// `--column` `--goto <line>` `--preview` `--no-highlight` (구문 색 끄기 — 스크린샷 비교용, init 에서 처리)
     private func applyLaunchOptions() {
         if let t = LaunchOptions.value("--theme") { themes.select(id: t) }
         if LaunchOptions.has("--follow-system-theme") { themes.setFollowsSystem(true) }

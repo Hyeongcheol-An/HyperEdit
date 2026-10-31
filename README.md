@@ -53,6 +53,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - Line-number gutter, current-line highlight, word wrap (⌥Z), line numbers (⌥⌘L), zoom (⌘= / ⌘- / ⌘0).
 - Last caret and scroll position restored per file; ⌃⌘E jumps to the end; ⌘L goes to a line.
 - F7 inserts a timestamp heading such as `## 2026-10-30 (Fri) 14:05`. The weekday follows the system locale, e.g. `(금)` on Korean systems.
+- **Syntax colors (⌃⌘H)**, chosen by file extension and shown in the status bar. Notes and Markdown get a deliberately light rule set — URLs, ISO dates and times, `#` headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 code languages (Swift, Python, JavaScript/TypeScript, JSON, shell, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI) get comments, strings, numbers, keywords, function and type names. Colors come from the theme's `syntax` palette and are applied as TextKit 2 rendering attributes to visible lines only, so they never touch the file, undo history or typing speed. Tokenization is line-based: a block comment or string that spans lines is colored only where it opens.
 
 ### Markdown preview
 - **⇧⌘P** splits the editor: the rendered GFM view of the current file appears on the right (headings, lists and task lists, tables, fenced code, block quotes, links, images) styled from the active theme, with the system font for prose and the editor's monospace stack for code.
@@ -86,7 +87,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 - External changes are detected: the file is reloaded when the buffer is clean (the caret stays where it was); when it is dirty the external version is snapshotted and a warning is shown.
 - An empty buffer is never written over a non-empty file.
 - Encoding is detected losslessly — UTF-8 first, then EUC-KR (CP949), CP1252 and Latin-1 — shown in the status bar and used again when saving (a UTF-8 BOM is preserved). If you type a character the original encoding cannot represent, the file is saved as UTF-8 and the status bar says so. A file that cannot be decoded in any of these encodings is not opened at all, rather than being corrupted by a lossy round-trip.
-- The status bar shows Ln / Col (plus selection length; the character offset is a tooltip), line ending (UNIX / DOS / MAC), file encoding, a COL indicator, caret count, line count · size, the status message, a theme picker (marked "· 시스템" while following the system appearance) and zoom %.
+- The status bar shows Ln / Col (plus selection length; the character offset is a tooltip), line ending (UNIX / DOS / MAC), file encoding, a COL indicator, caret count, line count · size, the status message, the syntax language (dimmed while syntax colors are off), a theme picker (marked "· 시스템" while following the system appearance) and zoom %.
 
 ## Keyboard shortcuts
 
@@ -108,6 +109,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
 | ⌘, | Settings | ⇧⌘P | Markdown preview |
+| ⌃⌘H | Syntax colors | | |
 
 ## Themes
 
@@ -153,6 +155,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` | Show a sidebar / bottom-panel tab |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
+| `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 
 ## Project layout
@@ -176,7 +179,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 ## Roadmap and limitations
 
 - UI in English and Korean (follows the system language); no other languages yet.
-- Plain text only: no syntax highlighting. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
+- Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
 - Planned editing tools — comment toggle, JSON tidy, macros, split view — are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math).
 

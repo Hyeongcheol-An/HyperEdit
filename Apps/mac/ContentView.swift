@@ -130,6 +130,10 @@ struct StatusBar: View {
                 cell(String(localized: "⚠ External change"), width: nil).foregroundStyle(theme.warningColor.color)
             }
             Spacer(minLength: 0)
+            // 구문 언어 (확장자로 결정; 색이 꺼져 있으면 흐리게). 언어 이름은 고유명사라 번역하지 않는다
+            cell(model.languageName, width: nil)
+                .foregroundStyle(model.syntaxHighlighting ? theme.foregroundMuted.color : theme.foregroundDim.color)
+                .help(model.syntaxHighlighting ? "Syntax highlighting language" : "Syntax highlighting language (colors are off — ⌃⌘H)")
             Menu {
                 Button { model.themes.setFollowsSystem(true) } label: {
                     if model.themes.followsSystem { Label("Follow System Appearance", systemImage: "checkmark") } else { Text("Follow System Appearance") }
