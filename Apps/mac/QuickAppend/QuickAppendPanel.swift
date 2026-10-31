@@ -67,7 +67,7 @@ struct QuickAppendView: View {
             }
             .font(.system(size: 11))
             .foregroundStyle(theme.foregroundMuted.color)
-            Text("⌘↩ append · esc close").font(.system(size: 10.5)).foregroundStyle(theme.foregroundDim.color)
+            Text("⌘↩ append · Esc close").font(.system(size: 10.5)).foregroundStyle(theme.foregroundDim.color)
         }
         .padding(EdgeInsets(top: 30, leading: 12, bottom: 10, trailing: 12))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -181,7 +181,7 @@ struct QuickAppendSettingsSection: View {
             }
             Text(controller.hotkeyStatus)
                 .font(.caption).foregroundStyle(controller.hotkeyFailed ? Color.red : Color.secondary)
-            Text("⌃Space and ⌃⌥Space are often taken by input-source switching (System Settings › Keyboard › Shortcuts). In the app, ⇧⌘N opens the panel; ⌘↩ appends to the end of the current document and saves at once.")
+            Text("⌃⌥Space and ⌃⇧Space are often taken by input-source switching (System Settings › Keyboard › Shortcuts). In the app, ⇧⌘N opens the panel; ⌘↩ appends to the end of the current document and saves at once.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
