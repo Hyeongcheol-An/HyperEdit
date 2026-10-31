@@ -2,6 +2,17 @@
 
 모든 변경은 [Conventional Commits](https://www.conventionalcommits.org/ko/) 기반으로 semantic-release가 자동 생성합니다.
 
+## [0.4.0](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.3.1...v0.4.0) (2026-10-31)
+
+### ✨ 기능
+
+* **l10n:** UI 를 영어 원본 + 한국어 번역(String Catalog)으로 전환 ([fce8641](https://github.com/Hyeongcheol-An/HyperEdit/commit/fce86417ae9f3eac2a3e4f49b94ff681f1ee48b0))
+* **l10n:** UI 문자열을 영어 소스 + 한국어 String Catalog 번역으로 전환 ([06fad1f](https://github.com/Hyeongcheol-An/HyperEdit/commit/06fad1fac6d876fc5c885d45a85c413c87e8c266))
+
+### 📝 문서
+
+* **screenshots:** README 스크린샷을 영어 UI 로 교체 (Hyper Light / Hyper Dark) ([5a21b9d](https://github.com/Hyeongcheol-An/HyperEdit/commit/5a21b9dec7d3ff1bb1d28e7c98ca75a128c2d606))
+
 ## [0.3.1](https://github.com/Hyeongcheol-An/HyperEdit/compare/v0.3.0...v0.3.1) (2026-10-31)
 
 ### 🐛 수정
