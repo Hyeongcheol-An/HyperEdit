@@ -182,7 +182,12 @@ final class AppModel: ObservableObject {
             .sink { [weak self] e in self?.log("오류: " + e) }.store(in: &cancellables)
         document.$lineIndex
             .debounce(for: .milliseconds(1200), scheduler: RunLoop.main)
-            .sink { [weak self] _ in self?.rescanStructure() }.store(in: &cancellables)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.rescanStructure()
+                // 편집으로 낡아진 검색 결과(범위·줄 번호)를 자동 갱신 — 결과가 떠 있을 때만
+                if self.findScope == .document, !self.searchQuery.isEmpty, !self.searchHits.isEmpty { self.runSearch() }
+            }.store(in: &cancellables)
     }
 
     /// 아웃라인·타임라인 재계산 (백그라운드, 텍스트 스냅샷 기준)
@@ -326,11 +331,15 @@ final class AppModel: ObservableObject {
         isFileSearching = true
         fileSearchSummary = "검색 중…"
         fileSearchTask = Task { [weak self] in
-            let outcome: (FileSearchResult?, String?) = await Task.detached(priority: .userInitiated) {
-                do { return (try FileSearch.search(q, in: dir, mask: mask, options: opts, isCancelled: { Task.isCancelled }), nil) }
-                catch SearchError.invalidRegex(let m) { return (nil, "정규식 오류: \(m)") }
-                catch { return (nil, error.localizedDescription) }
-            }.value
+            // detached 작업 안의 Task.isCancelled 는 바깥 작업의 취소를 모른다 → 플래그로 전달해 폴더 순회를 실제로 멈춘다
+            let flag = CancelFlag()
+            let outcome: (FileSearchResult?, String?) = await withTaskCancellationHandler {
+                await Task.detached(priority: .userInitiated) {
+                    do { return (try FileSearch.search(q, in: dir, mask: mask, options: opts, isCancelled: { flag.isSet }), nil) }
+                    catch SearchError.invalidRegex(let m) { return (nil, "정규식 오류: \(m)") }
+                    catch { return (nil, error.localizedDescription) }
+                }.value
+            } onCancel: { flag.set() }
             guard let self, !Task.isCancelled else { return }
             self.isFileSearching = false
             if let r = outcome.0 {
@@ -496,6 +505,14 @@ final class AppModel: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.jump(toLine: n) }
         }
     }
+}
+
+/// 스레드 안전 취소 플래그 — 부모 Task 의 취소를 detached 작업에 전달할 때 사용
+final class CancelFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+    var isSet: Bool { lock.lock(); defer { lock.unlock() }; return value }
+    func set() { lock.lock(); value = true; lock.unlock() }
 }
 
 /// 명령줄 인자 조회 도우미 (개발·셀프테스트·스크린샷용)
