@@ -1,0 +1,10 @@
+{
+  "Tools": "도구",
+  "Calculate": "계산",
+  "Evaluate the selection or current line and append ⇒ result (⌃⌘=)": "선택 영역 또는 현재 줄을 계산해 끝에 ⇒ 결과를 붙입니다 (⌃⌘=)",
+  "Align Columns": "열 맞춤",
+  "Pad tab- or pipe-separated columns so they line up (⌃⌘T)": "탭 또는 | 로 구분된 열을 공백으로 채워 나란히 맞춥니다 (⌃⌘T)",
+  "Not a valid expression": "유효한 수식이 아닙니다",
+  "No tab- or pipe-separated columns to align": "맞출 탭·| 구분 열이 없습니다",
+  "Aligned %lld lines": "%lld줄의 열을 맞췄습니다"
+}

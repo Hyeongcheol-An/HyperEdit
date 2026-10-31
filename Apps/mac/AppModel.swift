@@ -39,6 +39,8 @@ enum TextTool: String, CaseIterable {
     case upper, lower, capitalize, invertCase
     case sortAsc, sortDesc, sortNumeric, dedupe, removeBlank
     case trimTrailing, trimBoth, tabsToSpaces, spacesToTabs
+    /// 즉석 계산(⌃⌘=) · 열 맞춤(⌃⌘T)
+    case calculate, alignColumns
 }
 
 struct Replacement { let range: NSRange; let string: String }

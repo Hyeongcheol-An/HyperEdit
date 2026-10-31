@@ -139,6 +139,9 @@ struct EditorView: NSViewRepresentable {
             setWordWrap(model.wordWrap)
             gutter.isHidden = !model.showLineNumbers
             textView.columnModeEnabled = model.columnMode
+            // 북마크 줄 추적: 줄 수가 바뀌는 편집(입력·붙여넣기·도구·undo/redo 모두 shouldChangeText 경유) 직전에 북마크를 옮긴다
+            textView.needsLineTracking = { [weak self] in !(self?.model.bookmarks.bookmarks.isEmpty ?? true) }
+            textView.onLinesWillChange = { [weak self] line, delta in self?.model.bookmarks.shift(fromLine: line, delta: delta) }
             textView.onMultiChange = { [weak self] m in
                 guard let c = self?.model.caret else { return }
                 let n = m?.ranges.count ?? 0
@@ -239,6 +242,8 @@ struct EditorView: NSViewRepresentable {
             guard generation != lastReloadGeneration else { return }
             lastReloadGeneration = generation
             textView?.undoManager?.removeAllActions()
+            // 디스크에서 다시 읽은 내용은 shouldChangeText 를 거치지 않으므로 줄 수만 맞춘다
+            model.bookmarks.clamp(toLineCount: document.lineIndex.lineCount)
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) }
             // 외부 변경 반영 뒤 캐럿이 문서 끝으로 튀지 않도록 직전 위치(클램프)를 복원 — 같은 파일을 다른 도구로 덧붙여 쓰는 흐름에서 읽던 자리를 잃지 않는다
             if restored, let tv = textView, let keep = lastSelection {
@@ -390,6 +395,7 @@ struct EditorView: NSViewRepresentable {
 
         private func applyTextTool(_ tool: TextTool, in tv: HyperTextView) {
             tv.clearMulti()                           // 줄 도구는 단일 캐럿 기준 — 멀티 캐럿이 남아 있으면 insertText 가 엉뚱한 곳에 삽입한다
+            tv.breakUndoCoalescing()                  // 도구 한 번 = undo 한 단계 (앞선 타이핑 그룹에 합쳐지지 않게)
             let ns = tv.string as NSString
             let sel = tv.selectedRange()
             var cur = ns.lineRange(for: sel)          // 선택을 포함하는 줄 범위(개행 포함)
@@ -442,9 +448,77 @@ struct EditorView: NSViewRepresentable {
             case .lower: applySelection(tv, sel, cur) { TextTools.lower($0) }
             case .capitalize: applySelection(tv, sel, cur) { TextTools.capitalize($0) }
             case .invertCase: applySelection(tv, sel, cur) { TextTools.invertCase($0) }
+            case .calculate: calculate(tv, sel, cur)
+            case .alignColumns: alignColumns(tv, sel, cur)
             }
             document.textDidChange()
             gutter?.needsDisplay = true
+        }
+
+        /// 즉석 계산(⌃⌘=): 선택이 있으면 선택을, 없으면 현재 줄(마지막 `=`/`⇒` 뒤)을 평가해 줄 끝에 ` ⇒ 결과` 를 붙인다.
+        /// 이미 `⇒ 옛 결과` 가 있으면 결과만 바꾼다. 수식이 아니면 출력 패널에 알리고 아무것도 바꾸지 않는다.
+        private func calculate(_ tv: HyperTextView, _ sel: NSRange, _ line: NSRange) {
+            let ns = tv.string as NSString
+            var lr = line
+            var selected: String?
+            var selEnd = 0
+            if sel.length > 0 {
+                selected = ns.substring(with: sel)
+                lr = ns.lineRange(for: NSRange(location: NSMaxRange(sel) - 1, length: 0))   // 선택이 끝나는 줄
+                selEnd = NSMaxRange(sel) - lr.location
+            }
+            if lr.length > 0, ns.character(at: NSMaxRange(lr) - 1) == 10 { lr.length -= 1 }
+            let text = ns.substring(with: lr)
+            guard let r = TextTools.calculateLine(text, selectedExpression: selected, selectionEnd: min(max(0, selEnd), lr.length)) else {
+                model.log(String(localized: "Not a valid expression") + " · " + (selected ?? text).trimmingCharacters(in: .whitespacesAndNewlines))
+                return
+            }
+            if r.line != text { tv.insertText(r.line, replacementRange: lr) }
+            tv.setSelectedRange(NSRange(location: lr.location + (r.line as NSString).length, length: 0))
+            model.log(String(localized: "Calculate") + " · \(r.expression) ⇒ \(r.result)")
+        }
+
+        /// 열 맞춤(⌃⌘T): 선택한 줄들(없으면 캐럿 줄과 같은 구분자를 가진 인접 줄 묶음)의 탭/파이프 열을 표시 폭 기준으로 맞춘다.
+        private func alignColumns(_ tv: HyperTextView, _ sel: NSRange, _ lineRange: NSRange) {
+            let ns = tv.string as NSString
+            func content(_ r: NSRange) -> String {
+                var c = r
+                if c.length > 0, ns.character(at: NSMaxRange(c) - 1) == 10 { c.length -= 1 }
+                return ns.substring(with: c)
+            }
+            var range = lineRange
+            if sel.length == 0 {
+                guard let sep = TextTools.columnSeparator(for: [content(lineRange)]) else {
+                    model.log(String(localized: "No tab- or pipe-separated columns to align")); return
+                }
+                var start = range.location
+                while start > 0 {
+                    let prev = ns.lineRange(for: NSRange(location: start - 1, length: 0))
+                    guard content(prev).contains(sep) else { break }
+                    start = prev.location
+                }
+                var end = NSMaxRange(range)
+                while end < ns.length {
+                    let next = ns.lineRange(for: NSRange(location: end, length: 0))
+                    guard content(next).contains(sep) else { break }
+                    end = NSMaxRange(next)
+                }
+                range = NSRange(location: start, length: end - start)
+            }
+            let original = ns.substring(with: range)
+            var text = original
+            let hadNewline = text.hasSuffix("\n")
+            if hadNewline { text.removeLast() }
+            let lines = text.components(separatedBy: "\n")
+            guard let sep = TextTools.columnSeparator(for: lines) else {
+                model.log(String(localized: "No tab- or pipe-separated columns to align")); return
+            }
+            var result = TextTools.alignColumns(lines, separator: sep).joined(separator: "\n")
+            if hadNewline { result += "\n" }
+            guard result != original else { return }
+            tv.insertText(result, replacementRange: range)
+            tv.setSelectedRange(NSRange(location: range.location, length: (result as NSString).length))
+            model.log(String(localized: "Aligned \(lines.count) lines"))
         }
 
         /// 줄 범위 변환 (선택이 없으면 현재 줄)
