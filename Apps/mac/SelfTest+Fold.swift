@@ -114,7 +114,8 @@ extension SelfTest {
 
         // 전체 접기 / 펼치기 — 샘플의 마크다운 헤딩 영역도 함께 접힌다
         model.send(.foldAll); await wait(300)
-        check(hidden(header + 1) && pillCount() >= 2, "fold all: \(pillCount()) regions folded")
+        // 바깥 헤딩(1줄 `# …`)이 문서 전체를 숨기므로 보이는 표식은 가장 바깥 하나뿐 (안쪽 접힘의 표식은 숨은 머리 줄에 그리지 않는다)
+        check(hidden(header + 1) && hidden(2) && pillCount() == 1, "fold all: everything under the top heading hidden, \(pillCount()) visible pill")
         check(!hidden(caretLineNow()), "fold all: caret moved to a visible header (line \(caretLineNow()))")
         model.send(.unfoldAll); await wait(300)
         check(!hidden(header + 1) && pillCount() == 0, "unfold all: nothing hidden")

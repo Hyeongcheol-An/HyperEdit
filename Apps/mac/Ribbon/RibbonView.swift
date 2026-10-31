@@ -435,7 +435,7 @@ extension RibbonTab {
         switch self {
         case .home: 1060      // 파일 그룹 끝 ≈ 1035
         case .edit: 1520      // 도구 그룹 끝 ≈ 1505 (1600pt 스크린샷 실측)
-        case .layout: 1210    // 글꼴 크기 그룹 끝 ≈ 1190 (접기 그룹 추가 후 1600pt 스크린샷 실측)
+        case .layout: 1195    // 글꼴 크기 그룹 끝 ≈ 1172 (영어, 접기 그룹·스크롤 마커 토글 추가 후 1600pt 스크린샷 실측; 한국어는 1158)
         case .advanced: 260
         case .window: 260
         }
