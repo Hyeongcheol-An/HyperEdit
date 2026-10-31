@@ -44,6 +44,8 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private var loadedLength = 0
     /// 파일 전환 세대. 전환 전에 시작된 저장 완료 콜백이 새 파일 상태를 덮어쓰지 않도록.
     private var fileGeneration = 0
+    /// load/reload 의 전체 교체 중에는 저장소 변경 알림을 '사용자 편집' 으로 치지 않는다 (0 보다 크면 교체 중)
+    private var programmaticReplaceDepth = 0
 
     public init(url: URL) {
         self.url = url.resolvingSymlinksInPath()
@@ -151,9 +153,11 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private func replaceAll(with text: String) {
         lineEnding = Self.detectLineEnding(text)
         fileSize = text.utf8.count
+        programmaticReplaceDepth += 1
         textStorage.beginEditing()
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: text)
         textStorage.endEditing()
+        programmaticReplaceDepth -= 1
         loadedLength = textStorage.length
         lineIndex = LineIndex(text: text)
         reloadGeneration += 1
@@ -377,7 +381,11 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     public nonisolated func textStorage(_ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions, range editedRange: NSRange, changeInLength delta: Int) {
         MainActor.assumeIsolated {
-            guard editedMask.contains(.editedCharacters), let font = hangulFont else { return }
+            guard editedMask.contains(.editedCharacters) else { return }
+            // 문자 변경은 모두 '편집' 이다 — 텍스트 뷰를 거치지 않는 undo/redo(macOS 27 TextKit 2 는 shouldChangeText/didChangeText 를 부르지 않는다)도
+            // 여기서 잡아 dirty·자동 저장·줄 인덱스 재계산을 건다. 뷰 경로의 textDidChange() 와 겹쳐도 예약 취소·재예약뿐이라 비용은 없다.
+            if programmaticReplaceDepth == 0, isLoaded { textDidChange() }
+            guard let font = hangulFont else { return }
             let para = (textStorage.string as NSString).paragraphRange(for: editedRange)
             HangulFontFixer.apply(font: font, to: textStorage, in: para)
         }
