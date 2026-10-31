@@ -87,6 +87,21 @@ All 22 themes come from **one file**, `themes/palettes.json`. Each entry gives a
 - New themes are prefixed `Hyper ` and need a unique `id` and `name`, plus `appearance` set to `light` or `dark`. Keep the two defaults (`hyper-light`, `hyper-dark`) in place; the app falls back to them when it follows the system appearance.
 - `python3 themes/build_zed_theme.py --install` copies the result into `~/.config/zed/themes/` so you can check it in Zed immediately.
 
+## Localization
+
+English is the source language; Korean ships as a translation in two String Catalogs:
+
+- `Apps/mac/Localizable.xcstrings` — everything in the app target
+- `Packages/HyperCore/Sources/HyperCore/Resources/Localizable.xcstrings` — engine messages (`String(localized:bundle: .module)`)
+
+Rules of thumb:
+
+1. Write UI strings as **English literals**. SwiftUI views (`Text`, `Button`, `Label`, `Toggle`, `Menu`, `.help`, `TextField` prompts, alert titles) take `LocalizedStringKey`, so the literal becomes the catalog key. Ribbon components (`RibbonBigButton`, `RibbonSmallButton`, …) also take `LocalizedStringKey`. Strings built outside SwiftUI use `String(localized: "…")`.
+2. Interpolations become format placeholders in the key: `Text("\(count) hits")` → key `%lld hits`; a `String` argument → `%@`; keep explicit specifiers (`%.2f`). Numbers-only text uses `Text(verbatim:)` so it is not looked up.
+3. Add the Korean value for every new key. Easiest: put `{ "English key": "한국어" }` in a JSON file and run `python3 scripts/l10n-add.py that.json` — it finds which target uses each key and inserts the `ko` translation into the right catalog. You can also edit the catalogs by hand (they are plain JSON).
+4. `python3 scripts/check-l10n.py` must pass (it runs in CI): every key used in code exists in a catalog, every entry has a `ko` value, no unused entries.
+5. To test a language without changing your system: `scripts/build-mac.sh --run -AppleLanguages '("en")'` or `'("ko")'` (the `-AppleLanguages` argument must come first).
+
 ## Code style
 
 - **Swift 5 language mode** on a Swift 6 toolchain (`swiftLanguageMode(.v5)` in `Package.swift`, `SWIFT_VERSION 5.0` with `SWIFT_STRICT_CONCURRENCY minimal` in `project.yml`). Keep it compiling without warnings under those settings.
@@ -127,3 +142,4 @@ By contributing you agree that your contributions are licensed under the [MIT Li
 - **코드 스타일:** Swift 5 언어 모드, `@MainActor` 모델과 백그라운드 `Task.detached`, AppKit 편집기는 `Apps/mac/Editor/`에만, `HyperCore`는 플랫폼 중립 유지, 큰 파일 성능 우선. 저장소에 개인 경로·이메일·비밀 금지(`scripts/check-sensitive.sh`).
 - **PR 체크리스트:** 테스트 통과, 셀프테스트 `ALL PASS`, 테마 생성물 커밋, `bash scripts/check-sensitive.sh` 통과, 커밋 규약 준수, `package.json`을 바꿨으면 `package-lock.json`도 커밋, `README.md`와 `README.ko.md` 둘 다 갱신, UI 변경은 스크린샷 첨부.
 - **CI·릴리스:** 모든 액션은 커밋 SHA로 고정, Node 도구는 `npm ci --ignore-scripts`로 설치. 릴리스 워크플로는 서명·공증 시크릿이 없으면 실패하며(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 허용), Homebrew cask는 마지막 별도 단계에서만 `HOMEBREW_TAP_DEPLOY_KEY`로 푸시합니다. 시크릿 등록은 `scripts/setup-signing.sh ci-secrets <cert.p12> <AuthKey.p8> <KEY_ID> <ISSUER_ID> [owner/repo]`(.p12 암호는 프롬프트, `gh secret set`으로 바로 등록).
+- **로컬라이즈:** UI 문자열은 영어 리터럴로 쓰고(카탈로그 키), 한국어는 `Apps/mac/Localizable.xcstrings`·HyperCore 카탈로그에 넣습니다. `{ "English key": "한국어" }` JSON 을 만들어 `python3 scripts/l10n-add.py 파일.json` 으로 추가하고, `python3 scripts/check-l10n.py` 로 누락을 확인하세요. 언어 테스트는 `-AppleLanguages '("en")'` 실행 인자.
