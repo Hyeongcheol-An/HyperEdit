@@ -214,6 +214,9 @@ final class HyperTextView: NSTextView {
     }
 
     private var expectingTrackedEdit = false
+    /// 어떤 뷰가 shouldChangeText 로 추적 중인 편집의 저장소 (분할 보기: 다른 뷰는 같은 저장소 알림을 '추적되지 않은' 편집으로 보지만,
+    /// 북마크·dirty 는 추적한 뷰가 이미 처리했으므로 접힘만 통지해야 한다 — 보조 편집기의 performReplacements 를 되돌릴 때 북마크가 두 번 밀리던 문제)
+    private static var storagesWithTrackedEdit = Set<ObjectIdentifier>()
     private var editObserversInstalled = false
     /// undo/redo 직전의 전체 개행 수 (그룹 안의 편집마다 갱신) — 북마크 증감 계산용
     private var undoNewlineCount: Int?
@@ -223,7 +226,12 @@ final class HyperTextView: NSTextView {
 
     private func trackedEdits(_ edits: [(NSRange, String)]) {
         expectingTrackedEdit = true
-        DispatchQueue.main.async { [weak self] in self?.expectingTrackedEdit = false }   // 편집이 취소돼 저장소 알림이 안 오면 다음 턴에 해제
+        let storageID = textStorage.map { ObjectIdentifier($0) }
+        if let id = storageID { Self.storagesWithTrackedEdit.insert(id) }
+        DispatchQueue.main.async { [weak self] in   // 편집이 취소돼 저장소 알림이 안 오면 다음 턴에 해제
+            self?.expectingTrackedEdit = false
+            if let id = storageID { Self.storagesWithTrackedEdit.remove(id) }
+        }
         onTextWillChange?(edits, false)   // fold
         notifyLineChanges(edits)
         snippetTextWillChange(edits)      // snippets: 탭스톱 범위 보정 (편집 전 좌표)
@@ -261,7 +269,8 @@ final class HyperTextView: NSTextView {
         let pre = NSRange(location: edited.location, length: max(0, edited.length - ts.changeInLength))
         let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
         onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
-        guard tracksUntrackedLineChanges else { return }   // split: 아래는 주 편집기만
+        // split: 아래는 주 편집기만, 그리고 다른 뷰가 shouldChangeText 로 추적한 편집(그 뷰의 undo 클로저가 재생한 performReplacements 등)은 그 뷰가 처리했으므로 제외
+        guard tracksUntrackedLineChanges, !Self.storagesWithTrackedEdit.contains(ObjectIdentifier(ts)) else { return }
         // 같은 이유로 didChangeText(→ delegate textDidChange → 문서 dirty·자동 저장·줄 인덱스) 도 오지 않는다 — 저장소 편집 처리가 끝난 뒤 직접 부른다
         DispatchQueue.main.async { [weak self] in self?.didChangeText() }
         // 북마크: 개행 증감은 undo 직전에 세어 둔 전체 개행 수와 비교한다 (undo 한 그룹 안의 연속 편집도 각각 제 몫만큼)
