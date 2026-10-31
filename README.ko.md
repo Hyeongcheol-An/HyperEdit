@@ -158,6 +158,8 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--no-highlight` | 구문 색을 끈 채 시작 (스크린샷 비교용) |
 | `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
+| `--bench [--bench-out <json>] [--bench-strict] [--quit]` | 생성한 말뭉치(2 KB~8 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. `scripts/bench.sh` 가 감싸서 실행 |
+| `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성
 

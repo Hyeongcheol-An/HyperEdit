@@ -8,6 +8,7 @@ import HyperCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
+        Bench.launchMilestone("didFinishLaunching")   // perf bench (계측이 꺼져 있으면 비용 0)
         if Perf.enabled { PerfProbe.log = { Perf.log($0) } }
         Perf.startWatchdog()
         // 같은 앱의 다른 인스턴스가 떠 있는 상태에서 LaunchServices 가 새 인스턴스를 띄우면 SwiftUI 가 기본 창을 만들지 않는 경우가 있다.

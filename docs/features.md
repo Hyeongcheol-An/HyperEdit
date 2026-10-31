@@ -64,6 +64,7 @@
 | ✅ | **대소문자** — 대문자 / 소문자 / 첫 글자 대문자 / 반전 | |
 | ✅ | 자동 줄바꿈 ⌥Z, 줄 번호 ⌥⌘L, 구문 색 ⌃⌘H, 확대/축소 ⌘= / ⌘- / ⌘0 | ⌥⌘H 는 시스템 '기타 가리기' 가 가로채므로 ⌃⌘H |
 | ✅ | 대용량 성능 — 1.3 MB·3만 4천 줄에서 키 입력당 약 3 ms | design.ko.md §5 |
+| ✅ | 성능 벤치마크 하네스 — `--bench` / `scripts/bench.sh`: 열기·타이핑·검색·바꾸기·스크롤·테마·메모리·유휴 CPU·실행 시간을 예산과 비교(PASS/FAIL), JSON 기준선 비교 | `Apps/mac/Bench.swift` · [performance.md](performance.md) |
 | 🔜 | 주석 토글 | 로드맵 |
 | ✅ | **즉석 계산** ⌃⌘= — 선택 또는 현재 줄(마지막 `=` 뒤)을 평가해 줄 끝에 `⇒ 결과` 삽입, 옛 결과는 교체. `+ - * / % ^`, 괄호, `1,234`·`1_000`, `sqrt abs round floor ceil min max`, `pi` `e`. 정수는 소수점 없이, 아니면 6자리까지 | `TextTools.evaluate` 재귀 하강 파서(NSExpression 미사용). 수식이 아니면 출력 패널에 알림 |
 | ✅ | **열 맞춤** ⌃⌘T — 탭 표(선택 또는 캐럿 주변 탭 줄 묶음)를 표시 폭(한글·CJK 2칸) 기준 공백 패딩으로 맞춤. 줄마다 `\|` 가 있으면 마크다운 표로: ` \| ` 안 패딩, `---` 재생성, `--:` 오른쪽 정렬 | `TextTools.alignColumns` · `displayWidth`. 결과에 탭이 남지 않는다 |
@@ -109,7 +110,7 @@
 
 | 상태 | 기능 | 메모 |
 |---|---|---|
-| ✅ | 개발용 실행 인자 — `--file`, `--snapshot`, `--selftest`, `--theme`, `--ribbon`, `--left`, `--bottom`, `--search`, `--replace`, `--find-in-files`, `--column`, `--goto`, `--preview`, `--no-highlight`, `--debug-perf` | README 참고 |
+| ✅ | 개발용 실행 인자 — `--file`, `--snapshot`, `--selftest`, `--theme`, `--ribbon`, `--left`, `--bottom`, `--search`, `--replace`, `--find-in-files`, `--column`, `--goto`, `--preview`, `--no-highlight`, `--debug-perf`, `--bench`, `--quit-after-launch` | README 참고 |
 | 🔜 | URL 스킴, App Intents(Shortcuts), macOS 서비스 메뉴 | |
 | 🔜 | CLI(`add`, `grep`, `tail`) | |
 | 🔜 | Spotlight 인덱싱 | |
