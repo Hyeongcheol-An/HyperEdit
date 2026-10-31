@@ -49,7 +49,8 @@ BENCH_ARGS=(--ephemeral --file "$TMP/start.md" --bench --bench-out "$OUT" --benc
 BUNDLE_KB="$(du -sk "$APP" | cut -f1)"
 BIN_KB="$(( $(stat -f %z "$BIN") / 1024 ))"
 ARCHS="$(lipo -archs "$BIN" 2>/dev/null || echo unknown)"
-python3 - "$OUT" "$LAUNCH_LOG" "$BUNDLE_KB" "$BIN_KB" "$ARCHS" "$BASELINE" "$STRICT" <<'EOF'
+STATUS=0   # --strict 실패(exit 1)도 아래 .md 저장까지 마친 뒤 그 코드로 끝낸다 (set -e 가 여기서 바로 종료하지 않도록 || 로 받는다)
+python3 - "$OUT" "$LAUNCH_LOG" "$BUNDLE_KB" "$BIN_KB" "$ARCHS" "$BASELINE" "$STRICT" <<'EOF' || STATUS=$?
 import json, re, sys, statistics
 out, launch_log, bundle_kb, bin_kb, archs, baseline, strict = sys.argv[1:8]
 r = json.load(open(out, encoding="utf-8"))
@@ -126,7 +127,6 @@ if base: print("Regressions > 15 % vs baseline: " + (", ".join(regressions) if r
 print(f"\nJSON: {out}")
 if strict == "1" and (fails or regressions): sys.exit(1)
 EOF
-STATUS=$?
 # Markdown 표도 같은 이름으로 저장 (하네스가 쓴 .md 를 통합본으로 덮어쓴다)
 python3 - "$OUT" <<'EOF' > "${OUT%.json}.md"
 import json, sys
