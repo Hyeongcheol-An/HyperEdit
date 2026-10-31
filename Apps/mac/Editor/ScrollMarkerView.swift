@@ -50,6 +50,9 @@ final class ScrollMarkerView: NSView {
     override func setFrameSize(_ newSize: NSSize) { super.setFrameSize(newSize); needsDisplay = true }
 
     /// 줄 수 갱신을 구독 (문서를 갈아끼우면 다시 부른다)
+    /// 편집기가 닫힐 때: 모델·문서 구독 해제
+    func unbind() { cancellables.removeAll(); docCancellables.removeAll() }
+
     func bind(document doc: MemoDocument) {
         docCancellables.removeAll()
         doc.$lineIndex.receive(on: RunLoop.main).sink { [weak self] _ in self?.needsDisplay = true }.store(in: &docCancellables)

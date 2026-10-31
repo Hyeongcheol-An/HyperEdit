@@ -99,6 +99,7 @@ final class EditorSession: ObservableObject {
         if activeEditorID == c.id { activeEditorID = primary?.id }
         if let tv = c.textView {
             if undoManager.canUndo || undoManager.canRedo {
+                tv.retireFromEditing()   // undo 재생용으로만 보관 — 편집 관찰자·훅을 끊어 편집 비용이 늘지 않게
                 retired.append(c)
                 retiredViews.append(tv)
                 if retiredViews.count > Self.maxRetired { clearUndo() }
@@ -108,7 +109,7 @@ final class EditorSession: ObservableObject {
         }
         if let p = primary?.textView, p.window?.firstResponder !== p { p.window?.makeFirstResponder(p) }
     }
-    private static let maxRetired = 20   // 보관 뷰 하나는 수백 KB — 분할을 자주 여닫아도 undo 스택을 지우지 않도록 넉넉히
+    static let maxRetired = 20   // 보관 뷰 하나는 수백 KB — 분할을 자주 여닫아도 undo 스택을 지우지 않도록 넉넉히
 
     /// 공유 undo 스택 비우기 (파일 전환·디스크에서 다시 읽기). 이때 보관하던 옛 보조 뷰도 놓아 준다.
     func clearUndo() {

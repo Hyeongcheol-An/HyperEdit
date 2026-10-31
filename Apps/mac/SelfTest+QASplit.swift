@@ -430,7 +430,7 @@ extension SelfTest {
             let rssAfter = residentMB()
             log(String(format: "N: toggled split 20× · live coordinators before=%d after=%d max=%d · retired max=%d now=%d · undo stack wiped by retire policy %d× · RSS %.1f → %.1f MB (Δ %.1f)",
                        liveBefore, session.liveCoordinatorCount(), maxLive, maxRetired, session.retiredCount, undoWipes, rssBefore, rssAfter, rssAfter - rssBefore))
-            check(session.coordinators.count == 1 && maxLive <= liveBefore + 3 + 1, "N: live coordinators bounded by the retained-undo policy (max \(maxLive), base \(liveBefore))")
+            check(session.coordinators.count == 1 && maxLive <= liveBefore + EditorSession.maxRetired + 1, "N: live coordinators bounded by the retained-undo policy (max \(maxLive), base \(liveBefore), cap \(EditorSession.maxRetired))")
             check(session.liveTextViewCount() == session.liveCoordinatorCount(), "N: no orphan text views (\(session.liveTextViewCount()) vs \(session.liveCoordinatorCount()))")
             check(rssAfter - rssBefore < 20, String(format: "N: RSS growth %.1f MB < 20 MB", rssAfter - rssBefore))
             check(count("QA-TOGGLE-") == 20, "N: all 20 toggle edits present after undo/redo through retired views (\(count("QA-TOGGLE-")))")

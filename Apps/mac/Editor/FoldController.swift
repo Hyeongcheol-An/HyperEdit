@@ -77,6 +77,12 @@ final class FoldController {
     }
 
     /// 문서 연결 (파일 전환·다시 읽기·줄 인덱스 갱신을 구독). 같은 Coordinator 가 문서를 갈아끼우면 다시 부른다
+    /// 편집기가 닫힐 때(분할 해제): 구독과 진행 중인 스캔을 끊는다 — 보관만 되는 코디네이터가 편집마다 재스캔하지 않도록
+    func unbind() {
+        cancellables.removeAll()
+        scanTask?.cancel(); scanTask = nil
+    }
+
     func bind(document doc: MemoDocument) {
         cancellables.removeAll()
         document = doc

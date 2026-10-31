@@ -61,15 +61,16 @@ final class HyperTextView: NSTextView {
 
     override var acceptsFirstResponder: Bool { true }
 
-    deinit { Perf.log("HyperTextView deinit") }   // split: 닫힌 보조 뷰 해제 추적 (--debug-perf)
+    deinit {
+        NotificationCenter.default.removeObserver(self)   // fold: 저장소·undo 알림 구독 해제
+        Perf.log("HyperTextView deinit")                   // split: 닫힌 보조 뷰 해제 추적 (--debug-perf)
+    }
 
     override func becomeFirstResponder() -> Bool {   // split
         let ok = super.becomeFirstResponder()
         if ok { onBecomeActive?() }
         return ok
     }
-    deinit { NotificationCenter.default.removeObserver(self) }
-
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         if window != nil { installEditObservers() }
@@ -231,6 +232,18 @@ final class HyperTextView: NSTextView {
         snippetTextWillChange(edits)      // snippets: 탭스톱 범위 보정 (편집 전 좌표)
     }
 
+    /// 분할을 닫은 뒤 undo 항목 때문에 보관만 되는 뷰: 저장소·undo 알림 구독과 모든 훅을 끊어 편집마다 일하지 않게 한다
+    /// (보관 뷰 20개가 각각 개행 수를 세면 타이핑이 5배 느려지는 것이 실측됐다). undo 재생은 AppKit 이 뷰의 textStorage 로 직접 수행하므로 영향 없다.
+    func retireFromEditing() {
+        NotificationCenter.default.removeObserver(self)
+        editObserversInstalled = true   // 다시 설치되지 않게
+        onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
+        tracksUntrackedLineChanges = false
+        hasFolds = nil; isOffsetHidden = nil; foldedSpan = nil; foldPills = nil; onFoldPillClick = nil
+        snippetProvider = nil; macroSink = nil
+        onBecomeActive = nil; onMultiChange = nil; onDidMoveToWindow = nil
+    }
+
     /// 저장소 변경 알림(undo/redo 포함)과 undo 관리자 알림 구독. 창에 붙을 때 한 번.
     private func installEditObservers() {
         guard !editObserversInstalled else { return }
@@ -266,8 +279,8 @@ final class HyperTextView: NSTextView {
         let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
         onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
         guard tracksUntrackedLineChanges else { return }   // split: 아래는 주 편집기만
-        // 같은 이유로 didChangeText(→ delegate textDidChange → 문서 dirty·자동 저장·줄 인덱스) 도 오지 않는다 — 저장소 편집 처리가 끝난 뒤 직접 부른다
-        DispatchQueue.main.async { [weak self] in self?.didChangeText() }
+        // 문서 dirty·자동 저장·줄 인덱스는 MemoDocument 가 같은 저장소 알림에서 직접 처리한다(load/reload 의 전체 교체는 제외).
+        // 여기서 didChangeText() 를 다시 부르면 파일 전환·다시 읽기 직후 새 문서가 dirty 가 되므로 부르지 않는다.
         // 북마크: 개행 증감은 undo 직전에 세어 둔 전체 개행 수와 비교한다 (undo 한 그룹 안의 연속 편집도 각각 제 몫만큼)
         guard let hook = onLinesWillChange, needsLineTracking?() ?? true, let before = undoNewlineCount else { return }
         let total = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))

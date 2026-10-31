@@ -105,6 +105,8 @@ struct EditorView: NSViewRepresentable {
             saveStateTask?.cancel()
             cancellables.removeAll()
             docCancellables.removeAll()
+            foldController?.unbind()   // fold: 보관 코디네이터가 줄 인덱스 발행마다 재스캔하지 않게
+            markerView?.unbind()       // markers
             session.retire(self)
         }
 
