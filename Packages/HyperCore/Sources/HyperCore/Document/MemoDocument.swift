@@ -46,6 +46,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private var fileGeneration = 0
     /// load/reload 의 전체 교체 중에는 저장소 변경 알림을 '사용자 편집' 으로 치지 않는다 (0 보다 크면 교체 중)
     private var programmaticReplaceDepth = 0
+    /// 마지막 load/reload 이후 실제 문자 편집(저장소 알림 기준)이 있었는가. 없으면 뷰가 보내는 textDidChange() 는 무시한다 —
+    /// macOS 27 의 undo 경로 보정으로 전체 교체 직후에도 뷰가 didChangeText 를 한 번 더 부르는데, 그 때문에 새로 연 문서가 dirty 가 되면 안 된다.
+    private var editedSinceLoad = false
 
     public init(url: URL) {
         self.url = url.resolvingSymlinksInPath()
@@ -158,6 +161,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         textStorage.replaceCharacters(in: NSRange(location: 0, length: textStorage.length), with: text)
         textStorage.endEditing()
         programmaticReplaceDepth -= 1
+        editedSinceLoad = false
         loadedLength = textStorage.length
         lineIndex = LineIndex(text: text)
         reloadGeneration += 1
@@ -173,6 +177,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     /// 텍스트 뷰의 사용자 편집 후 호출.
     public func textDidChange() {
+        guard editedSinceLoad else { return }   // 로드 뒤 문자 편집이 없었으면 무시 (전체 교체 직후 뷰가 보내는 didChangeText 가 새 문서를 dirty 로 만들지 않게)
         // 같은 값을 다시 대입해도 @Published 는 objectWillChange 를 보낸다 → 키 입력마다 문서를 구독하는 모든 SwiftUI 뷰(탭 바·상태바·EditorView.updateNSView)가
         // 다시 평가됐다 (타이핑 지연의 약 1/3). 첫 편집에서만 바꾼다.
         if !isDirty { isDirty = true }
@@ -400,7 +405,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             guard editedMask.contains(.editedCharacters) else { return }
             // 문자 변경은 모두 '편집' 이다 — 텍스트 뷰를 거치지 않는 undo/redo(macOS 27 TextKit 2 는 shouldChangeText/didChangeText 를 부르지 않는다)도
             // 여기서 잡아 dirty·자동 저장·줄 인덱스 재계산을 건다. 뷰 경로의 textDidChange() 와 겹쳐도 예약 취소·재예약뿐이라 비용은 없다.
-            if programmaticReplaceDepth == 0, isLoaded { textDidChange() }
+            if programmaticReplaceDepth == 0, isLoaded { editedSinceLoad = true; textDidChange() }
             guard let font = hangulFont else { return }
             let para = (textStorage.string as NSString).paragraphRange(for: editedRange)
             HangulFontFixer.apply(font: font, to: textStorage, in: para)

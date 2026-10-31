@@ -62,7 +62,7 @@ final class HyperTextView: NSTextView {
     override var acceptsFirstResponder: Bool { true }
 
     deinit {
-        NotificationCenter.default.removeObserver(self)   // fold: 저장소·undo 알림 구독 해제
+        removeEditObservers()   // fold: 저장소·undo 알림 구독 해제 (이 뷰가 건 것만)
         Perf.log("HyperTextView deinit")                   // split: 닫힌 보조 뷰 해제 추적 (--debug-perf)
     }
 
@@ -218,6 +218,9 @@ final class HyperTextView: NSTextView {
 
     private var expectingTrackedEdit = false
     private var editObserversInstalled = false
+    /// 이 뷰가 직접 등록한 알림 구독. `NotificationCenter.removeObserver(self)` 로 통째로 지우면 AppKit 이 NSTextView 내부에 건 구독까지
+    /// 사라져 보관 중인 뷰의 레이아웃 매니저가 편집마다 문서 전체를 다시 배치하는 것이 실측됐다 → 반드시 이것만 해제한다.
+    private var editObserverNames: [Notification.Name] = []
     /// undo/redo 직전의 전체 개행 수 (그룹 안의 편집마다 갱신) — 북마크 증감 계산용
     private var undoNewlineCount: Int?
     /// 분할 보기: 두 뷰가 같은 저장소 알림을 받으므로, 추적되지 않은 편집(undo/redo)의 북마크 이동·문서 dirty 통지는 주 편집기 한 곳만 한다
@@ -235,7 +238,7 @@ final class HyperTextView: NSTextView {
     /// 분할을 닫은 뒤 undo 항목 때문에 보관만 되는 뷰: 저장소·undo 알림 구독과 모든 훅을 끊어 편집마다 일하지 않게 한다
     /// (보관 뷰 20개가 각각 개행 수를 세면 타이핑이 5배 느려지는 것이 실측됐다). undo 재생은 AppKit 이 뷰의 textStorage 로 직접 수행하므로 영향 없다.
     func retireFromEditing() {
-        NotificationCenter.default.removeObserver(self)
+        removeEditObservers()
         editObserversInstalled = true   // 다시 설치되지 않게
         onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
         tracksUntrackedLineChanges = false
@@ -249,11 +252,22 @@ final class HyperTextView: NSTextView {
         guard !editObserversInstalled else { return }
         editObserversInstalled = true
         let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(storageDidProcessEditing(_:)), name: NSTextStorage.didProcessEditingNotification, object: nil)
-        nc.addObserver(self, selector: #selector(undoWillChange(_:)), name: .NSUndoManagerWillUndoChange, object: nil)
-        nc.addObserver(self, selector: #selector(undoWillChange(_:)), name: .NSUndoManagerWillRedoChange, object: nil)
-        nc.addObserver(self, selector: #selector(undoDidChange(_:)), name: .NSUndoManagerDidUndoChange, object: nil)
-        nc.addObserver(self, selector: #selector(undoDidChange(_:)), name: .NSUndoManagerDidRedoChange, object: nil)
+        let pairs: [(Notification.Name, Selector)] = [
+            (NSTextStorage.didProcessEditingNotification, #selector(storageDidProcessEditing(_:))),
+            (.NSUndoManagerWillUndoChange, #selector(undoWillChange(_:))),
+            (.NSUndoManagerWillRedoChange, #selector(undoWillChange(_:))),
+            (.NSUndoManagerDidUndoChange, #selector(undoDidChange(_:))),
+            (.NSUndoManagerDidRedoChange, #selector(undoDidChange(_:))),
+        ]
+        for (name, sel) in pairs { nc.addObserver(self, selector: sel, name: name, object: nil) }
+        editObserverNames = pairs.map(\.0)
+    }
+
+    /// installEditObservers 가 건 구독만 해제한다 (이름 단위 — AppKit 내부 구독은 건드리지 않는다)
+    private func removeEditObservers() {
+        let nc = NotificationCenter.default
+        for name in editObserverNames { nc.removeObserver(self, name: name, object: nil) }
+        editObserverNames.removeAll()
     }
 
     @objc private func undoWillChange(_ n: Notification) {
@@ -279,8 +293,10 @@ final class HyperTextView: NSTextView {
         let replacement = ns.substring(with: NSIntersectionRange(edited, NSRange(location: 0, length: ns.length)))
         onTextWillChange?([(pre, replacement)], true)   // fold: 사후 통지 (뷰마다)
         guard tracksUntrackedLineChanges else { return }   // split: 아래는 주 편집기만
-        // 문서 dirty·자동 저장·줄 인덱스는 MemoDocument 가 같은 저장소 알림에서 직접 처리한다(load/reload 의 전체 교체는 제외).
-        // 여기서 didChangeText() 를 다시 부르면 파일 전환·다시 읽기 직후 새 문서가 dirty 가 되므로 부르지 않는다.
+        // undo/redo 는 didChangeText 도 부르지 않는다 — 저장소 편집 처리가 끝난 뒤 직접 불러 뷰 상태(입력 합치기 등)를 정리한다.
+        // 이 호출을 빼면 undo 뒤 모든 입력이 5배쯤 느려지는 것이 실측됐다. 문서 dirty 는 MemoDocument 가 저장소 알림으로 직접 관리하며,
+        // load/reload 의 전체 교체 뒤에 오는 이 호출은 MemoDocument.textDidChange() 가 (문자 편집이 없었으므로) 무시한다.
+        DispatchQueue.main.async { [weak self] in self?.didChangeText() }
         // 북마크: 개행 증감은 undo 직전에 세어 둔 전체 개행 수와 비교한다 (undo 한 그룹 안의 연속 편집도 각각 제 몫만큼)
         guard let hook = onLinesWillChange, needsLineTracking?() ?? true, let before = undoNewlineCount else { return }
         let total = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))
