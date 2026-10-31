@@ -75,8 +75,9 @@ final class MacroRecorder: ObservableObject {
             finishRecording()
             model.log(String(localized: "Macro recording stopped · document changed"))
         }
-        // $url 은 willSet 에 발행되므로 document.url 은 아직 이전 파일 (동기 저장은 끝났다) — 그 파일이 매크로 JSON 이었으면 다시 읽는다
-        if model.document.url.standardizedFileURL == store.fileURL.standardizedFileURL {
+        // $url 은 willSet 에 발행되므로 document.url 은 아직 이전 파일 (동기 저장은 끝났다) — 그 파일이 매크로 JSON 이었으면 다시 읽는다.
+        // 문서 URL 은 심볼릭 링크를 푼 경로라(MemoDocument.switchTo) 저장소 경로도 풀어서 비교한다 (Application Support 가 링크면 안 맞는다)
+        if model.document.url.resolvingSymlinksInPath().path == store.fileURL.resolvingSymlinksInPath().path {
             store.reload()
             if let e = store.loadError { model.log(String(localized: "Macros file could not be read · \(e)"), isError: true) }
             else { model.log(String(localized: "Macros reloaded · \(store.macros.count) macros")) }
@@ -288,7 +289,8 @@ extension AppModel {
 
     /// "여러 번 재생…" 알림창 확인 — 횟수 상자(1 ~ 10,000)
     func playLastMacroRepeated() {
-        let n = Int(macros.repeatText.trimmingCharacters(in: .whitespaces)) ?? 1
+        // 자리표시자가 "1 ~ 10,000" 이라 "10,000" 처럼 치기 쉽다 — 천 단위 쉼표·공백은 걷어낸다 (못 읽으면 1회)
+        let n = Int(macros.repeatText.filter { !$0.isWhitespace && $0 != "," }) ?? 1
         macros.showRepeatAlert = false
         Task { @MainActor in await macros.playLast(times: n) }
     }
