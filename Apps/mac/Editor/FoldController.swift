@@ -237,6 +237,14 @@ final class FoldController {
         unfoldAll(containing: sel.location, reason: String(localized: "caret"))
     }
 
+    /// 점프(검색 매치·줄 이동·북마크·문서 끝)로 선택이 놓이기 전에 그 자리를 숨기는 접힘을 펼친다 — 길이 있는 선택(검색 매치)은 selectionDidChange 가 건드리지 않는다
+    func reveal(range r: NSRange) {
+        guard !folds.isEmpty else { return }
+        for o in Set([r.location, max(r.location, NSMaxRange(r) - 1)]) where isOffsetHidden(o) {
+            unfoldAll(containing: o, reason: String(localized: "caret"))
+        }
+    }
+
     // MARK: 접기 / 펼치기
 
     private func fold(_ c: FoldCandidate) {
@@ -271,12 +279,14 @@ final class FoldController {
         changed()
     }
 
-    /// 오프셋을 숨기고 있는 접힘을 전부 펼친다 (바깥 → 안쪽)
+    /// 오프셋을 숨기고 있는 접힘을 전부 펼친다 (바깥 → 안쪽). 문서 끝까지 닿는 접힘은 끝 오프셋(= 문서 길이)도 숨긴 것으로 본다 — hiddenSpan 과 같은 규칙
+    /// (⌘↓·문서 끝 이동으로 캐럿이 거기 놓이면 펼쳐져야 보인다)
     private func unfoldAll(containing offset: Int, reason: String?) {
+        let length = textView?.textStorage?.length ?? -1
         var i = 0
         while i < folds.count {
             let f = folds[i]
-            if f.hiddenStart <= offset && offset < f.hiddenEnd { unfold(at: i, reason: reason) } else { i += 1 }
+            if f.hiddenStart <= offset && (offset < f.hiddenEnd || (offset == f.hiddenEnd && offset == length)) { unfold(at: i, reason: reason) } else { i += 1 }
         }
     }
 
@@ -572,7 +582,10 @@ extension HyperTextView {
             let next = NSMaxRange(cur)
             guard next < ns.length, hidden(next), let s = span(next) else { return false }
             if NSMaxRange(s) >= ns.length {
-                setSelectedRange(NSRange(location: ns.length, length: 0)); scrollRangeToVisible(selectedRange()); return true
+                // 접힘이 문서 끝까지 닿으면 들어갈 보이는 줄이 없다 — AppKit 의 마지막 줄 ↓ 처럼 머리 줄 끝에 머문다 (숨은 끝 오프셋에 둔 캐럿은 보이지 않는다)
+                var contentEnd = NSMaxRange(cur)
+                if cur.length > 0, ns.character(at: contentEnd - 1) == 10 { contentEnd -= 1 }
+                setSelectedRange(NSRange(location: contentEnd, length: 0)); scrollRangeToVisible(selectedRange()); return true
             }
             targetLine = ns.lineRange(for: NSRange(location: NSMaxRange(s), length: 0))
         } else {
