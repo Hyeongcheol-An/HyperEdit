@@ -70,9 +70,16 @@ struct EditorView: NSViewRepresentable {
         private var lastReloadGeneration = 0
         private var saveStateTask: Task<Void, Never>?
 
+        // 구문 하이라이트 상태 (렌더링은 아래 MARK 참조)
+        private var grammar: any LanguageGrammar
+        private var syntaxColors: [TokenKind: NSColor] = [:]
+        private(set) var highlightEnabled: Bool
+
         init(model: AppModel) {
             self.model = model
             self.document = model.document
+            self.grammar = GrammarRegistry.grammar(for: model.document.url)
+            self.highlightEnabled = model.syntaxHighlighting
             super.init()
         }
 
@@ -116,7 +123,70 @@ struct EditorView: NSViewRepresentable {
             tv.textContainerInset = NSSize(width: 10, height: 12)
             tv.delegate = self
             tv.onDidMoveToWindow = { [weak self] in self?.restoreViewStateIfNeeded() }
+            installHighlighter(on: tv)
             return tv
+        }
+
+        // MARK: 구문 하이라이트 — TextKit 2 렌더링 속성
+        // 색을 NSTextStorage 에 쓰지 않는다 (테마 전체 적용·undo·한글 폰트 런·검색 강조와 충돌). 대신 레이아웃 매니저의
+        // renderingAttributesValidator 가 레이아웃 프래그먼트(= 문단 = 줄)마다 호출될 때 그 줄만 토큰화해 foregroundColor 렌더링 속성을 얹는다.
+        // 보이는 줄만 계산되므로 문서 크기와 무관하고, 줄 하나는 수 µs 다.
+
+        private func installHighlighter(on tv: HyperTextView) {
+            tv.textLayoutManager?.renderingAttributesValidator = { [weak self] lm, fragment in
+                self?.validateRenderingAttributes(lm, fragment)
+            }
+        }
+
+        private func validateRenderingAttributes(_ lm: NSTextLayoutManager, _ fragment: NSTextLayoutFragment) {
+            guard let cs = lm.textContentManager as? NSTextContentStorage else { return }
+            let tr = fragment.rangeInElement
+            Perf.measure("highlight.fragment", threshold: 0.2) {
+                // 이전 검증의 색은 걷어낸다 (편집으로 토큰 경계가 바뀌었을 수 있음)
+                lm.removeRenderingAttribute(.foregroundColor, for: tr)
+                guard highlightEnabled, let ts = cs.textStorage else { return }
+                let start = cs.offset(from: cs.documentRange.location, to: tr.location)
+                let length = cs.offset(from: tr.location, to: tr.endLocation)
+                guard length > 0 else { return }
+                let ns = ts.string as NSString
+                for token in grammar.tokens(in: ns, range: NSRange(location: start, length: length)) {
+                    guard let color = syntaxColors[token.kind],
+                          let a = cs.location(cs.documentRange.location, offsetBy: token.range.location),
+                          let b = cs.location(a, offsetBy: token.range.length),
+                          let r = NSTextRange(location: a, end: b) else { continue }
+                    lm.addRenderingAttribute(.foregroundColor, value: color, for: r)
+                }
+            }
+        }
+
+        /// 테마 색 → 토큰 종류별 NSColor (테마에 없는 키는 본문 색 = 칠하지 않음)
+        private func rebuildSyntaxColors(_ theme: Theme) {
+            var table: [TokenKind: NSColor] = [:]
+            for kind in TokenKind.allCases {
+                if let c = theme.syntax[kind.themeKey], c != theme.foreground { table[kind] = c.nsColor }
+            }
+            syntaxColors = table
+        }
+
+        /// 보이는 줄의 색을 다시 계산하게 한다 (켜기/끄기).
+        /// 실측(macOS 27 TextKit 2): `invalidateLayout(for:)`·`invalidateRenderingAttributes(for:)` 는 뷰포트든 문서 전체든
+        /// 이미 레이아웃된 프래그먼트의 validator 를 다시 부르지 않는다. 스토리지에 속성 편집을 알리면(테마 적용의 setAttributes 와 같은 경로)
+        /// 보이는 프래그먼트가 재생성되며 validator 가 즉시 다시 계산한다. 편집된 문단은 TextKit 2 가 스스로 다시 검증하므로 키 입력마다 할 일은 없다.
+        private func invalidateHighlight() {
+            guard let tv = textView, let lm = tv.textLayoutManager, let ts = tv.textStorage else { return }
+            Perf.measure("highlight.invalidate len=\(ts.length)", threshold: 1) {
+                if !highlightEnabled { lm.removeRenderingAttribute(.foregroundColor, for: lm.documentRange) }
+                ts.beginEditing()
+                ts.edited(.editedAttributes, range: NSRange(location: 0, length: ts.length), changeInLength: 0)
+                ts.endEditing()
+            }
+            tv.needsDisplay = true
+        }
+
+        func setSyntaxHighlighting(_ on: Bool) {
+            guard on != highlightEnabled else { return }
+            highlightEnabled = on
+            invalidateHighlight()
         }
 
         func attach(container: EditorContainerView, scrollView: NSScrollView, textView: HyperTextView, gutter: GutterView) {
@@ -158,15 +228,18 @@ struct EditorView: NSViewRepresentable {
                 }
                 .store(in: &docCancellables)
             // 같은 문서 객체가 다른 파일로 전환됨: 이전 파일의 위치 저장 예약 취소, undo 비우기, 새 파일 위치 복원 준비
+            // (@Published 는 willSet 시점에 발행하므로 document.url 은 아직 이전 값 — 전달된 newURL 을 쓴다)
             document.$url
                 .removeDuplicates()
                 .dropFirst()
-                .sink { [weak self] _ in
+                .sink { [weak self] newURL in
                     guard let self else { return }
                     self.saveStateTask?.cancel()
                     self.textView?.undoManager?.removeAllActions()
                     self.restored = false
                     self.lastCaretRect = nil
+                    // 문법은 내용 교체(switchTo → load) 전에 바꿔 둔다 — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
+                    self.grammar = GrammarRegistry.grammar(for: newURL)
                 }
                 .store(in: &docCancellables)
         }
@@ -180,7 +253,8 @@ struct EditorView: NSViewRepresentable {
             restored = false
             appliedThemeID = nil
             bindDocument()
-            if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) }
+            grammar = GrammarRegistry.grammar(for: newDoc.url)
+            if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) } else { invalidateHighlight() }
         }
 
         // MARK: 테마 / 폰트
@@ -216,6 +290,7 @@ struct EditorView: NSViewRepresentable {
 
             let ts = tv.textStorage ?? document.textStorage
             let full = NSRange(location: 0, length: ts.length)
+            rebuildSyntaxColors(theme)   // 아래 전체 속성 적용이 프래그먼트를 다시 만들며 validator 를 부르므로 색 표를 먼저 바꾼다
             ts.beginEditing()
             Perf.measure("  apply.setAttributes len=\(full.length)") { ts.setAttributes(attrs, range: full) }
             if let h = hangul { Perf.measure("  apply.hangul") { HangulFontFixer.apply(font: h, to: ts, in: full) } }
@@ -233,6 +308,7 @@ struct EditorView: NSViewRepresentable {
             tv.needsDisplay = true
             highlightKey = ""   // 전체 속성 재적용으로 매치 강조가 지워졌으니 다음 update 에서 다시 칠한다
             highlightedRanges = []
+            // 구문 색: 위 전체 setAttributes 가 프래그먼트를 다시 만들며 validator 가 새 색 표(rebuildSyntaxColors)로 칠한다 — 추가 무효화 불필요
         }
 
         func handleReload(generation: Int) {
@@ -335,6 +411,8 @@ struct EditorView: NSViewRepresentable {
             case .setLineNumbers(let on):
                 gutter?.isHidden = !on
                 container?.needsLayout = true
+            case .setSyntaxHighlighting(let on):
+                setSyntaxHighlighting(on)
             case .saveViewState:
                 saveViewStateNow()
             case .undo: tv.undoManager?.undo()

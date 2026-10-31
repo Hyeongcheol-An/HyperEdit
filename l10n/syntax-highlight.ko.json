@@ -1,0 +1,8 @@
+{
+  "Syntax Colors": "구문 색",
+  "Syntax colors by file type — URLs, dates, headings and tags in notes; keywords, strings and comments in code (⌃⌘H)": "파일 종류별 구문 색 — 메모에서는 URL·날짜·헤딩·태그, 코드에서는 키워드·문자열·주석 (⌃⌘H)",
+  "Syntax highlighting language": "구문 강조 언어",
+  "Syntax highlighting language (colors are off — ⌃⌘H)": "구문 강조 언어 (색 꺼짐 — ⌃⌘H)",
+  "Syntax colors on · %@": "구문 색 켬 · %@",
+  "Syntax colors off": "구문 색 끔"
+}

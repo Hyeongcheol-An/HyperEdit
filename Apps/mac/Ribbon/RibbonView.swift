@@ -87,6 +87,7 @@ private struct HomeTab: View {
             RibbonStack {
                 RibbonSmallToggle(title: "Word Wrap", systemImage: "text.word.spacing", help: "Word wrap (⌥Z)", isOn: $model.wordWrap, theme: theme)
                 RibbonSmallToggle(title: "Line Numbers", systemImage: "list.number", help: "Line number gutter (⌥⌘L)", isOn: $model.showLineNumbers, theme: theme)
+                RibbonSmallToggle(title: "Syntax Colors", systemImage: "paintbrush.pointed", help: "Syntax colors by file type — URLs, dates, headings and tags in notes; keywords, strings and comments in code (⌃⌘H)", isOn: $model.syntaxHighlighting, theme: theme)
             }
         }
         RibbonGroup(title: "File", theme: theme) {

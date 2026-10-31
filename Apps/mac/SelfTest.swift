@@ -190,7 +190,55 @@ enum SelfTest {
         let disk = (try? String(contentsOf: dir.appendingPathComponent("sample.md"), encoding: .utf8)) ?? ""
         check(disk.contains("tail\n") && Timestamp.headingRegex.firstMatch(in: disk, options: [], range: NSRange(location: 0, length: (disk as NSString).length)) != nil, "disk content has tail + timestamp")
 
-        // 8. 성능: 타이핑 80타 지연(런루프 포함)
+        // 7b. 구문 하이라이트: 렌더링 속성(스토리지가 아님)에 색이 올라가고, 편집 뒤에도 유지되며, 끄면 사라진다
+        log("highlight language=\(model.languageName) enabled=\(model.syntaxHighlighting)")
+        check(model.languageName == "Markdown", "language detected for .md = \(model.languageName)")
+        func renderingColor(atLine line: Int, column: Int) -> NSColor? {
+            var found: NSColor?
+            model.send(.perform { tv in
+                guard let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
+                let r = LineIndex(text: tv.string).range(ofLine: line)
+                guard let loc = cs.location(cs.documentRange.location, offsetBy: r.location + column) else { return }
+                lm.ensureLayout(for: NSTextRange(location: loc))
+                lm.enumerateRenderingAttributes(from: loc, reverse: false) { _, attrs, range in
+                    if range.contains(loc) { found = attrs[.foregroundColor] as? NSColor }
+                    return false
+                }
+            })
+            return found
+        }
+        func storageColor(atLine line: Int) -> NSColor? {
+            let ns = text(); let r = LineIndex(text: ns as String).range(ofLine: line)
+            return model.document.textStorage.attribute(.foregroundColor, at: r.location, effectiveRange: nil) as? NSColor
+        }
+        let theme = model.themes.current
+        model.jump(toLine: 8); await wait(400)   // `[Title] bracket heading`
+        let titleColor = renderingColor(atLine: 8, column: 1)
+        check(titleColor != nil && titleColor == theme.syntaxColor("title").nsColor, "rendering attribute on [Title] = title color (\(titleColor.map { $0.description } ?? "nil"))")
+        check(storageColor(atLine: 8) == theme.foreground.nsColor, "storage foreground untouched by highlighting")
+        check(renderingColor(atLine: 6, column: 1) == nil, "plain line has no rendering color")
+        model.send(.perform { tv in
+            let ns = tv.string as NSString
+            let r = LineIndex(text: tv.string).range(ofLine: 8)
+            tv.setSelectedRange(NSRange(location: r.location + ns.substring(with: r).utf16.count - 1, length: 0))
+            tv.insertText(" https://example.com/x", replacementRange: tv.selectedRange())
+        }); await wait(300)
+        let linkColor = renderingColor(atLine: 8, column: lineText(8).utf16.count - 3)
+        check(linkColor == theme.syntaxColor("link").nsColor, "typed URL gets link color after edit (\(linkColor.map { $0.description } ?? "nil"))")
+        model.send(.undo); await wait(300)
+        model.syntaxHighlighting = false; await wait(300)
+        check(renderingColor(atLine: 8, column: 1) == nil, "turning syntax colors off removes rendering attributes")
+        model.syntaxHighlighting = true; await wait(300)
+        check(renderingColor(atLine: 8, column: 1) == theme.syntaxColor("title").nsColor, "turning syntax colors back on restores them")
+        // 단축키 충돌 진단: ⌃⌘H 를 쓰는 메뉴 항목이 '구문 색' 하나뿐이어야 한다 (⌥⌘H 는 시스템 '기타 가리기' 가 선점)
+        if let menu = NSApp.mainMenu {
+            var hits: [String] = []
+            func walk(_ m: NSMenu) { for it in m.items { if it.keyEquivalent == "h", it.keyEquivalentModifierMask.contains([.command, .control]) { hits.append(it.title) }; if let s = it.submenu { walk(s) } } }
+            walk(menu)
+            check(hits.count == 1, "⌃⌘H bound to exactly one menu item: \(hits)")
+        }
+
+        // 8. 성능: 타이핑 80타 지연(런루프 포함, 구문 색 켜진 상태)
         model.goToEnd(); await wait(300)
         let t1 = CFAbsoluteTimeGetCurrent()
         for _ in 0..<80 {

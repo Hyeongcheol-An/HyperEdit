@@ -110,6 +110,8 @@ struct EditorCommands: Commands {
             Button("Timeline") { model.showTimeline() }.keyboardShortcut("4")
             Button(model.showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers") { model.showLineNumbers.toggle() }.keyboardShortcut("l", modifiers: [.command, .option])
             Button(model.wordWrap ? "Turn Word Wrap Off" : "Turn Word Wrap On") { model.wordWrap.toggle() }.keyboardShortcut("z", modifiers: [.option])
+            // ⌥⌘H 는 시스템 '기타 가리기(Hide Others)' 가 앱 메뉴에서 먼저 가로채므로 ⌃⌘H (⌃⌘E·⌃⌘F 와 같은 계열)
+            Toggle("Syntax Colors", isOn: $model.syntaxHighlighting).keyboardShortcut("h", modifiers: [.command, .control])
             Divider()
             ForEach(RibbonTab.allCases) { tab in
                 Button(tab.menuLabel) { model.ribbonTab = tab }
