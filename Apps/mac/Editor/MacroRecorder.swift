@@ -165,6 +165,10 @@ final class MacroRecorder: ObservableObject {
         state = .playing
         tv.macroSuppressDepth += 1
         defer { tv.macroSuppressDepth -= 1; state = .idle }
+        // 재생 중 사용자 키·마우스 입력은 버린다 — 50 ms 마다 런루프에 양보하는 동안 ⌘Z(undo) 가 들어오면 열어 둔 undo 그룹이 닫혀
+        // 아래 endUndoGrouping 이 NSInternalInconsistencyException 으로 죽고, 클릭은 활성 편집기를 바꿔 단계가 다른 뷰에 적용된다
+        let inputMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]) { _ in nil }
+        defer { if let inputMonitor { NSEvent.removeMonitor(inputMonitor) } }
         tv.window?.makeFirstResponder(tv)
         tv.breakUndoCoalescing()
         let um = tv.undoManager

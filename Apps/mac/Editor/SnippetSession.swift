@@ -154,7 +154,8 @@ enum SnippetRendering {
         let ns = tv.string as NSString
         let sel = tv.selectedRange()
         let selection = sel.length > 0 && NSMaxRange(sel) <= ns.length ? ns.substring(with: sel) : ""
-        let clipboard = NSPasteboard.general.string(forType: .string) ?? ""
+        // 클립보드는 본문이 `${clipboard}` 를 쓸 때만 읽는다 — 붙여넣기 동작 밖에서 pasteboard 를 읽으면 macOS 15.4+ 가 '다른 앱에서 붙여넣기' 확인 알림을 띄울 수 있다
+        let clipboard = snippet.body.contains("${clipboard}") ? (NSPasteboard.general.string(forType: .string) ?? "") : ""
         return SnippetTemplate.render(snippet.body, selection: selection, clipboard: clipboard, filename: filename)
     }
 }
