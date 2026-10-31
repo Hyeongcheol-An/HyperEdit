@@ -175,6 +175,7 @@ private struct EditTab: View {
                 RibbonSmallButton(title: "Minify JSON", systemImage: "curlybraces.square", help: "Collapse the selection or the whole document to single-line JSON", theme: theme) { model.textTool(.minifyJSON) }
             }
         }
+        MacroRibbonGroup(theme: theme)   // macro
     }
 }
 
@@ -435,7 +436,7 @@ extension RibbonTab {
     var requiredWidth: CGFloat {
         switch self {
         case .home: 1190      // 파일 그룹 끝 ≈ 1166 (삽입 그룹에 '스니펫…'+'빠른 추가…' 스택 하나 추가, 1600pt 스크린샷 실측)
-        case .edit: 1660      // 도구 그룹 끝 ≈ 1637 (주석 토글·JSON 스택 추가 후 1800pt 스크린샷 실측)
+        case .edit: 1865      // 매크로 그룹 끝 ≈ 1843 (도구 그룹 1637 + 매크로 그룹 206; 통합 후 2000pt 스크린샷으로 재측정할 것)   // macro
         case .layout: 920     // 글꼴 크기 그룹 끝 ≈ 905
         case .advanced: 260
         case .window: 260

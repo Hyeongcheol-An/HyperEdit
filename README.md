@@ -81,6 +81,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · join ⇧⌘J · reverse · number lines · sort ascending / descending / numeric · remove duplicate lines · remove blank lines · trim trailing / both · tabs → spaces · spaces → tabs · UPPER / lower / Capitalize / iNVERT case.
 
 - **Calculate (⌃⌘=):** evaluates the selection, or the current line (the part after the last `=` if there is one), and appends ` ⇒ result` — `3+0.5+0.25` becomes `3+0.5+0.25 ⇒ 3.75`; running it again on an edited line replaces the old result. Plain arithmetic only: `+ - * / % ^`, parentheses, `1,234` / `1_000` numbers, `sqrt abs round floor ceil min max`, `pi` and `e`. Invalid expressions are reported in the Output panel and leave the text alone.
+- **Macros (⇧⌘M record / stop, ⌥⌘M play):** records typing (for Korean IME, only the committed syllables), caret movement, deletion and newline commands, paste (as the clipboard text at the time), the text tools above and Find Next (F3, with its query), then replays them at the caret. "Play Macro Multiple Times…" repeats up to 10,000 times and stops on its own when a Find step finds nothing or a run changes nothing; a whole run is one undo step. "Save Last Macro As…" adds it to the Macro menu; the list lives in `~/Library/Application Support/HyperEdit/macros/macros.json`, which "Edit Macros File…" opens in the editor. Mouse clicks, selection changes and multi-caret edits (Replace All, Insert Number) are not recorded. The status bar shows `● REC` while recording.
 - **Align Columns (⌃⌘T):** pads tab-separated columns (the selected lines, or the block of tab lines around the caret) so every column starts at the same display column, counting Hangul / CJK as two cells. Lines that all contain `|` are treated as a Markdown table instead: cells are padded inside ` | `, `---` rows are redrawn and `--:` columns right-aligned.
 - **Toggle Comment (⌘/):** comments or uncomments the selected lines (or the current line) with the file type's marker — `//`, `#`, `--`, … for code, `<!-- -->` for Markdown and HTML/XML, `/* */` for CSS, `//` for plain notes. VS Code semantics: if every non-blank line is already commented they are all uncommented, otherwise all are commented, with the markers aligned at the shallowest indentation; blank lines are skipped and tabs stay tabs.
 - **Format JSON (⌃⌘J) / Minify JSON:** pretty-prints (2-space indent) or collapses the selection, or the whole document when nothing is selected. Key order and number text (`1.0`, big integers) are preserved, strings are re-escaped minimally (Korean and emoji stay as-is). Input may contain a BOM, trailing commas and `//` / `/* */` comments (JSONC); the output is always strict JSON. On a syntax error the text is left alone, the Output panel shows `line:column` and the caret jumps there. A 5.6 MB document formats in about 30 ms.
@@ -118,7 +119,8 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌘, | Settings | ⇧⌘P | Markdown preview |
 | ⌃⌘H | Syntax colors | ⌘\\ | Split editor |
 | ⌥⌘\\ | Focus other split | ⇧⌘N | Quick Append |
-| ⌃⌥N | Quick Append from any app (global, configurable) | | |
+| ⌃⌥N | Quick Append from any app (global, configurable) | ⇧⌘M | Record / stop macro |
+| ⌥⌘M | Play macro | | |
 
 ## Themes
 
@@ -192,7 +194,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Kore
 - UI in English and Korean (follows the system language); no other languages yet.
 - Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
-- Macros are on the roadmap but not implemented yet. The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
+- Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).
 
