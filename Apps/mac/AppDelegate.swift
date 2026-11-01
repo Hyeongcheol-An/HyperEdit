@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     nonisolated(unsafe) static var relaunchOnQuit = false
 
     func applicationWillTerminate(_ notification: Notification) {
+        AppModel.current?.secrets.flushPendingClipboardClear()   // secrets: 예약된 소거는 프로세스와 함께 사라진다 → 지금 비운다
         guard Self.relaunchOnQuit else { return }
         Self.relaunchOnQuit = false
         let pid = ProcessInfo.processInfo.processIdentifier

@@ -98,6 +98,7 @@ extension SelfTest {
         settingsWin.setContentSize(NSSize(width: 560, height: 800)); settingsWin.orderFront(nil)
         model.quickAppend.show(); await wait(300)
         check(settingsWin.isVisible && model.quickAppend.isVisible, "applock: settings window and Quick Append panel open before locking")
+        model.showGoToLine = true   // 잠글 때 떠 있던 알림은 닫혀야 한다 (시트는 오버레이가 가리지 못한다)
         lock.lock()
         let lockLine = model.output.last?.text ?? ""
         await wait(400)
@@ -106,6 +107,8 @@ extension SelfTest {
         check(overlay() != nil, "applock: overlay marker view '\(AppLockController.overlayIdentifier)' present in the window while locked")
         check(!hitIsEditor(), "applock: hitTest at the editor center no longer reaches the editor (\(hitAtEditorCenter().map { String(describing: type(of: $0)) } ?? "nil"))")
         check(!settingsWin.isVisible, "applock: open settings window is closed by locking")
+        check(!model.showGoToLine, "applock: an open Go to Line alert is dismissed by locking")
+        check(win.firstResponder !== tv, "applock: editor resigns first responder while locked (dictation/insertText cannot reach the document)")
         check(!model.quickAppend.isVisible, "applock: Quick Append panel is hidden by locking")
         check(win.isVisible, "applock: document window stays open")
         lock.lock()
@@ -126,6 +129,8 @@ extension SelfTest {
         check(!monitorPasses(",", keyCode: 43, flags: [.command]) && !monitorPasses("v", keyCode: 9, flags: [.command]) && !monitorPasses("q", keyCode: 12, flags: [.command, .shift])
               && !monitorPasses("a", keyCode: 0, flags: []) && !monitorPasses("s", keyCode: 1, flags: [.command]),
               "applock: ⌘, ⌘V ⇧⌘Q ⌘S and plain typing are swallowed by the locked key monitor")
+        check(!monitorPasses("z", keyCode: 13, flags: [.command]) && !monitorPasses(",", keyCode: 13, flags: [.command]) && !monitorPasses(",", keyCode: 46, flags: [.command]),
+              "applock: AZERTY ⌘Z and Dvorak/AZERTY ⌘, are swallowed — characters decide, key codes only for non-Latin input")
         let cancelledBefore = lock.cancelledMenuCount
         let lockedCancels = simulateMenuTracking()
         check(lockedCancels == 1 && lock.cancelledMenuCount == cancelledBefore + 1, "applock: a menu that begins tracking while locked is cancelled at once (cancelled \(lockedCancels), controller count +\(lock.cancelledMenuCount - cancelledBefore))")

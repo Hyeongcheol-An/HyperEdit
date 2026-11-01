@@ -518,6 +518,7 @@
   "line %lld column %lld: %@": "%lld 行 %lld 列: %@",
   "not UTF-8 text": "UTF-8 テキストではありません",
   "not a grammar object: %@": "文法オブジェクトではありません: %@",
+  "not a regular file or larger than 1 MB — skipped": "通常のファイルでないか 1 MB を超えるためスキップ",
   "nothing changed": "変化なし",
   "stopped early at run %lld of %lld · %@": "%2$lld 回中 %1$lld 回目で早期停止 · %3$@",
   "unlock your documents": "書類のロックを解除",

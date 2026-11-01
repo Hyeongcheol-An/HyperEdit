@@ -518,6 +518,7 @@
   "line %lld column %lld: %@": "%lld줄 %lld열: %@",
   "not UTF-8 text": "UTF-8 텍스트가 아닙니다",
   "not a grammar object: %@": "문법 객체가 아닙니다: %@",
+  "not a regular file or larger than 1 MB — skipped": "일반 파일이 아니거나 1 MB 를 넘어 건너뜀",
   "nothing changed": "변화 없음",
   "stopped early at run %lld of %lld · %@": "조기 중단 · %2$lld회 중 %1$lld회째 · %3$@",
   "unlock your documents": "문서 잠금을 해제",

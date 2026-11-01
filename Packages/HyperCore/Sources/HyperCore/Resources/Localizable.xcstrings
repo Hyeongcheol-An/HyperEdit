@@ -1152,6 +1152,70 @@
           }
         }
       }
+    },
+    "not a regular file or larger than 1 MB — skipped": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليس ملفًا عاديًا أو حجمه أكبر من 1 ميغابايت — تم تخطيه"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "keine reguläre Datei oder größer als 1 MB – übersprungen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no es un archivo normal o supera 1 MB — omitido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fichier non régulier ou de plus de 1 Mo — ignoré"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सामान्य फ़ाइल नहीं है या 1 MB से बड़ी है — छोड़ दी गई"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通常のファイルでないか 1 MB を超えるためスキップ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "일반 파일이 아니거나 1 MB 를 넘어 건너뜀"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "não é um arquivo comum ou tem mais de 1 MB — ignorado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "không phải tệp thường hoặc lớn hơn 1 MB — đã bỏ qua"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不是普通文件或大于 1 MB，已跳过"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

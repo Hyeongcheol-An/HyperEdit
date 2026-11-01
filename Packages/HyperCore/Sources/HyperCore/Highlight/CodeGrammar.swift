@@ -13,6 +13,8 @@ public struct CodeLanguage: Sendable {
     public var quotes: Set<unichar> = [0x22, 0x27]
     /// 여는/닫는 구분자가 같은 여러 줄 문자열 (`"""` `'''` `` ` ``). 줄에서 닫히지 않으면 다음 줄이 `.string(1-based 인덱스)` 로 시작한다.
     public var multilineStrings: [[unichar]] = []
+    /// 백슬래시 이스케이프가 없는 여러 줄 문자열의 1-based id (Go 의 `` ` `` raw 문자열) — `C:\` 로 끝나는 raw 문자열이 파일 끝까지 번지지 않게
+    public var rawMultilineStrings: Set<Int> = []
     public var rawHashStrings = false          // Rust `r"…"` `r#"…"#` (여러 줄, 이스케이프 없음) → `.string(0x80 | #개수)`
     public var stringPrefixes: Set<unichar> = []
     public var keywords: Set<String> = []
@@ -100,7 +102,7 @@ public struct CodeGrammar: LanguageGrammar {
         if id & 0x80 != 0 { return Self.rawClose(buf, from: from, hashes: Int(id & 0x7F)) }
         let k = Int(id) - 1
         guard k >= 0, k < language.multilineStrings.count else { return 0 }
-        return Self.close(of: language.multilineStrings[k], buf, from: from, escapes: true)
+        return Self.close(of: language.multilineStrings[k], buf, from: from, escapes: !language.rawMultilineStrings.contains(k + 1))
     }
 
     /// 닫는 구분자 `d` 를 찾는다 (백슬래시 이스케이프는 건너뜀). 반환: 닫힘 뒤 오프셋, 없으면 nil
@@ -168,7 +170,7 @@ public struct CodeGrammar: LanguageGrammar {
         func stringFrom(_ s: Int) -> (end: Int, exit: LineState?) {
             if let id = multilineDelimiter(at: s) {
                 let d = L.multilineStrings[id - 1]
-                if let e = Self.close(of: d, buf, from: s + d.count, escapes: true) { return (e, nil) }
+                if let e = Self.close(of: d, buf, from: s + d.count, escapes: !L.rawMultilineStrings.contains(id)) { return (e, nil) }
                 return (n, .string(UInt8(id)))
             }
             return (stringEnd(from: s, quote: buf[s]), nil)
@@ -200,6 +202,12 @@ public struct CodeGrammar: LanguageGrammar {
             let wasAfterKey = afterKey
             afterKey = false
 
+            // 블록 주석을 줄 주석보다 먼저 본다 — Lua 처럼 줄 주석(`--`)이 블록 시작(`--[[`)의 앞부분인 언어
+            if let bc = L.blockComment, CharClass.matches(buf, i, bc.start) {
+                // 줄에서 닫히지 않으면 줄 끝까지 주석이고 다음 줄은 `.blockComment` 로 시작한다
+                guard let e = CharClass.find(bc.end, in: buf, from: i + bc.start.count) else { add(i, n, .comment); return .blockComment }
+                add(i, e, .comment); i = e; continue
+            }
             // 줄 주석
             var isLineComment = false
             for lc in L.lineComments where CharClass.matches(buf, i, lc) {
@@ -208,11 +216,6 @@ public struct CodeGrammar: LanguageGrammar {
                 isLineComment = true; break
             }
             if isLineComment { add(i, n, .comment); return .normal }
-            if let bc = L.blockComment, CharClass.matches(buf, i, bc.start) {
-                // 줄에서 닫히지 않으면 줄 끝까지 주석이고 다음 줄은 `.blockComment` 로 시작한다
-                guard let e = CharClass.find(bc.end, in: buf, from: i + bc.start.count) else { add(i, n, .comment); return .blockComment }
-                add(i, e, .comment); i = e; continue
-            }
 
             // Rust: 'a' 문자 vs 'a 수명
             if L.rustLifetimes, ch == 0x27 {
@@ -592,7 +595,7 @@ public extension CodeLanguage {
     static let go: CodeLanguage = {
         var l = CodeLanguage(id: "go", name: "Go")
         l.lineComments = [u("//")]; l.blockComment = (u("/*"), u("*/"))
-        l.quotes = [0x22, 0x27, 0x60]; l.multilineStrings = [u("`")]   // raw 문자열은 여러 줄
+        l.quotes = [0x22, 0x27, 0x60]; l.multilineStrings = [u("`")]; l.rawMultilineStrings = [1]   // raw 문자열은 여러 줄, 이스케이프 없음
         l.keywords = words("break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var")
         l.constants = words("true false nil iota")
         l.types = words("int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 uintptr float32 float64 complex64 complex128 string bool byte rune error any")

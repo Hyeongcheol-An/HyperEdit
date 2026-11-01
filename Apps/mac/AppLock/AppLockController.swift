@@ -32,7 +32,12 @@ protocol Authenticator: AnyObject {
 
 /// LocalAuthentication 인증기. evaluatePolicy 는 호출마다 새 LAContext 로 — 이전 인증 결과를 재사용하지 않는다.
 final class LocalAuthenticator: Authenticator {
-    var isAvailable: Bool { LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) }
+    /// 인증 수단이 없다고 보는 것은 "로그인 암호 미설정"(passcodeNotSet) 뿐이다 — 다른 오류(일시적 실패·생체 잠금)는 "있음" 으로 보고 인증을 요구한다(fail-closed)
+    var isAvailable: Bool {
+        var err: NSError?
+        if LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: &err) { return true }
+        return (err as? LAError)?.code != .passcodeNotSet
+    }
 
     var biometry: LABiometryType {
         let ctx = LAContext()
@@ -44,7 +49,9 @@ final class LocalAuthenticator: Authenticator {
         let ctx = LAContext()
         var err: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: &err) else {
-            return .unavailable(err?.localizedDescription ?? "")
+            // 로그인 암호가 없을 때만 "인증 수단 없음"(해제). 그 밖의 오류는 잠근 채 메시지만 보여 준다 — 실패를 이유로 풀지 않는다
+            if (err as? LAError)?.code == .passcodeNotSet { return .unavailable(err?.localizedDescription ?? "") }
+            return .failed(err?.localizedDescription ?? "")
         }
         do {
             return try await ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) ? .success : .failed("")
@@ -178,7 +185,22 @@ final class AppLockController: ObservableObject {
         idleTimer?.invalidate(); idleTimer = nil
         installLockedKeyMonitor()
         closeAuxiliaryWindows()
+        dismissSheets()
+        model.secrets.lockdown()   // secrets: 드러낸 블록 다시 가리기 + 예약된 클립보드 소거 즉시
+        // 편집기를 첫 응답자에서 내린다 — 키 모니터는 keyDown 만 막으므로 받아쓰기·문자 뷰어·서비스의 insertText 가 숨은 문서에 들어가지 않게
+        for w in NSApp.windows where w.isVisible && Self.containsEditor(w.contentView) { w.makeFirstResponder(nil) }
         model.log(logLine(for: trigger))
+    }
+
+    /// 잠글 때 떠 있던 시트·알림(줄 이동·숫자 채우기·스니펫 선택)과 모달 패널(열기·저장)을 닫는다 — 시트는 별도 창이라 오버레이가 가리지 못한다
+    private func dismissSheets() {
+        model.showGoToLine = false
+        model.showInsertNumber = false
+        model.showSnippetPicker = false
+        for w in NSApp.windows {
+            if let s = w.attachedSheet { w.endSheet(s, returnCode: .cancel) }
+        }
+        if NSApp.modalWindow != nil { NSApp.abortModal() }
     }
 
     /// 오버레이의 "Unlock" 버튼 · Return · Quick Append 호출: 인증기를 돌려 성공하면 해제한다. 인증 중 중복 호출은 무시
@@ -192,8 +214,9 @@ final class AppLockController: ObservableObject {
         case .success:
             unlock()
         case .cancelled:
-            break
+            pendingUnlockActions.removeAll()
         case .failed(let detail):
+            pendingUnlockActions.removeAll()
             message = detail.isEmpty ? String(localized: "Authentication failed — try again.") : detail
         case .unavailable(let detail):
             model.log(String(localized: "App Lock: this Mac has no Touch ID or login password, so HyperEdit was unlocked without authentication. \(detail)"), isError: true)
@@ -201,13 +224,13 @@ final class AppLockController: ObservableObject {
         }
     }
 
-    /// 잠겨 있으면 인증 뒤에, 아니면 바로 실행 (Quick Append 가 쓴다)
+    /// 잠겨 있으면 인증 뒤에, 아니면 바로 실행 (Quick Append 가 쓴다). 인증이 이미 진행 중이면 그 결과를 기다려 함께 실행한다
+    private var pendingUnlockActions: [@MainActor () -> Void] = []
     func whenUnlocked(_ action: @escaping @MainActor () -> Void) {
         guard isLocked else { action(); return }
-        Task { @MainActor in
-            await requestUnlock()
-            if !isLocked { action() }
-        }
+        pendingUnlockActions.append(action)
+        guard !isAuthenticating else { return }
+        Task { @MainActor in await requestUnlock() }
     }
 
     private func unlock() {
@@ -217,6 +240,8 @@ final class AppLockController: ObservableObject {
         rearmIdle()
         model.log(String(localized: "HyperEdit unlocked"))
         model.focusEditor()
+        let actions = pendingUnlockActions; pendingUnlockActions.removeAll()
+        actions.forEach { $0() }
     }
 
     private func logLine(for trigger: Trigger) -> String {
@@ -230,9 +255,10 @@ final class AppLockController: ObservableObject {
     }
 
     /// 열린 설정 창(SwiftUI Settings 장면 · `--show-settings` 창)과 Quick Append 패널을 닫는다.
-    /// 편집기(HyperTextView)를 담은 문서 창과 그 시트는 그대로 둔다 — 오버레이가 가린다.
+    /// 편집기(HyperTextView)를 담은 문서 창은 그대로 둔다(오버레이가 가린다); 그 창의 시트는 dismissSheets() 가 닫는다.
     private func closeAuxiliaryWindows() {
-        for w in NSApp.windows where w.isVisible && !(w is NSPanel) && w.sheetParent == nil && !Self.containsEditor(w.contentView) {
+        for w in NSApp.windows where w.isVisible && !(w is NSPanel) && w.sheetParent == nil && !Self.containsEditor(w.contentView)
+            && w.identifier?.rawValue != WebPDFRenderer.offscreenWindowIdentifier {   // 내보내기용 화면 밖 창은 작업 중일 수 있다
             w.close()
         }
         if model.quickAppend.isVisible { model.quickAppend.hide() }
@@ -249,11 +275,16 @@ final class AppLockController: ObservableObject {
     private func installLockedKeyMonitor() {
         guard lockedKeyMonitor == nil else { return }
         lockedKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
-            MainActor.assumeIsolated { self?.handleLockedKeyDown(e) }
+            // NSEvent 는 Sendable 이 아니다 — 격리 경계 안에서는 Bool 만 계산한다 (Swift 6 경고)
+            let code = e.keyCode, flags = e.modifierFlags, chars = e.charactersIgnoringModifiers, rep = e.isARepeat
+            let pass = MainActor.assumeIsolated { self?.lockedKeyPasses(code: code, flags: flags, chars: chars, isRepeat: rep) ?? true }
+            return pass ? e : nil
         }
     }
 
-    /// 잠긴 동안 통과시키는 키 등가물 (키 코드는 자판 배열과 무관 — 한글 입력 소스에서도 ⌘Q 가 동작한다): 종료 ⌘Q · 가리기 ⌘H / ⌥⌘H · 최소화 ⌘M · 닫기 ⌘W · 전체 화면 ⌃⌘F
+    /// 잠긴 동안 통과시키는 키 등가물: 종료 ⌘Q · 가리기 ⌘H / ⌥⌘H · 최소화 ⌘M · 닫기 ⌘W · 전체 화면 ⌃⌘F.
+    /// 판정은 문자(charactersIgnoringModifiers)로 한다 — 키 코드는 물리 위치라 AZERTY 에서는 13 이 z, Dvorak 에서는 `,` 라서 ⌘Z·⌘, 가 새어 나간다(QA 실측).
+    /// 키 코드는 문자가 라틴이 아닐 때(한글·일본어 입력 소스)만 쓴다
     static let allowedKeyEquivalents: [(keyCode: UInt16, char: String, flags: NSEvent.ModifierFlags)] = [
         (12, "q", .command), (4, "h", .command), (4, "h", [.command, .option]), (46, "m", .command), (13, "w", .command), (3, "f", [.command, .control]),
     ]
@@ -261,18 +292,22 @@ final class AppLockController: ObservableObject {
     /// 허용 목록의 ⌘ 키 등가물만 그대로 통과시켜 메뉴로 보내고(⌘V·⌘, 같은 나머지 ⌘ 조합과 편집기의 ⌘⌫ 키 바인딩은 버린다),
     /// Return / Enter / Space 는 잠금 해제 요청, 나머지(타이핑·⌃K 같은 Cocoa 편집 바인딩)는 버린다. 반환 nil = 이벤트 소비
     func handleLockedKeyDown(_ e: NSEvent) -> NSEvent? {
-        guard isLocked else { return e }
-        let flags = e.modifierFlags.intersection([.command, .shift, .option, .control])
+        lockedKeyPasses(code: e.keyCode, flags: e.modifierFlags, chars: e.charactersIgnoringModifiers, isRepeat: e.isARepeat) ? e : nil
+    }
+
+    /// 잠긴 동안 이 키 입력을 통과시킬지 (true = 통과). 통과시키지 않는 Return/Enter/Space 는 잠금 해제 요청
+    func lockedKeyPasses(code: UInt16, flags rawFlags: NSEvent.ModifierFlags, chars rawChars: String?, isRepeat: Bool) -> Bool {
+        guard isLocked else { return true }
+        let flags = rawFlags.intersection([.command, .shift, .option, .control])
         if flags.contains(.command) {
-            let chars = (e.charactersIgnoringModifiers ?? "").lowercased()
-            let typed = (e.characters ?? "").lowercased()
-            let allowed = Self.allowedKeyEquivalents.contains { $0.flags == flags && ($0.keyCode == e.keyCode || $0.char == chars || $0.char == typed) }
-            return allowed ? e : nil
+            let chars = (rawChars ?? "").lowercased()
+            let latin = !chars.isEmpty && chars.unicodeScalars.allSatisfy { $0.isASCII }
+            return Self.allowedKeyEquivalents.contains { $0.flags == flags && (latin ? $0.char == chars : $0.keyCode == code) }
         }
-        if !e.isARepeat, flags.isEmpty, [36, 76, 49].contains(e.keyCode) {   // return · keypad enter · space
+        if !isRepeat, flags.isEmpty, [36, 76, 49].contains(code) {   // return · keypad enter · space
             Task { @MainActor in await self.requestUnlock() }
         }
-        return nil
+        return false
     }
 
     // MARK: 잠긴 동안의 메뉴

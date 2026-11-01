@@ -70,6 +70,6 @@ struct SettingsView: View {
             AppLockSettingsSection(controller: model.appLock)   // applock: Touch ID 잠금
         }
         .formStyle(.grouped)
-        .frame(width: 560, height: 800)
+        .frame(width: 560, height: LaunchOptions.value("--settings-height").flatMap(Double.init) ?? 800)   // --settings-height <pt>: 스크린샷용(아래 섹션까지 한 장에)
     }
 }

@@ -36,7 +36,7 @@ public enum FileSearch {
 
     public static func search(_ query: String, in directory: URL, mask: String = "", options: SearchOptions, recursive: Bool = true,
                               maxFileSize: Int = 20_000_000, limit: Int = 5000, perFileLimit: Int = 500,
-                              isCancelled: () -> Bool = { false }) throws -> FileSearchResult {
+                              redactSecrets: Bool = false, isCancelled: () -> Bool = { false }) throws -> FileSearchResult {
         var result = FileSearchResult()
         guard !query.isEmpty else { return result }
         _ = try SearchEngine.search(query, in: "", index: LineIndex(), options: options)   // 정규식 검증
@@ -52,7 +52,9 @@ public enum FileSearch {
             guard let data = try? Data(contentsOf: url), !looksBinary(data) else { continue }
             result.filesScanned += 1
             let text = String(decoding: data, as: UTF8.self)
-            let hits = (try? SearchEngine.search(query, in: text, index: LineIndex(text: text), options: options, limit: perFileLimit)) ?? []
+            var hits = (try? SearchEngine.search(query, in: text, index: LineIndex(text: text), options: options, limit: perFileLimit)) ?? []
+            // secrets: 비밀 블록 안의 줄은 결과 목록에 평문으로 올리지 않는다 (줄 번호·일치 위치는 그대로) — 펜스가 있을 때만 스캔
+            if redactSecrets, !hits.isEmpty, text.contains("secret") { hits = SecretScanner.redacting(hits: hits, in: text) }
             if !hits.isEmpty {
                 result.filesMatched += 1
                 for h in hits {

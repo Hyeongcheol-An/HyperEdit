@@ -518,6 +518,7 @@
   "line %lld column %lld: %@": "dòng %lld cột %lld: %@",
   "not UTF-8 text": "không phải văn bản UTF-8",
   "not a grammar object: %@": "không phải đối tượng ngữ pháp: %@",
+  "not a regular file or larger than 1 MB — skipped": "không phải tệp thường hoặc lớn hơn 1 MB — đã bỏ qua",
   "nothing changed": "không có gì thay đổi",
   "stopped early at run %lld of %lld · %@": "dừng sớm ở lượt %lld trên %lld · %@",
   "unlock your documents": "mở khóa tài liệu của bạn",

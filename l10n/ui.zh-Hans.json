@@ -518,6 +518,7 @@
   "line %lld column %lld: %@": "第 %lld 行第 %lld 列：%@",
   "not UTF-8 text": "不是 UTF-8 文本",
   "not a grammar object: %@": "不是语法对象：%@",
+  "not a regular file or larger than 1 MB — skipped": "不是普通文件或大于 1 MB，已跳过",
   "nothing changed": "无更改",
   "stopped early at run %lld of %lld · %@": "在第 %lld 轮（共 %lld 轮）提前停止 · %@",
   "unlock your documents": "解锁你的文稿",

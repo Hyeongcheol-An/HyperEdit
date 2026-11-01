@@ -339,7 +339,11 @@ struct RibbonGroup<Content: View>: View {
             HStack(alignment: .top, spacing: 2) { content() }
                 .frame(maxHeight: .infinity, alignment: .top)
                 .environment(\.ribbonCompact, compactGroups.contains(title))
+            // l10n: 제목 폭을 버튼 열 폭(RibbonGroupSpec)으로 고정해 긴 번역(es "Espacios en blanco" 등)이 그룹을 넓히지 않게 — 넘치면 말줄임.
+            // (overlay + minimumScaleFactor 로 했더니 큰 편집이 4배 느려졌다 — 셀프테스트 실측. 고정 frame + lineLimit 은 측정 비용이 없다)
             Text(LocalizedStringKey(title)).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
+                .lineLimit(1).truncationMode(.tail)
+                .frame(width: max(24, RibbonGroupSpec.contentWidth(forTitle: title, compact: compactGroups.contains(title))))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
@@ -464,6 +468,14 @@ struct RibbonGroupSpec {
     func width(compact: Bool) -> CGFloat {
         let items = bigs + stacks
         return CGFloat(bigs) * 60 + CGFloat(stacks) * (compact ? 26 : 128) + CGFloat(max(0, items - 1)) * 2 + 16 + 1
+    }
+
+    /// 제목(= id)으로 그룹의 버튼 열 폭(패딩·구분선 제외) — RibbonGroup 이 제목 Text 의 폭을 여기에 맞춘다
+    static func contentWidth(forTitle title: String, compact: Bool) -> CGFloat {
+        for tab in RibbonTab.allCases {
+            if let g = tab.groups.first(where: { $0.id == title }) { return g.width(compact: compact) - 17 }
+        }
+        return 128
     }
 }
 

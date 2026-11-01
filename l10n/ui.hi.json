@@ -518,6 +518,7 @@
   "line %lld column %lld: %@": "पंक्ति %lld कॉलम %lld: %@",
   "not UTF-8 text": "UTF-8 टेक्स्ट नहीं है",
   "not a grammar object: %@": "व्याकरण ऑब्जेक्ट नहीं है: %@",
+  "not a regular file or larger than 1 MB — skipped": "सामान्य फ़ाइल नहीं है या 1 MB से बड़ी है — छोड़ दी गई",
   "nothing changed": "कुछ नहीं बदला",
   "stopped early at run %lld of %lld · %@": "रन %lld/%lld पर पहले ही रुका · %@",
   "unlock your documents": "अपने दस्तावेज़ अनलॉक करें",

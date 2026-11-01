@@ -42,6 +42,7 @@ struct ContentView: View {
         // appearance: 투명도 < 1 이면 바탕은 비우고(겹치면 더 불투명해진다) 표면마다 테마 배경을 α 로 칠한다. 창 isOpaque·블러는 맨 뒤의 WindowChromeView
         .background(model.surfaceColorIfOpaque(theme.background))
         .background { WindowChromeView(opacity: model.backgroundOpacity, blur: model.backgroundBlur).ignoresSafeArea() }
+        .modifier(AppLockAccessibilityHider(controller: model.appLock))   // applock: 잠긴 동안 아래 내용(편집기·패널·사이드바)을 접근성 트리에서도 숨긴다
         .overlay { AppLockOverlayHost(controller: model.appLock, theme: theme) }   // applock: 잠기면 리본·사이드바·편집기·패널·상태바 전부를 불투명 오버레이로 가린다
         .preferredColorScheme(theme.isDark ? .dark : .light)
         // 주의: .ignoresSafeArea(.top) 로 리본 탭 줄을 제목 표시줄 영역에 올리면 hiddenTitleBar 의 제목 표시줄이 탭을 가린다(실측) — 탭 줄은 그 아래에 둔다

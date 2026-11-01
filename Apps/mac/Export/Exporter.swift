@@ -138,6 +138,8 @@ extension AppModel {
 /// 인쇄가 실패하거나 시간 안에 끝나지 않으면 2순위 `createPDF`(한 장짜리) 로 폴백한다.
 @MainActor
 final class WebPDFRenderer: NSObject, WKNavigationDelegate {
+    /// 내보내기용 화면 밖 창의 identifier (AppLockController.closeAuxiliaryWindows 가 제외)
+    static let offscreenWindowIdentifier = "hyperedit.export.offscreen"
     struct Result: Sendable { var error: String?; var method: String? }
 
     static let margin: CGFloat = 36
@@ -166,6 +168,7 @@ final class WebPDFRenderer: NSObject, WKNavigationDelegate {
         wv.navigationDelegate = self
         // 보이지 않는 창에 붙인다 — WebKit 은 창에 없는 뷰의 레이아웃·인쇄를 미룬다. 화면 밖 위치, 키 창이 되지 않게 orderBack
         let w = NSWindow(contentRect: NSRect(x: -20000, y: -20000, width: contentWidth, height: paper.height), styleMask: [.borderless], backing: .buffered, defer: false)
+        w.identifier = NSUserInterfaceItemIdentifier(Self.offscreenWindowIdentifier)   // applock: 잠금이 보조 창을 닫을 때 이 창은 건너뛴다
         w.isReleasedWhenClosed = false
         w.isExcludedFromWindowsMenu = true
         w.collectionBehavior = [.transient, .ignoresCycle]

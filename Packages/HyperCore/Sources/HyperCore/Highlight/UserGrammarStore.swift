@@ -61,6 +61,9 @@ public final class UserGrammarStore: @unchecked Sendable {
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
         for f in files {
             do {
+                // 크기·종류를 먼저 본다 — 시작 시 메인 스레드에서 읽으므로 거대한 파일이나 장치 파일로의 링크가 시작을 멈추게 하면 안 된다
+                let rv = try f.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+                guard rv.isRegularFile == true, let size = rv.fileSize, size <= Self.maxFileSize else { throw UserGrammarError.tooLarge }
                 let data = try Data(contentsOf: f)
                 langs.append(try Self.decode(data, fileName: f.lastPathComponent))
             } catch let e as UserGrammarError {
@@ -117,6 +120,9 @@ public final class UserGrammarStore: @unchecked Sendable {
 
     // MARK: - 디코딩
 
+    /// 문법 파일 크기 상한 (1 MB — 단어 목록 수만 개도 수십 KB 다)
+    public static let maxFileSize = 1_000_000
+
     /// JSON 파일 내용 → 언어 정의 (주석·뒤따르는 쉼표 허용). 스키마 위반은 `UserGrammarError`.
     public static func decode(_ data: Data, fileName: String) throws -> CodeLanguage {
         guard let text = String(data: data, encoding: .utf8) else { throw UserGrammarError.notUTF8 }
@@ -125,8 +131,21 @@ public final class UserGrammarStore: @unchecked Sendable {
         catch let e as JSONFormatter.SyntaxError { throw UserGrammarError.syntax(line: e.line, column: e.column, detail: e.message) }
         let file: UserGrammarFile
         do { file = try JSONDecoder().decode(UserGrammarFile.self, from: Data(strict.utf8)) }
+        catch let e as DecodingError { throw UserGrammarError.notAnObject(Self.describe(e)) }
         catch { throw UserGrammarError.notAnObject(error.localizedDescription) }
         return try file.language()
+    }
+
+    /// DecodingError → 어느 키가 어떻게 틀렸는지 ("'mode': expected String") — 기본 localizedDescription 은 키 이름을 알려 주지 않는다
+    static func describe(_ e: DecodingError) -> String {
+        func path(_ ctx: DecodingError.Context) -> String { ctx.codingPath.map { $0.intValue.map { "[\($0)]" } ?? $0.stringValue }.joined(separator: ".") }
+        switch e {
+        case .typeMismatch(let t, let ctx): return "'\(path(ctx))': expected \(t)"
+        case .valueNotFound(let t, let ctx): return "'\(path(ctx))': expected \(t), got null"
+        case .keyNotFound(let k, let ctx): return "'\(path(ctx))': missing key '\(k.stringValue)'"
+        case .dataCorrupted(let ctx): return ctx.debugDescription
+        @unknown default: return e.localizedDescription
+        }
     }
 
     // MARK: - 예제 · README (첫 로드 때 폴더에 쓴다)
@@ -220,6 +239,7 @@ public enum UserGrammarError: Error, Equatable {
     case badBlockComment
     case badStringDelimiter(String)
     case tooManyMultilineStrings
+    case tooLarge
 
     public var message: String {
         switch self {
@@ -232,6 +252,7 @@ public enum UserGrammarError: Error, Equatable {
         case .badBlockComment: return String(localized: "'blockComment' must be [open, close]", bundle: .module)
         case .badStringDelimiter(let s): return String(localized: "'strings' entries must be a single character (got '\(s)')", bundle: .module)
         case .tooManyMultilineStrings: return String(localized: "'multilineStrings' has too many entries (max 127)", bundle: .module)
+        case .tooLarge: return String(localized: "not a regular file or larger than 1 MB — skipped", bundle: .module)
         }
     }
 }
@@ -281,7 +302,7 @@ struct UserGrammarFile: Decodable {
             }
             l.quotes = set
         }
-        l.multilineStrings = (multilineStrings ?? []).filter { !$0.isEmpty }.map(CodeLanguage.u)
+        l.multilineStrings = (multilineStrings ?? []).filter { !$0.isEmpty }.map(CodeLanguage.u).sorted { $0.count > $1.count }   // 긴 구분자 먼저 (`"""` 가 `"` 보다 앞에)
         guard l.multilineStrings.count <= 127 else { throw UserGrammarError.tooManyMultilineStrings }
         l.caseInsensitive = caseInsensitive ?? false
         func words(_ a: [String]?) -> Set<String> {

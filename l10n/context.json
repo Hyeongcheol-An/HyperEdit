@@ -6506,6 +6506,18 @@
   ],
   "limit": null
  },
+ "not a regular file or larger than 1 MB — skipped": {
+  "where": [
+   "String(localized:)"
+  ],
+  "files": [
+   "UserGrammarStore.swift"
+  ],
+  "target": "HyperCore",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
  "nothing changed": {
   "where": [
    "String(localized:)"

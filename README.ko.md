@@ -189,7 +189,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | 찾기 창 미리 채우기 |
 | `--column` · `--goto <line>` · `--preview` | 열 모드 켜기 / 줄로 이동 / 마크다운 미리보기 표시 |
-| `--show-settings` · `--snapshot-settings <png>` | 실행 뒤 설정 창 열기 / (`--snapshot` 과 함께) 설정 창을 PNG 로 캡처 — 언어별 스크린샷용 |
+| `--show-settings` · `--snapshot-settings <png>` · `--settings-height <pt>` | 실행 뒤 설정 창 열기 / (`--snapshot` 과 함께) 설정 창을 PNG 로 캡처 / 모든 섹션이 한 장에 들어가도록 창을 높게 — 언어별 스크린샷용 |
 | `--split [vertical\|horizontal]` · `--quick-append` | 편집기를 분할한 채 시작(기본 좌우) / 빠른 추가 창 열기 |
 | `--no-highlight` | 구문 색을 끈 채 시작 (스크린샷 비교용) |
 | `--fold <line>` · `--fold-all` · `--no-fold` | 해당 줄이 머리인 영역 접기 / 영역 스캔 뒤 모두 접기 / 접기 기능 끄기 |

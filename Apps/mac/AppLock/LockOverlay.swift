@@ -15,6 +15,12 @@ struct AppLockOverlayHost: View {
     }
 }
 
+/// 잠긴 동안 콘텐츠를 접근성 트리에서 숨긴다 — 오버레이는 그림일 뿐이라 VoiceOver·손쉬운 사용 권한을 가진 앱은 AXValue 로 본문을 읽을 수 있었다(QA)
+struct AppLockAccessibilityHider: ViewModifier {
+    @ObservedObject var controller: AppLockController
+    func body(content: Content) -> some View { content.accessibilityHidden(controller.isLocked) }
+}
+
 struct LockOverlay: View {
     @ObservedObject var controller: AppLockController
     let theme: Theme
@@ -60,6 +66,8 @@ struct LockOverlay: View {
                     .padding(.top, 10)
             }
             .padding(40)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text("HyperEdit is locked"))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())   // 클릭·스크롤이 아래 편집기로 가지 않는다

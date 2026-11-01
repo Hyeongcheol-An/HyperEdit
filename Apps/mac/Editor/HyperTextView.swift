@@ -44,7 +44,10 @@ final class HyperTextView: NSTextView {
     /// 문단 시작 오프셋이 지금 가려져 있는가 (셀프테스트용)
     var isOffsetMasked: ((Int) -> Bool)?   // secrets
     /// 복사·잘라내기가 끝난 뒤 복사된 범위를 알린다 — 비밀 줄이 섞였으면 클립보드 자동 소거
-    var onDidCopy: ((_ ranges: [NSRange]) -> Void)?   // secrets
+    /// secrets: 복사·잘라내기 범위가 비밀 줄과 겹치는지 — 편집 **전에** 판정한다(잘라낸 뒤에는 비밀 구간이 이미 옮겨져 블록 전체를 잘라내면 길이 0 이 된다)
+    var secretHitTest: ((_ ranges: [NSRange]) -> Bool)?
+    /// secrets: 비밀이 섞인 복사가 페이스트보드에 쓰인 뒤 호출 — 클립보드 소거 예약 (changeCount 는 이 시점 것을 잡는다)
+    var onDidCopySecret: (() -> Void)?
 
     /// 열 모드 (UltraEdit Alt+C): 켜져 있으면 드래그와 ⇧방향키가 사각형 블록을 만든다
     var columnModeEnabled = false {
@@ -154,6 +157,8 @@ final class HyperTextView: NSTextView {
     }
 
     private var indicatorUpdateScheduled = false
+    /// 네이티브 표시기를 우리가 .hidden 으로 숨겼는가 (AppKit 이 숨긴 것과 구분 — 되돌리기는 우리 것만)
+    private var indicatorHiddenByUs = false
     private var applyingIndicatorMode = false
     /// KVO 알림 안에서 표시기를 다시 설정하면 AppKit 의 setter 와 재진입해 무한 재귀가 된다
     /// (실측: setDisplayMode: 가 값을 저장하기 전에 setHidden: 을 불러 isHidden 관찰자가 먼저 깨어난다) → 다음 런루프 턴에 한 번만 처리
@@ -206,12 +211,23 @@ final class HyperTextView: NSTextView {
         guard let ind = insertionIndicator, !applyingIndicatorMode else { return }
         applyingIndicatorMode = true
         defer { applyingIndicatorMode = false }
+        let native: NSTextInsertionIndicator.DisplayMode = cursorBlinks ? .automatic : .visible
+        // AppKit 도 displayMode 를 바꾼다(숨길 때 .hidden, 다시 보일 때 .automatic). AppKit 이 숨긴 상태와 싸우면 KVO 가 턴마다 핑퐁하며 런루프를 점유한다
+        // (실측: 타이핑 2 → 20 ms, 큰 편집 4배). 그래서 "우리가 숨겼다" 는 플래그로만 되돌린다.
         switch cursorStyle {
         case .bar:
-            let wanted: NSTextInsertionIndicator.DisplayMode = cursorBlinks ? .automatic : .visible
-            if !ind.isHidden, ind.displayMode != wanted { ind.displayMode = wanted }
+            if indicatorHiddenByUs || !ind.isHidden {
+                if ind.displayMode != native { ind.displayMode = native }
+                indicatorHiddenByUs = false
+            }
         case .block, .underline:
-            if ind.displayMode != .hidden { ind.displayMode = .hidden }
+            if isInHugeParagraph(selectedRange().location) {
+                // 2만 자 넘는 문단에서는 caretRect 를 구하지 않아 블록/밑줄 캐럿을 그릴 수 없다 → 시스템 막대 캐럿으로 대신한다 (QA: 캐럿이 아예 사라졌었다)
+                if indicatorHiddenByUs { if ind.displayMode != native { ind.displayMode = native }; indicatorHiddenByUs = false }
+            } else {
+                if ind.displayMode != .hidden { ind.displayMode = .hidden }
+                indicatorHiddenByUs = true
+            }
         }
     }
 
@@ -383,6 +399,7 @@ final class HyperTextView: NSTextView {
         super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
         if !settingSelectionProgrammatically, multi != nil { multi = nil }
         restartBlink(); caretVisibilityChanged()   // appearance: 선택 유무에 따라 보이고 숨기며, 이전 자리를 지운다
+        if cursorStyle != .bar { applyInsertionIndicatorMode() }   // appearance: 거대 문단 안팎을 오갈 때 시스템 캐럿 폴백을 켜고 끈다
     }
 
     // MARK: - 멀티 상태 설정
@@ -498,7 +515,7 @@ final class HyperTextView: NSTextView {
         onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
         tracksUntrackedLineChanges = false
         hasFolds = nil; isOffsetHidden = nil; foldedSpan = nil; foldPills = nil; onFoldPillClick = nil
-        hasMasks = nil; isOffsetMasked = nil; onDidCopy = nil   // secrets
+        hasMasks = nil; isOffsetMasked = nil; secretHitTest = nil; onDidCopySecret = nil   // secrets
         snippetProvider = nil; macroSink = nil
         onBecomeActive = nil; onMultiChange = nil; onDidMoveToWindow = nil
     }
@@ -817,24 +834,25 @@ final class HyperTextView: NSTextView {
 
     override func copy(_ sender: Any?) {
         guard let m = multi, m.ranges.contains(where: { $0.length > 0 }) else {
-            let ranges = selectedRanges.map(\.rangeValue)
+            let hit = secretHitTest?(selectedRanges.map(\.rangeValue)) ?? false   // secrets
             super.copy(sender)
-            onDidCopy?(ranges)   // secrets
+            if hit { onDidCopySecret?() }
             return
         }
         let ns = string as NSString
         let text = m.ranges.map { ns.substring(with: $0) }.joined(separator: "\n")
         let pb = NSPasteboard.general
         pb.clearContents()
+        let hit = secretHitTest?(m.ranges) ?? false   // secrets: 멀티 캐럿·열 블록 복사
         pb.setString(text, forType: .string)
-        onDidCopy?(m.ranges)   // secrets: 멀티 캐럿·열 블록 복사
+        if hit { onDidCopySecret?() }
     }
 
     override func cut(_ sender: Any?) {
         guard let m = multi else {
-            let ranges = selectedRanges.map(\.rangeValue)
+            let hit = secretHitTest?(selectedRanges.map(\.rangeValue)) ?? false   // secrets: 잘라내기 전에 판정 (super.cut 이 copy 를 거쳐도 그쪽 판정은 편집 전이라 같다)
             super.cut(sender)
-            onDidCopy?(ranges)   // secrets (AppKit 의 cut 이 copy 를 거치면 두 번 통지되지만 소거 예약은 마지막 것으로 갈음된다)
+            if hit { onDidCopySecret?() }
             return
         }
         guard m.ranges.contains(where: { $0.length > 0 }) else { return }   // 길이 0 캐럿뿐이면 지울 선택이 없다 (앞 글자를 지우면 안 됨)

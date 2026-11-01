@@ -77,7 +77,9 @@ final class UserGrammarTests: XCTestCase {
         XCTAssertEqual(failure("{\"name\": \"A\", \"extensions\": [\"a\"], \"mode\": \"prose\"}"), .badMode("prose"))
         XCTAssertEqual(failure("{\"name\": \"A\", \"extensions\": [\"a\"], \"blockComment\": [\"/*\"]}"), .badBlockComment)
         XCTAssertEqual(failure("{\"name\": \"A\", \"extensions\": [\"a\"], \"strings\": [\"''\"]}"), .badStringDelimiter("''"))
-        if case .notAnObject = failure("{\"name\": \"A\", \"extensions\": [\"a\"], \"keywords\": \"let\"}") {} else { XCTFail("type mismatch should be notAnObject") }
+        if case .notAnObject(let detail) = failure("{\"name\": \"A\", \"extensions\": [\"a\"], \"keywords\": \"let\"}") {
+            XCTAssertTrue(detail.contains("'keywords'"), "타입 오류는 어느 키인지 말해야 한다: \(detail)")
+        } else { XCTFail("type mismatch should be notAnObject") }
         if case .syntax(let line, let column, _)? = failure("{\"name\": \"A\",\n \"extensions\": [\"a\"") { XCTAssertEqual(line, 2); XCTAssertGreaterThan(column, 0) } else { XCTFail("truncated JSON should be a syntax error") }
         if case .notAnObject = failure("[1, 2]") {} else { XCTFail("array should be notAnObject") }
         XCTAssertNil(failure("{\"name\": \"A\", \"extensions\": [\"a\"], \"blockComment\": []}"), "빈 blockComment 는 없음과 같다")
@@ -85,6 +87,34 @@ final class UserGrammarTests: XCTestCase {
         XCTAssertTrue(UserGrammarError.missingName.message.contains("'name'"))
         XCTAssertTrue(UserGrammarError.badMode("x").message.contains("'mode'") && UserGrammarError.badMode("x").message.contains("'x'"))
         XCTAssertTrue(UserGrammarError.syntax(line: 3, column: 7, detail: "d").message.contains("3") && UserGrammarError.syntax(line: 3, column: 7, detail: "d").message.contains("7"))
+    }
+
+    func testMultilineDelimitersAreTriedLongestFirstAndBlockCommentBeatsLineComment() throws {
+        // `"` 를 `"""` 보다 앞에 적어도 `"""` 가 먼저 매칭되어야 여러 줄 문자열이 열린다
+        let py = try UserGrammarStore.decode(Data("""
+        {"name": "PyLike", "extensions": ["pyl"], "strings": ["\\""], "multilineStrings": ["\\"", "\\"\\"\\""]}
+        """.utf8), fileName: "p.json")
+        XCTAssertEqual(py.multilineStrings.first?.count, 3)
+        let g = CodeGrammar(language: py)
+        let r = g.scanLines(in: "s = \"\"\"a\nb\"\"\"\nc = 1").map(\.exiting)
+        XCTAssertEqual(r, [.string(1), .normal, .normal])
+        // Lua 처럼 줄 주석(`--`)이 블록 주석 시작(`--[[`)의 앞부분인 언어: 블록 주석이 먼저 열려야 한다
+        let lua = try UserGrammarStore.decode(Data("""
+        {"name": "LuaLike", "extensions": ["lual"], "lineComments": ["--"], "blockComment": ["--[[", "]]"]}
+        """.utf8), fileName: "l.json")
+        let lg = CodeGrammar(language: lua)
+        XCTAssertEqual(lg.scanLines(in: "--[[ a\nb ]] x = 1\n-- line").map(\.exiting), [.blockComment, .normal, .normal])
+    }
+
+    func testLoadSkipsOversizedFiles() {
+        let dir = tempDir()
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let big = "{\"name\": \"Big\", \"extensions\": [\"big\"], \"keywords\": [" + String(repeating: "\"k\",", count: 300_000) + "\"z\"]}"
+        try? big.write(to: dir.appendingPathComponent("big.json"), atomically: true, encoding: .utf8)
+        let store = UserGrammarStore()
+        XCTAssertEqual(store.load(directory: dir), 0, "1 MB 넘는 파일은 읽지 않는다")
+        XCTAssertEqual(store.problems.count, 1)
+        XCTAssertEqual(store.problems.first?.message, UserGrammarError.tooLarge.message)
     }
 
     func testLoadCreatesFolderWithExampleAndReadme() {

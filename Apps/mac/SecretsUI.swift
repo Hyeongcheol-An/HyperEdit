@@ -128,6 +128,21 @@ final class SecretsStore: ObservableObject {
         NSPasteboard.general.clearContents()
         model?.log(String(localized: "Clipboard cleared"))
     }
+
+    /// 앱 종료 직전: 예약된 소거가 있으면 기다리지 않고 지금 비운다 (타이머는 프로세스와 함께 사라진다)
+    func flushPendingClipboardClear() {
+        guard clipboardClearPending else { return }
+        clipboardTask?.cancel(); clipboardTask = nil
+        clipboardClearPending = false
+        NSPasteboard.general.clearContents()
+        model?.log(String(localized: "Clipboard cleared (secret)"))
+    }
+
+    /// 앱 잠금: 드러낸 비밀을 다시 가리고 예약된 클립보드 소거를 바로 실행한다 — 잠긴 화면 뒤에 평문이 남지 않게
+    func lockdown() {
+        remaskAll(automatic: true, quiet: true)
+        flushPendingClipboardClear()
+    }
 }
 
 extension Notification.Name {

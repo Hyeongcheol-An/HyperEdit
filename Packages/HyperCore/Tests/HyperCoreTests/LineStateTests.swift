@@ -74,6 +74,9 @@ final class LineStateCodeTests: XCTestCase {
         XCTAssertEqual(lines(js, "a = `x\\`y`").map(\.exit), [.normal], "이스케이프된 백틱은 닫지 않는다")
         let go = CodeGrammar(language: .go)
         XCTAssertEqual(lines(go, "s := `raw\nline` + \"x\"").map(\.exit), [.string(1), .normal])
+        // Go raw 문자열에는 이스케이프가 없다 — `C:\` 처럼 백슬래시로 끝나도 닫힌다 (QA: 파일 끝까지 문자열 색이 번졌다)
+        XCTAssertEqual(lines(go, "p := `C:\\dir\\`\nx := 1").map(\.exit), [.normal, .normal])
+        XCTAssertFalse(lines(go, "p := `C:\\dir\\`\nx := 1")[1].tokens.contains { $0.hasSuffix(":string") }, "닫힌 뒤의 줄은 보통 코드")
         // 셸의 백틱은 한 줄 (여러 줄 구분자가 아님)
         XCTAssertEqual(lines(CodeGrammar(language: .shell), "x=`cmd").map(\.exit), [.normal])
     }

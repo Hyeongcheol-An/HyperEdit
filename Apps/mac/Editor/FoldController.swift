@@ -550,6 +550,8 @@ final class FoldedLayoutFragment: NSTextLayoutFragment {
 final class FoldLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
     weak var controller: FoldController?
 
+    // 문단마다 불리는 뜨거운 경로 — @MainActor 클래스 + @preconcurrency 적합으로 바꿨더니 호출마다 격리 검사가 들어가 큰 편집(24,000줄 주석 해제)이 4배 느려졌다(셀프테스트 실측).
+    // 그래서 비격리 클래스 + assumeIsolated 를 유지한다 (NSTextLayoutFragment Sendable 경고는 Swift 5 모드에서 무해).
     func textLayoutManager(_ textLayoutManager: NSTextLayoutManager, textLayoutFragmentFor location: NSTextLocation, in textElement: NSTextElement) -> NSTextLayoutFragment {
         let range = textElement.elementRange
         return MainActor.assumeIsolated { () -> NSTextLayoutFragment in

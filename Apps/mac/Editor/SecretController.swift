@@ -56,7 +56,13 @@ final class SecretController {
         fold.onEdit = { [weak self] edits, applied in self?.textWillChange(edits, alreadyApplied: applied) }
         textView.hasMasks = { [weak self] in self?.hasMasks ?? false }
         textView.isOffsetMasked = { [weak self] off in self?.isMasked(paragraphStart: off) ?? false }
-        textView.onDidCopy = { [weak self] ranges in self?.didCopy(ranges) }
+        textView.secretHitTest = { [weak self] ranges in self?.copyHitsSecret(ranges) ?? false }
+        textView.onDidCopySecret = { [weak self] in
+            guard let self, self.store.maskEnabled else { return }
+            // 클립보드 관리자(Paste·Maccy 등)가 기록하지 않도록 표식 — nspasteboard.org 관례
+            NSPasteboard.general.setString("", forType: NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"))
+            self.store.scheduleClipboardClear()
+        }
         // @Published 는 willSet 에 발행 — 값이 바뀐 뒤(다음 턴)에 프래그먼트를 다시 만든다
         store.$revealedAll.dropFirst().removeDuplicates()
             .sink { [weak self] _ in DispatchQueue.main.async { self?.invalidateAllSpans() } }
@@ -143,20 +149,24 @@ final class SecretController {
         if let n = now { invalidate(spans[n]) }
     }
 
-    /// 복사·잘라내기 뒤: 복사 범위가 비밀 줄과 겹치면 클립보드 소거 예약
-    private func didCopy(_ ranges: [NSRange]) {
-        guard store.maskEnabled, !spans.isEmpty else { return }
-        let hit = ranges.contains { r in
-            if r.length == 0 { return spanIndex(containing: r.location) != nil }
-            return spans.contains { s in s.end > s.start && r.location < s.end && NSMaxRange(r) > s.start }
+    /// 복사·잘라내기 **전** 판정: 복사 범위가 비밀 줄과 겹치는가. 길이 0 범위는 아무것도 복사하지 않으므로 겹침으로 보지 않는다
+    /// (캐럿만 블록 안에 둔 ⌘C 를 겹침으로 보면 다른 앱이 넣어 둔 클립보드를 지우게 된다 — QA)
+    private func copyHitsSecret(_ ranges: [NSRange]) -> Bool {
+        guard store.maskEnabled, !spans.isEmpty else { return false }
+        return ranges.contains { r in
+            r.length > 0 && spans.contains { s in s.end > s.start && r.location < s.end && NSMaxRange(r) > s.start }
         }
-        if hit { store.scheduleClipboardClear() }
     }
 
     // MARK: 편집 추적 (편집 전 좌표 — FoldController.onEdit)
 
     private func textWillChange(_ edits: [(NSRange, String)], alreadyApplied: Bool) {
         editGeneration &+= 1
+        // 붙여넣기·undo 로 펜스가 통째로 들어오면 디바운스(250 ms) 스캔을 기다리지 않고 다음 턴에 동기 스캔 — 새 블록이 평문으로 보이는 시간을 없앤다.
+        // 검사는 UTF-8 바이트로 (String.contains 는 자소 단위라 2.7 MB 교체에서 수백 ms — 셀프테스트 실측), 10자 미만 교체(타이핑)는 건너뛴다
+        if store.maskEnabled, edits.contains(where: { $0.1.utf8.count >= 10 && Self.mentionsSecretFence($0.1) }) {
+            DispatchQueue.main.async { [weak self] in self?.scanNow(synchronous: true) }
+        }
         guard !spans.isEmpty else { return }
         let before = spans
         for (r, s) in edits.sorted(by: { $0.0.location > $1.0.location }) where r.location != NSNotFound {
@@ -169,6 +179,20 @@ final class SecretController {
             guard let self else { return }
             for s in changed { self.invalidate(s) }
             self.fold?.updateLayoutDelegate()
+        }
+    }
+
+    /// "secret" 과 펜스 기호가 모두 들어 있는가 — UTF-8 바이트 검색 (memmem 수준)
+    private static func mentionsSecretFence(_ s: String) -> Bool {
+        var s = s
+        return s.withUTF8 { buf -> Bool in
+            func has(_ needle: StaticString) -> Bool {
+                needle.withUTF8Buffer { n -> Bool in
+                    guard buf.count >= n.count, let base = buf.baseAddress, let nb = n.baseAddress else { return false }
+                    return memmem(base, buf.count, nb, n.count) != nil
+                }
+            }
+            return has("secret") && (has("```") || has("~~~"))
         }
     }
 

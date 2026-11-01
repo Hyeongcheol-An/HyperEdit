@@ -189,7 +189,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | Show a sidebar / bottom-panel tab, or hide the sidebar / bottom panel |
 | `--search <text>` · `--replace [--replace-with <text>]` · `--find-in-files` | Pre-fill the Find panel |
 | `--column` · `--goto <line>` · `--preview` | Turn column mode on / jump to a line / show the Markdown preview |
-| `--show-settings` · `--snapshot-settings <png>` | Open the Settings window after launch / capture it to PNG (with `--snapshot`) — used for the per-language screenshots |
+| `--show-settings` · `--snapshot-settings <png>` · `--settings-height <pt>` | Open the Settings window after launch / capture it to PNG (with `--snapshot`) / make the window taller so every section fits in one screenshot — used for the per-language screenshots |
 | `--split [vertical\|horizontal]` · `--quick-append` | Start with the editor split (side by side by default) / open the Quick Append panel |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
 | `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |

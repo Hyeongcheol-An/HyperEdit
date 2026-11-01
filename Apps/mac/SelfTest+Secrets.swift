@@ -142,6 +142,33 @@ extension SelfTest {
         model.send(.undo); await wait(600)
         model.jump(toLine: 1); await wait(200)
         check((text() as String).contains("PIN 1234") && masked(pin), "secrets: undo restores the cut line, still masked")
+        // 5b. 빈 선택 ⌘C 는 아무것도 복사하지 않으므로 소거를 예약하면 안 된다 (다른 앱의 클립보드를 지우게 된다 — QA)
+        pb.clearContents(); pb.setString("from-another-app", forType: .string)
+        model.send(.perform { tv in tv.setSelectedRange(NSRange(location: lineStart(pin), length: 0)); tv.copy(nil) }); await wait(100)
+        check(!store.clipboardClearPending, "secrets: ⌘C with an empty selection inside a block schedules nothing (clipboard now '\(pb.string(forType: .string) ?? "nil")')")
+        // 5c. 블록 전체(펜스 포함) 잘라내기 — 판정은 편집 전에 해야 한다 (편집 뒤에는 구간이 사라져 있다)
+        let whole = NSRange(location: lineStart(fence), length: NSMaxRange(lineRange(closing)) - lineStart(fence))
+        model.send(.perform { tv in tv.setSelectedRange(whole); tv.cut(nil) }); await wait(200)
+        check(store.clipboardClearPending && pb.string(forType: .string)?.contains("ACCOUNT 9876") == true, "secrets: cutting the whole block (fences included) schedules clearing")
+        check(pb.types?.contains(NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")) == true, "secrets: a secret copy carries the ConcealedType marker for clipboard managers")
+        await wait(600)
+        check(pb.string(forType: .string) == nil, "secrets: whole-block cut is cleared")
+        model.send(.undo); await wait(900)
+        model.jump(toLine: 1); await wait(200)
+        check((text() as String).contains("PIN 1234") && store.blockCount == 1 && masked(pin), "secrets: undo restores the whole block, masked again (\(store.blockCount) block)")
+        // 5d. 북마크 미리보기(북마크 JSON 에 저장)는 비밀 줄의 평문을 남기지 않는다
+        model.jump(toLine: acct); await wait(150); model.toggleBookmarkAtCaret(); await wait(150)
+        let bm = model.bookmarks.bookmarks.first { $0.line == acct }
+        check(bm?.preview == SecretScanner.defaultMask, "secrets: bookmark preview of a secret line is •••••••• ('\(bm?.preview ?? "none")')")
+        model.toggleBookmarkAtCaret(); await wait(150)
+        model.jump(toLine: 1); await wait(150)
+        // 5e. 파일에서 찾기도 비밀 줄은 마스크로 (현재 문서를 포함한 모든 파일)
+        model.saveNow(); await wait(300)
+        let savedMask = model.fileMask, savedQuery = model.searchQuery
+        model.fileMask = ""; model.searchQuery = "ACCOUNT 9876"; model.runFindInFiles(); await wait(1500)
+        check(!model.fileHits.isEmpty && model.fileHits.allSatisfy { $0.lineText == SecretScanner.defaultMask },
+              "secrets: Find in Files masks secret lines in every file (\(model.fileHits.count) hit(s), '\(model.fileHits.first?.lineText ?? "none")')")
+        model.fileMask = savedMask; model.searchQuery = savedQuery
 
         // 6. 찾기 결과 redaction (매치·줄 번호는 그대로, 미리보기 텍스트만 마스크)
         model.searchQuery = "9876"; model.runSearch(); await wait(700)

@@ -252,6 +252,7 @@ final class AppModel: ObservableObject {
         log(String(localized: "HyperEdit started · \(doc.url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))"))
         reportGrammarLoad()   // grammar: 건너뛴 문법 파일을 출력 패널에
         applyLaunchOptions()
+        _ = appLock   // applock: 여기서 만든다 — 첫 ContentView.body 평가 중에 만들어지면 시작 잠금의 isLocked/log 변경이 뷰 업데이트 안에서 일어난다 (코드 리뷰)
     }
 
     private func bind() {
@@ -422,7 +423,7 @@ final class AppModel: ObservableObject {
 
     func runFindInFiles() {
         fileSearchTask?.cancel()
-        let q = searchQuery, opts = searchOptions, dir = fileSearchDirectory, mask = fileMask
+        let q = searchQuery, opts = searchOptions, dir = fileSearchDirectory, mask = fileMask, redact = secrets.maskEnabled   // secrets
         guard !q.isEmpty else { fileHits = []; fileSearchSummary = ""; return }
         isFileSearching = true
         fileSearchSummary = String(localized: "Searching…")
@@ -431,7 +432,7 @@ final class AppModel: ObservableObject {
             let flag = CancelFlag()
             let outcome: (FileSearchResult?, String?) = await withTaskCancellationHandler {
                 await Task.detached(priority: .userInitiated) {
-                    do { return (try FileSearch.search(q, in: dir, mask: mask, options: opts, isCancelled: { flag.isSet }), nil) }
+                    do { return (try FileSearch.search(q, in: dir, mask: mask, options: opts, redactSecrets: redact, isCancelled: { flag.isSet }), nil) }
                     catch SearchError.invalidRegex(let m) { return (nil, String(localized: "Regex error: \(m)")) }
                     catch { return (nil, error.localizedDescription) }
                 }.value
@@ -548,7 +549,9 @@ final class AppModel: ObservableObject {
         let r = document.lineIndex.range(ofLine: line)
         let ns = document.textStorage.string as NSString
         let safe = NSIntersectionRange(r, NSRange(location: 0, length: ns.length))
-        let preview = String(ns.substring(with: safe).trimmingCharacters(in: .whitespaces).prefix(60))
+        var preview = String(ns.substring(with: safe).trimmingCharacters(in: .whitespaces).prefix(60))
+        // secrets: 비밀 블록 안의 줄은 미리보기(북마크 JSON 에 저장됨)에 평문을 남기지 않는다
+        if secrets.maskEnabled, SecretScanner.intersectsContent(safe, blocks: SecretScanner.blocks(in: ns), textLength: ns.length) { preview = SecretScanner.defaultMask }
         let added = bookmarks.toggle(line: line, preview: preview)
         log(added ? String(localized: "Bookmark added · line \(line)") : String(localized: "Bookmark removed · line \(line)"))
     }

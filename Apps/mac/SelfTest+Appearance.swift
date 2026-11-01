@@ -96,6 +96,22 @@ extension SelfTest {
         }
         model.cursorStyle = .bar; model.cursorBlink = true; await wait(200)
 
+        // 3b. 2만 자 넘는 문단에서는 블록/밑줄 캐럿을 그릴 수 없다 → 시스템 막대 캐럿으로 대신하고, 밖으로 나오면 다시 숨긴다 (QA: 캐럿이 아예 사라졌었다)
+        if let ind = tv.insertionIndicator {
+            let hugeAt = (tv.string as NSString).length
+            let huge = "\n" + String(repeating: "x", count: HyperTextView.hugeParagraphLength + 500)
+            model.send(.perform { tv in tv.breakUndoCoalescing(); tv.insertText(huge, replacementRange: NSRange(location: hugeAt, length: 0)) }); await wait(300)
+            model.cursorStyle = .block; await wait(200)
+            model.send(.perform { tv in tv.setSelectedRange(NSRange(location: hugeAt + 100, length: 0)) }); await wait(200)
+            check(ind.displayMode != .hidden, "appearance: block caret inside a huge paragraph falls back to the native caret (mode \(ind.displayMode.rawValue))")
+            model.send(.perform { tv in tv.setSelectedRange(NSRange(location: 0, length: 0)) }); await wait(200)
+            check(ind.displayMode == .hidden, "appearance: native caret hidden again outside the huge paragraph")
+            model.cursorStyle = .bar; await wait(200)
+            check(ind.displayMode != .hidden, "appearance: switching back to the bar caret restores the native indicator")
+            model.send(.undo); await wait(300)
+            check((tv.string as NSString).length == hugeAt, "appearance: huge paragraph removed again")
+        }
+
         // 4. 투명도 0.8 → 창·편집기·패널 반투명
         model.backgroundOpacity = 0.8; await wait(400)
         check(abs((d.object(forKey: BackgroundOpacity.defaultsKey) as? Double ?? 0) - 0.8) < 0.001, "appearance: opacity 0.8 stored")

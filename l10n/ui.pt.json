@@ -518,6 +518,7 @@
   "line %lld column %lld: %@": "linha %lld coluna %lld: %@",
   "not UTF-8 text": "não é texto UTF-8",
   "not a grammar object: %@": "não é um objeto de gramática: %@",
+  "not a regular file or larger than 1 MB — skipped": "não é um arquivo comum ou tem mais de 1 MB — ignorado",
   "nothing changed": "nada mudou",
   "stopped early at run %lld of %lld · %@": "interrompida na execução %lld de %lld · %@",
   "unlock your documents": "desbloquear seus documentos",
