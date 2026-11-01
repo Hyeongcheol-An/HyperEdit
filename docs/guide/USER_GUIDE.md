@@ -169,7 +169,7 @@ Because the panel does not activate HyperEdit, it also works from any other app 
 
 - **Markdown Preview (⇧⌘P)** splits the window with a rendered view of the current file on the right: headings, lists and task lists, tables, fenced code, quotes, links and images, styled with the current theme. It follows the editor's scroll position and re-renders shortly after you stop typing. Links open in your browser; raw HTML in the file is shown as text, never executed. Files over 2 MB show a notice instead of a preview. The status bar shows **MD** while it is on.
 - **Syntax Colors (⌃⌘H)** are chosen by file extension and shown in the status bar. Notes and Markdown get a light rule set — URLs, dates and times, headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 programming languages get comments, strings, numbers, keywords, function and type names. Colors are drawn on the visible lines only, so they never change the file or slow down typing. Constructs that span lines keep their color until they close: block comments (`/* */`, `<!-- -->`), multi-line strings (Swift and Python `"""`, JavaScript template literals, Go raw strings, Rust `r#"…"#`) and Markdown fenced code blocks, which are colored with the language named in the info string (```` ```python ````). Typing an opening or closing delimiter recolors the lines below immediately.
-- **User-defined grammars.** To color a language HyperEdit does not know, or to change a built-in one, put a `*.json` file in `~/Library/Application Support/HyperEdit/grammars/`. **File › Open Grammars Folder…** creates the folder with an `example.json` you can copy and a README that explains every key — `name`, `extensions` or `filenames`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **File › Reload Grammars** applies your changes without restarting; the status bar shows the grammar's name, Toggle Comment (⌘/) uses its comment markers, and a file that fails to parse is skipped with a message in the Output panel.
+- **User-defined grammars.** To color a language HyperEdit does not know, or to change a built-in one, put a `*.json` file in `~/Library/Application Support/HyperEdit/grammars/`. HyperEdit creates the folder on first launch with an `example.json` you can copy and a README that explains every key — `name`, `extensions` or `filenames`, `mode`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **File › Reload Grammars** applies your changes without restarting; the status bar shows the grammar's name, Toggle Comment (⌘/) uses its comment markers, and a file that fails to parse is skipped with a message in the Output panel.
 
 ## 16. Themes, fonts and CJK text
 
@@ -203,6 +203,7 @@ Open Settings with **⌘,** or the Advanced tab.
 | Quick Append | Global shortcut (Off / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), timestamp heading on/off |
 | Appearance | Cursor style (Bar / Block / Underline), blink, window opacity 50–100 %, blur behind window |
 | Secrets | Mask secret blocks, re-mask after (10 / 30 / 60 s / Never), clear clipboard after copying a secret (Off / 10 / 30 / 60 s) |
+| App Lock | Require Touch ID or password to open HyperEdit (off), lock after inactivity (Never / 1 / 5 / 15 / 30 minutes), lock when the Mac sleeps or the screen locks (on; needs the first option) |
 
 Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the split and the ribbon tab are remembered automatically.
 
@@ -263,7 +264,7 @@ Nothing is written next to your documents, and nothing leaves your Mac.
 
 ## 22. Known limitations
 
-- Syntax colors follow block comments, multi-line strings and Markdown fences across lines, but only same-open-and-close string delimiters and one block-comment pair per language are supported, and user grammars are word lists without regular-expression rules. The Markdown preview is a view, not an editor.
+- Syntax colors follow block comments, multi-line strings and Markdown fences across lines, but, apart from Rust raw strings, only same-open-and-close string delimiters and one block-comment pair per language are supported, and user grammars are word lists without regular-expression rules. The Markdown preview is a view, not an editor.
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). Calculate and Align Columns handle plain arithmetic and tab / pipe tables only.
 - Snippets, macros and user grammars are edited as JSON files; there is no graphical editor for them.
 - Export writes the whole document only, without selection or multi-file export, page or font options, or a PDF table of contents.
@@ -288,7 +289,7 @@ Every line between the fences is drawn as a blank bar with `••••••�
 
 - **Reveal Secrets (⌥⌘S)** in the Edit menu shows every block at once; after **Settings › Secrets › Re-mask after** (10 / 30 / 60 s, default 30 s, or Never) they are masked again and the Output panel logs it. The status bar shows `REVEALED` meanwhile and `•••• N` while N blocks are masked. **Edit › Mask Secret Blocks** turns masking off entirely.
 - Secret lines are shown as `••••••••` in the Find Results list (the match and the line number still work), skipped by the Outline and Timeline, and redacted in the Markdown preview and in HTML / PDF exports.
-- **Clipboard auto-clear.** When a copy or cut overlaps a secret line — including multi-caret and column-mode copies — the clipboard is cleared after **Settings › Secrets › Clear clipboard after copying a secret** (Off / 10 / 30 / 60 s, default 30 s), unless you copied something else in the meantime. **Edit › Clear Clipboard** clears it immediately.
+- **Clipboard auto-clear.** When a copy or cut overlaps a secret line — including multi-caret and column-mode copies — the clipboard is cleared after **Settings › Secrets › Clear clipboard after copying a secret** (Off / 10 / 30 / 60 s, default 30 s), unless you copied something else in the meantime. **Edit › Clear Clipboard** clears it immediately, and turning masking off also turns the auto-clear off.
 - Secret blocks fold like any fenced block (⌥⌘←).
 
 > Masking is not encryption. The file, autosaves and snapshots are plain text, and anyone who has the file can read the secrets. The feature keeps them off your screen, screenshots, find results, preview and exports while you work.

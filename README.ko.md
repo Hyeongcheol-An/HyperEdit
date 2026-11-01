@@ -55,12 +55,12 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - 줄 번호 거터, 현재 줄 강조, 자동 줄바꿈(⌥Z), 줄 번호 표시(⌥⌘L), 확대/축소(⌘= / ⌘- / ⌘0).
 - 파일별로 마지막 캐럿·스크롤 위치 복원. ⌃⌘E로 문서 끝으로, ⌘L로 줄 이동.
 - **접기(⌥⌘← / ⌥⌘→, 모두 접기·펼치기 ⌥⇧⌘← / ⌥⇧⌘→):** 어떤 줄은 그 아래 더 깊이 들여쓴 줄들을 접고(빈 줄 무시), 마크다운 `#` 헤딩은 같거나 높은 레벨의 다음 헤딩 직전까지 접으며(펜스 코드 블록도 접힘), 코드에서 `{`, `[`, `(` 로 끝나는 줄은 닫는 괄호 줄까지 접습니다. 거터의 화살표나 `⋯ N lines` 표식을 클릭해도 접고 펼칩니다. 캐럿이 접힌 줄로 들어가면(찾기, 줄 이동, 북마크, 실행 취소) 자동으로 펼쳐지고, ↑ / ↓ 는 접힌 구간을 건너뜁니다. 접힘은 편집을 따라갑니다 — 머리 줄 안의 입력, 위쪽 줄 삽입·삭제, 실행 취소 — 그리고 세션 동안 유지됩니다.
-- **스크롤바 마커:** 편집기 오른쪽 가장자리 12 pt 띠에 검색 매치(강조색 눈금), 북마크(경고색), 캐럿 줄, 접힌 머리 줄을 상대 위치로 표시합니다. 문서가 한 화면에 들어가면 숨겨집니다. 보기 메뉴 → 스크롤바 마커, 또는 레이아웃 탭 패널 그룹.
+- **스크롤바 마커:** 편집기 오른쪽 가장자리 12 pt 띠에 검색 매치(강조색 눈금), 북마크(경고색), 캐럿 줄, 접힌 머리 줄을 상대 위치로 표시합니다. 문서가 한 화면에 들어가면 숨겨집니다. 보기 메뉴 → 스크롤바 마커, 또는 레이아웃 탭 접기 그룹.
 - F7은 `## 2026-10-30 (금) 14:05` 같은 타임스탬프 헤딩을 삽입합니다. 요일은 시스템 로케일을 따릅니다(영어 환경이면 `(Fri)`).
 - **편집기 분할(⌘\\)** — 같은 문서를 두 편집기로 좌우 또는 상하로 나란히 봅니다(보기 › 분할, 레이아웃 탭). 두 뷰는 같은 텍스트와 하나의 undo 스택을 공유하지만(한쪽에서 입력, 다른 쪽에서 ⌘Z) 스크롤은 따로 하고, 명령·상태바·마크다운 미리보기는 마지막으로 클릭한 뷰를 따라갑니다. ⌥⌘\\ 로 다른 분할로 포커스를 옮기며, 켜져 있는 동안 상태바에 **SPLIT**이 표시됩니다.
 - **빠른 추가(⇧⌘N, 다른 앱에서는 ⌃⌥N):** HyperEdit를 활성화하지 않는 작은 떠 있는 창입니다. 메모를 쓰고 ⌘↩를 누르면 문서 끝에 덧붙여지고(기본으로 타임스탬프 헤딩 포함) 바로 저장되며 undo 한 번으로 되돌릴 수 있습니다. 창은 숨겨지고 포커스는 쓰던 앱으로 돌아갑니다. Esc로 닫으면 쓰던 글은 다음에 이어집니다. 전역 단축키(끔 / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N)는 설정에서 고르며 손쉬운 사용 권한이 필요 없습니다.
 - **구문 색(⌃⌘H)** — 파일 확장자로 언어를 고르고 상태바에 표시합니다. 메모·마크다운은 일부러 가벼운 규칙만 — URL, ISO 날짜·시각, `#` 헤딩, `[제목]` 줄, 목록 기호와 `[ ]` / `[x]` 체크박스, `#태그`, `키:` 라벨, `**굵게**`, `` `코드` ``, `⇒ → ->` 화살표 — 를 칠하고, 코드 20여 종(Swift, Python, JavaScript/TypeScript, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI)은 주석·문자열·숫자·키워드·함수·타입 이름을 칠합니다. 색은 테마의 `syntax` 팔레트에서 오고 TextKit 2 렌더링 속성으로 보이는 줄에만 입히므로 파일·undo·타이핑 속도에 영향이 없습니다. 블록 주석(`/* */`, `<!-- -->`), 여러 줄 문자열(Swift·Python 의 `"""`, JavaScript 템플릿 리터럴, Go raw 문자열, Rust `r#"…"#`), 마크다운 펜스 코드 블록은 닫힐 때까지 모든 줄이 색을 유지하고 — 펜스는 정보 문자열의 언어로 칠합니다 — 여는/닫는 기호를 입력하면 아래 줄이 바로 다시 칠해집니다. 줄별 상태 표 덕에 3만 4천 줄 파일도 약 10 ms, 키 입력당 비용은 체감되지 않습니다.
-- **사용자 정의 문법:** `~/Library/Application Support/HyperEdit/grammars/` 에 `*.json` 파일을 두면 언어를 추가하거나 내장 언어를 덮어쓸 수 있습니다 — 이름, 확장자·파일 이름, 주석 기호, 문자열 구분자, 키워드 목록. **파일 › 문법 폴더 열기…** 가 `example.json` 과 스키마를 설명하는 README 와 함께 폴더를 만들고, **파일 › 문법 다시 읽기** 로 재실행 없이 반영되며, 상태바에 문법 이름이 보이고 주석 토글(⌘/)도 그 기호를 씁니다.
+- **사용자 정의 문법:** `~/Library/Application Support/HyperEdit/grammars/` 에 `*.json` 파일을 두면 언어를 추가하거나 내장 언어를 덮어쓸 수 있습니다 — 이름, 확장자·파일 이름, 주석 기호, 문자열 구분자, 키워드 목록. HyperEdit 가 첫 실행 때 `example.json` 과 스키마를 설명하는 README 와 함께 폴더를 만들고, **파일 › 문법 폴더 열기…** 가 Finder 에서 열며, **파일 › 문법 다시 읽기** 로 재실행 없이 반영되며, 상태바에 문법 이름이 보이고 주석 토글(⌘/)도 그 기호를 씁니다.
 - **커서 스타일과 창 투명도(설정 › 외형):** 막대·블록·밑줄 캐럿과 깜빡임 끄기 — 멀티 커서·열 모드의 보조 캐럿도 같은 스타일 — 그리고 50–100 % 창 투명도로 편집기·리본·패널·상태바가 반투명해지고(글자는 불투명) 창 뒤 시스템 블러를 켤 수 있습니다. 보기 › 창 투명도 메뉴에 100 / 90 / 80 / 70 % 단계가 있습니다.
 
 ### 마크다운 미리보기
@@ -108,12 +108,12 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 
 ### 비밀 블록
 - 정보 문자열이 `secret` 로 시작하는 펜스 코드 블록(```` ```secret ````, ```` ```secret 은행 ````)은 **비밀 블록** 입니다. 편집기에서 안쪽 줄은 가림막과 `••••••••` 로 그려지고 펜스 줄은 보이므로, 비밀번호·키·토큰을 메모에 두되 화면에는 보이지 않게 할 수 있습니다. 캐럿을 블록에 넣으면(클릭, ↑ / ↓, 줄 이동, 찾기 결과, 북마크) 드러나 편집할 수 있고 나가면 다시 가려집니다. 텍스트는 그대로라 찾기·바꾸기·undo·저장이 평소와 같고, 가리는 것일 뿐 암호화가 아닙니다 — 파일과 스냅샷은 평문입니다.
-- **비밀 드러내기(⌥⌘S)** 는 모든 블록을 드러냈다가 설정 › 비밀 › *다시 가리기까지*(10 / 30 / 60초 또는 안 함) 뒤 다시 가립니다. 그동안 상태바에 `REVEALED`, 가린 동안에는 `•••• N` 이 표시됩니다. 찾기 결과·아웃라인·타임라인·마크다운 미리보기·HTML/PDF 내보내기는 비밀 줄을 `••••••••` 로 보여 줍니다.
-- **클립보드 자동 비우기:** 비밀 줄과 겹치는 복사·잘라내기 뒤 10 / 30 / 60초(기본 30초)가 지나면 그 사이 다른 것을 복사하지 않았을 때 클립보드를 비웁니다. **편집 › 클립보드 비우기** 는 즉시 비웁니다.
+- **비밀 드러내기(⌥⌘S)** 는 모든 블록을 드러냈다가 설정 › 비밀 › *다시 가리기까지*(10 / 30 / 60초 또는 안 함) 뒤 다시 가립니다. 그동안 상태바에 `REVEALED`, 가린 동안에는 `•••• N` 이 표시됩니다. 찾기 결과·마크다운 미리보기·HTML/PDF 내보내기는 비밀 줄을 `••••••••` 로 보여 주고, 아웃라인·타임라인은 비밀 줄을 건너뜁니다.
+- **클립보드 자동 비우기:** 비밀 줄과 겹치는 복사·잘라내기 뒤 설정 › 비밀 › *비밀을 복사한 뒤 클립보드 비우기*(끔 / 10 / 30 / 60초, 기본 30초)가 지나면 그 사이 다른 것을 복사하지 않았을 때 클립보드를 비웁니다. **편집 › 클립보드 비우기** 는 즉시 비웁니다. 가리기를 끄면 자동 비우기도 꺼집니다.
 
 ### 앱 잠금 (Touch ID)
 - **HyperEdit › HyperEdit 잠금(⌃⌘L)** 은 리본·사이드바·편집기·패널·상태바까지 창 전체를 현재 테마 색의 불투명한 잠금 화면으로 가리고, 열려 있던 설정 창을 닫고 빠른 추가 패널을 숨깁니다. 잠긴 동안에는 파일 이름을 포함해 문서에 관한 어떤 것도 보이지 않습니다. **잠금 해제**(또는 Return)는 **Touch ID** 로 인증하고, Touch ID 가 실패하거나 없는 Mac 에서는 로그인 암호로 대신합니다. 취소하면 잠긴 채 유지됩니다.
-- **설정 › 앱 잠금:** *HyperEdit 를 열 때 Touch ID 또는 암호 요구*(기본 꺼짐)를 켜면 앱이 잠긴 상태로 시작합니다 — 문서는 읽히고 자동 저장도 계속되지만 인증 전에는 아무것도 보이지 않습니다. *입력이 없으면 잠금*(안 함 / 1 / 5 / 15 / 30분)은 HyperEdit 안에서 키 입력이나 클릭이 그 시간 동안 없으면 잠그고, *Mac 이 잠자기에 들어가거나 화면이 잠기면 잠금*(기본 켜짐)은 시작 옵션이 켜져 있을 때 적용됩니다.
+- **설정 › 앱 잠금:** *HyperEdit 를 열 때 Touch ID 또는 암호 요구*(기본 꺼짐)를 켜면 앱이 잠긴 상태로 시작합니다 — 문서는 읽히고 자동 저장도 계속되지만 인증 전에는 아무것도 보이지 않습니다. *입력이 없으면 잠금*(안 함 / 1 / 5 / 15 / 30분, 기본 안 함)은 HyperEdit 안에서 키 입력이나 클릭이 그 시간 동안 없으면 잠그고, *Mac 이 잠자기에 들어가거나 화면이 잠기면 잠금*(기본 켜짐)은 시작 옵션이 켜져 있을 때 적용됩니다.
 - 잠긴 동안 키 입력은 버려지고 메뉴 막대는 열리지 않습니다(⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F 와 Dock 메뉴만 동작). 빠른 추가 전역 단축키는 패널 대신 잠금 해제 프롬프트를 띄웁니다. 화면을 가리는 프라이버시 잠금이지 암호화가 아니며 디스크의 파일은 그대로입니다. Touch ID 도 로그인 암호도 없는 Mac 에서는 *요구…* 옵션이 켜지지 않으므로 스스로 잠겨 버리는 일은 없습니다.
 
 ## 단축키
@@ -183,7 +183,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(616개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(616개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
@@ -206,12 +206,12 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 
 ```
 Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), Export/, AppLock/, Bench.swift, SelfTest*.swift
-  Editor/            AppKit 편집기: HyperTextView(TextKit 2), GutterView, EditorSession(분할), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
+  Editor/            AppKit 편집기: HyperTextView(TextKit 2, 캐럿 스타일), GutterView, EditorSession(분할), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
 Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 251개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
-docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
+docs/                guide/ (USER_GUIDE.md + 번역 10개) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
 l10n/                ui.<언어>.json — 언어별 평면 사전(scripts/l10n-export.py 로 내보내고 scripts/l10n-add.py 로 카탈로그에 병합) · context.json
 scripts/             bootstrap · build-mac · install-mac · make-dmg · bench · make-icon.swift · set-version · setup-signing · update-cask · check-sensitive · check-l10n · l10n-export · l10n-add · install-hooks
 Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xcconfig 기본값 · Local.xcconfig.example
@@ -227,7 +227,7 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 ## 로드맵과 제한
 
 - 인터페이스는 11개 언어로 번역돼 있고, 그 밖의 시스템 언어(예: 중국어 번체)는 영어로 표시됩니다. 언어를 바꾸려면 재실행이 필요한데, 설정의 버튼이 대신 해 줍니다.
-- 구문 색은 블록 주석·여러 줄 문자열·마크다운 펜스를 줄 너머로 추적하지만, 여는/닫는 구분자가 같은 문자열과 언어당 블록 주석 1쌍만 지원하고 사용자 문법은 단어 목록 기반입니다(정규식 규칙 없음). 마크다운 미리보기(⇧⌘P)는 현재 파일을 렌더링해 보여 주는 보기 전용 화면입니다.
+- 구문 색은 블록 주석·여러 줄 문자열·마크다운 펜스를 줄 너머로 추적하지만, Rust 원시 문자열을 빼면 여는/닫는 구분자가 같은 문자열과 언어당 블록 주석 1쌍만 지원하고 사용자 문법은 단어 목록 기반입니다(정규식 규칙 없음). 마크다운 미리보기(⇧⌘P)는 현재 파일을 렌더링해 보여 주는 보기 전용 화면입니다.
 - 로컬 파일만 다룹니다. 클라우드 동기화 없음. 엔진은 iOS를 염두에 두고 만들었지만 iOS 앱은 아직 없습니다.
 - 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.
 - 스니펫·매크로·사용자 문법은 JSON 파일(Application Support의 `snippets.json`, `macros/macros.json`, `grammars/*.json`)로 편집합니다. GUI 편집기는 없습니다.

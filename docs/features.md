@@ -6,7 +6,7 @@
 >
 > **참고한 제품:** UltraEdit, Sublime Text, BBEdit, VS Code, Zed, Obsidian, Bear, Drafts, nvUltra, iA Writer, Typora, Marked 2, Day One, Apple Notes.
 >
-> **상태 표기:** ✅ 구현됨 · 🔜 예정(로드맵) · ⏸ 보류 · ✗ 제외. 미구현 기능은 UI에 비활성 자리표시자로 나타나지 않는다. 단축키는 `Apps/mac/HyperEditApp.swift`·`MacroUI.swift` 기준.
+> **상태 표기:** ✅ 구현됨 · 🔜 예정(로드맵) · ⏸ 보류 · ✗ 제외. 미구현 기능은 UI에 비활성 자리표시자로 나타나지 않는다. 단축키는 `Apps/mac/HyperEditApp.swift`·`MacroUI.swift`·`SecretsUI.swift`·`AppLock/AppLockUI.swift` 기준.
 
 ## A. 입력·캡처 (append 습관 강화)
 
@@ -14,7 +14,7 @@
 |---|---|---|
 | ✅ | **마지막 본 위치 복원** — 파일별 캐럿·스크롤 저장, 기록이 없으면 끝으로. ⌃⌘E로 문서 끝 | `ViewStateStore` |
 | ✅ | **타임스탬프 삽입** — F7 → `## 2026-10-30 (금) 14:05`, 요일은 시스템 로케일 | 날짜 줄이 생기면 B의 타임라인이 따라온다 |
-| ✅ | **첫 실행 기본 문서** — `~/Documents/HyperEdit/notes.md`, 없으면 영·한 환영 문서 생성 | 사용자 파일은 덮어쓰지 않음 |
+| ✅ | **첫 실행 기본 문서** — `~/Documents/HyperEdit/notes.md`, 없으면 인터페이스 언어(11개)의 환영 문서 생성 | 사용자 파일은 덮어쓰지 않음 |
 | ✅ | **새 문서** ⌘N — 이름과 위치를 고르면 빈 텍스트 파일을 만들어 연다(문서 탭 줄의 + 버튼, 홈 탭 파일 그룹) | 기본 폴더는 현재 문서의 폴더 |
 | ✅ | **빠른 추가(Quick Append) 창** ⇧⌘N · 전역 ⌃⌥N — 앱을 활성화하지 않는 떠 있는 패널에 메모를 쓰고 ⌘↩ 로 문서 끝에 덧붙인다(타임스탬프 헤딩 옵션, 기본 켜짐). 바로 저장하고 undo 한 번으로 되돌릴 수 있으며, 닫으면 포커스가 이전 앱으로 돌아간다. Esc 로 닫으면 쓰던 글은 다음에 이어진다. 전역 단축키는 설정에서 끄기 / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N 중 선택(Carbon `RegisterEventHotKey`, 손쉬운 사용 권한 불필요). 홈 탭 삽입 그룹 · 파일 메뉴 | `QuickAppend/QuickAppendPanel.swift` · `QuickAppendController.swift` · `GlobalHotKey.swift` · `QuickAppendComposer`(HyperCore, 빈 줄·개행 규칙). 메뉴바 아이콘은 만들지 않음 |
 | 🔜 | **붙여넣기 정리** — 채팅 앱 이모지 코드 제거, 연속 공백·빈 줄 정리, 스마트 따옴표 → 일반 | |
@@ -80,7 +80,7 @@
 |---|---|---|
 | ✅ | 일반 텍스트 렌더링, 현재 줄 강조, 줄 번호 거터 | |
 | ✅ | **라이트 하이라이트(메모·마크다운)** ⌃⌘H — URL, ISO 날짜·시각, `#` 헤딩(메모 모드에서 코드 주석처럼 보이는 `# from x import` 는 주석색), `[제목]`, 목록 기호·`[ ]`/`[x]` 체크박스, `#태그`, `키:` 라벨, `**굵게**`, `` `코드` ``, `⇒ → ->` 화살표. `.txt`·`.md`·확장자 없는 파일의 기본 | `PlainNotesGrammar`. 보이는 줄만 계산(TextKit 2 `renderingAttributesValidator`), 스토리지 속성·undo·한글 폰트 런·검색 강조와 분리. 상태바에 언어 이름, 홈 탭 모드 그룹·보기 메뉴에 토글 |
-| ✅ | **코드 구문 색 20여 종** — Swift, Python, JS/TS, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI. 주석·문자열·숫자·키워드·함수·타입·속성(데코레이터)·구두점·연산자 | `CodeGrammar(language:)` + `GrammarRegistry`(확장자 → 문법). 줄 단위 토큰화라 여러 줄 블록 주석·문자열은 시작한 줄만. 색은 테마 `syntax` 팔레트 |
+| ✅ | **코드 구문 색 20여 종** — Swift, Python, JS/TS, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI. 주석·문자열·숫자·키워드·함수·타입·속성(데코레이터)·구두점·연산자 | `CodeGrammar(language:)` + `GrammarRegistry`(확장자 → 문법). 블록 주석·여러 줄 문자열·펜스는 줄 상태 추적(아래 행)으로 줄 너머까지 색이 이어진다. 색은 테마 `syntax` 팔레트 |
 | ✅ | **마크다운 분할 미리보기** ⇧⌘P — 좌 편집 / 우 렌더(GFM: 헤딩·목록·체크리스트·표·코드 블록·인용·링크·이미지), 현재 테마 색으로 스타일, 편집기 → 미리보기 스크롤 동기화(보이는 첫 줄 기준, `data-line`), 입력 멈춤 300 ms 뒤 다시 렌더(스크롤 위치 유지), 2 MB 초과 파일은 안내만. 링크는 기본 브라우저로, 원문 HTML은 이스케이프해 글자로(실행 안 함), 상대 경로 이미지는 문서 폴더 기준. 레이아웃 탭 "마크다운" 그룹 · 보기 메뉴 · 상태바 **MD** 표시 | swift-markdown 0.9.0(Apache-2.0) · `MarkdownHTML`(HyperCore) · `MarkdownPreviewView`(WKWebView). 미리보기 → 편집기 역방향 동기화는 없음 |
 | ✅ | **편집기 분할(분할 보기)** ⌘\ — 같은 문서를 두 편집기로(좌우 또는 상하, 보기 메뉴 "분할" 하위 메뉴·레이아웃 탭 패널 그룹). 두 뷰는 같은 텍스트·undo 스택을 공유하고(A 에서 입력, B 에서 ⌘Z) 따로 스크롤한다. 명령·상태바·미리보기 동기화는 마지막으로 클릭/포커스한 편집기 기준, ⌥⌘\ 로 다른 분할로 포커스. 상태바 **SPLIT** 표시, 마크다운 미리보기와 함께 켤 수 있음 | TextKit 2: `NSTextContentStorage` 하나에 뷰마다 `NSTextLayoutManager`(`EditorSession`). `Editor/EditorSession.swift` · `EditorView.swift`(role). 보조 편집기는 위치 저장·창 제목·검색 강조(스토리지 속성)를 맡지 않는다. `--split [vertical\|horizontal]` |
 | ✅ | **HTML/PDF 내보내기** — 파일 › HTML로 내보내기… / PDF로 내보내기…. 저장 패널 액세서리로 테마(현재·Hyper Light·Hyper Dark)·줄 번호 선택. 마크다운은 미리보기와 같은 본문의 독립 HTML(미리보기 스크립트 없음·인쇄 CSS), 메모·코드는 문법 토큰을 `tok-*` span 으로 입힌 `<pre>`(여러 줄 상태 포함) + 테마 syntax CSS. PDF 는 화면 밖 WKWebView 에 같은 HTML 을 올려 `printOperation`(.save, Letter/A4, 여백 36 pt, 머리글·바닥글 없음)으로 쪽 나뉜 파일, 실패 시 `createPDF` 폴백. 2 MB 초과는 PDF 만 거절. 비밀 블록은 `••••••••` 로 | `HTMLExporter`(HyperCore `Export/`) · `Apps/mac/Export/Exporter.swift`·`ExportUI.swift`. 선택 영역·여러 파일·용지 옵션·PDF 목차 없음 |
@@ -112,7 +112,7 @@
 
 | 상태 | 기능 | 메모 |
 |---|---|---|
-| ✅ | 개발용 실행 인자 — `--file`, `--ephemeral`, `--snapshot` `--snapshot-delay` `--snapshot-activate` `--snapshot-panel` `--window-width` `--quit`, `--selftest` `--selftest-out` `--selftest-split-big` `--show-snippet-picker` `--show-macro-recording` `--snapshot-sheet` `--selftest-open`, `--theme` `--follow-system-theme`, `--ribbon`, `--left` `--bottom` `--hide-left` `--hide-bottom`, `--search` `--replace` `--replace-with` `--find-in-files`, `--column`, `--goto`, `--preview`, `--show-settings` `--snapshot-settings`, `--cursor` `--no-cursor-blink` `--opacity` `--blur`, `--reveal-secrets`, `--locked`, `--split`, `--quick-append`, `--no-highlight`, `--fold` `--fold-all` `--no-fold`, `--debug-perf` `--debug-perf-log`, `--debug-startup` `--debug-startup-log` `--debug-preview-log` `--debug-no-apply`, `--bench` `--bench-out` `--bench-strict` `--bench-only` `--bench-commit`, `--quit-after-launch` `--bench-launch-log` | README "개발용 실행 인자" 표 참고. `--snapshot`·`--selftest`·`--bench`·`--ephemeral` 은 휘발성 설정과 임시 폴더만 쓴다 |
+| ✅ | 개발용 실행 인자 — `--file`, `--ephemeral`, `--snapshot` `--snapshot-delay` `--snapshot-activate` `--snapshot-panel` `--window-width` `--quit`, `--selftest` `--selftest-out` `--selftest-split-big` `--show-snippet-picker` `--show-macro-recording` `--snapshot-sheet` `--selftest-open`, `--theme` `--follow-system-theme`, `--ribbon`, `--left` `--bottom` `--hide-left` `--hide-bottom`, `--search` `--replace` `--replace-with` `--find-in-files`, `--column`, `--goto`, `--preview`, `--show-settings` `--snapshot-settings`, `--cursor` `--no-cursor-blink` `--opacity` `--blur`, `--reveal-secrets`, `--locked`, `--selftest-markers-big`, `--split`, `--quick-append`, `--no-highlight`, `--fold` `--fold-all` `--no-fold`, `--debug-perf` `--debug-perf-log`, `--debug-startup` `--debug-startup-log` `--debug-preview-log` `--debug-no-apply`, `--bench` `--bench-out` `--bench-strict` `--bench-only` `--bench-commit`, `--quit-after-launch` `--bench-launch-log` | README "개발용 실행 인자" 표 참고. `--snapshot`·`--selftest`·`--bench`·`--ephemeral` 은 휘발성 설정과 임시 폴더만 쓴다 |
 | ✅ | 성능 벤치마크 하네스 — `--bench` / `scripts/bench.sh`: 열기·타이핑·검색·바꾸기·스크롤·테마·메모리·유휴 CPU·실행 시간을 예산과 비교(PASS/FAIL), `--compare` 로 JSON 기준선과 비교. CI 에는 넣지 않는다(러너가 시끄러움) | `Apps/mac/Bench.swift` · `docs/bench/baseline-0.6.0.json` · [performance.md](performance.md) |
 | 🔜 | URL 스킴, App Intents(Shortcuts), macOS 서비스 메뉴 | |
 | 🔜 | CLI(`add`, `grep`, `tail`) | |
@@ -123,8 +123,8 @@
 | 상태 | 기능 | 메모 |
 |---|---|---|
 | ✅ | 네트워크 코드 없음, 텔레메트리 없음 | SECURITY.md |
-| ✅ | 사용자가 연 파일과 자체 파일(기본 문서, ⌘N으로 만든 파일, Application Support의 북마크 JSON·스냅샷·`snippets.json`·`macros/macros.json`, 환경설정)만 읽고 씀. 빠른 추가는 현재 문서 끝에 덧붙여 바로 저장 | 샌드박스는 아님. 전역 단축키는 Carbon `RegisterEventHotKey` 라 손쉬운 사용 권한이 필요 없고 다른 키 입력을 보지 않는다 |
-| ✅ | **비밀 블록 마스킹** — 정보 문자열이 `secret` 로 시작하는 펜스 블록(```` ```secret 은행 ````)의 안쪽 줄을 편집기에서 가림막 + `••••••••` 로 그린다(펜스 줄은 보임, .txt 도 같은 규칙, 중첩은 CommonMark). 캐럿이 들어가면 그 블록만 드러나고 나가면 다시 가림. **비밀 드러내기 ⌥⌘S**(편집 메뉴)는 전부 드러냈다가 설정 시간(10/30/60초/안 함, 기본 30초) 뒤 자동으로 다시 가림, 상태바 `•••• N` / `REVEALED`. 찾기 결과 줄 텍스트·아웃라인·타임라인·마크다운 미리보기·HTML/PDF 내보내기도 가린 텍스트. 설정 › 비밀 에서 끌 수 있음. 표시만 가리며 파일·스냅샷은 평문 | `SecretScanner`(HyperCore `Text/`) · `Editor/SecretController.swift`(`MaskedLayoutFragment`, FoldController 의 layout delegate 공용) · `SecretsUI.swift`. 가림막 폭 = 줄 폭(길이는 보임), 파일에서 찾기의 다른 파일은 평문, `--no-fold` 면 가림도 꺼짐 |
+| ✅ | 사용자가 연 파일과 자체 파일(기본 문서, ⌘N으로 만든 파일, Application Support의 북마크 JSON·스냅샷·`snippets.json`·`macros/macros.json`·`grammars/`, 환경설정)만 읽고 씀. 빠른 추가는 현재 문서 끝에 덧붙여 바로 저장 | 샌드박스는 아님. 전역 단축키는 Carbon `RegisterEventHotKey` 라 손쉬운 사용 권한이 필요 없고 다른 키 입력을 보지 않는다 |
+| ✅ | **비밀 블록 마스킹** — 정보 문자열이 `secret` 로 시작하는 펜스 블록(```` ```secret 은행 ````)의 안쪽 줄을 편집기에서 가림막 + `••••••••` 로 그린다(펜스 줄은 보임, .txt 도 같은 규칙, 중첩은 CommonMark). 캐럿이 들어가면 그 블록만 드러나고 나가면 다시 가림. **비밀 드러내기 ⌥⌘S**(편집 메뉴)는 전부 드러냈다가 설정 시간(10/30/60초/안 함, 기본 30초) 뒤 자동으로 다시 가림, 상태바 `•••• N` / `REVEALED`. 찾기 결과 줄 텍스트·마크다운 미리보기·HTML/PDF 내보내기도 가린 텍스트, 아웃라인·타임라인은 비밀 줄을 건너뜀. 설정 › 비밀 에서 끌 수 있음. 표시만 가리며 파일·스냅샷은 평문 | `SecretScanner`(HyperCore `Text/`) · `Editor/SecretController.swift`(`MaskedLayoutFragment`, FoldController 의 layout delegate 공용) · `SecretsUI.swift`. 가림막 폭 = 줄 폭(길이는 보임), 파일에서 찾기의 다른 파일은 평문, `--no-fold` 면 가림도 꺼짐 |
 | ✅ | **클립보드 자동 소거** — 복사·잘라내기(멀티 커서·열 모드 포함) 범위가 비밀 줄과 겹치면 설정 지연(끔/10/30/60초, 기본 30초) 뒤 changeCount 가 그대로일 때만 비운다. 편집 › 클립보드 비우기 로 즉시. 출력 로그 "Clipboard cleared (secret)" | `HyperTextView.onDidCopy` → `SecretsStore.scheduleClipboardClear`. 드래그 페이스트보드는 대상 아님 |
 | ✅ | **앱 잠금(Touch ID)** ⌃⌘L(앱 메뉴 Settings… 아래) — 창 전체(리본·사이드바·편집기·패널·상태바)를 테마 색 불투명 오버레이로 가리고 파일 이름도 보이지 않는다. "잠금 해제" 버튼(또는 Return)으로 `LocalAuthentication` `.deviceOwnerAuthentication`(Touch ID → 실패/미지원 시 시스템 암호 폴백) 인증. 설정 › 앱 잠금: 열 때 요구(기본 꺼짐, 켜면 잠긴 채 시작·문서는 로드·자동 저장 계속) · 입력이 없으면 잠금(안 함/1/5/15/30분, 시작 옵션과 독립) · 잠자기/화면 잠금 시 잠금(기본 켜짐, 시작 옵션이 켜져 있을 때만). 잠긴 동안 키 입력은 버려지고(⌘Q·⌘H·⌥⌘H·⌘M·⌘W·⌃⌘F 만 통과) 메뉴는 열리자마자 닫히며(`NSMenu.didBeginTrackingNotification` → `cancelTracking`), 설정 창은 닫히고 빠른 추가(전역 단축키 포함)는 패널 대신 해제 프롬프트. 자동화 실행은 시작 잠금을 하지 않음(`--locked` 로 강제) | `AppLock/AppLockController.swift`(상태 머신 · `Authenticator` 프로토콜로 셀프테스트가 성공/실패/취소 주입 · 유휴는 입력당 시각만 기록하는 로컬 모니터 + 한 번 울리는 타이머 · `NSWorkspace.willSleepNotification`/`screensDidSleepNotification` · 분산 알림 `com.apple.screenIsLocked`) · `LockOverlay.swift`(표식 NSView `applock.overlay`) · `AppLockUI.swift` · `AppLockSettings.swift`. SwiftUI 는 NSPrincipalClass 를 무시해 `sendAction` 가로채기가 불가능(실측) → 키 허용 목록 + 메뉴 추적 취소 방식. 화면 가림이지 파일 암호화가 아님 · 엔타이틀먼트 추가 없음. 셀프테스트는 실제 메뉴를 띄우지 않고(OS 전체 키보드를 가로챔) 알림만 흉내 냄 |
 
@@ -134,7 +134,7 @@
 |---|---|---|
 | ✅ | **22종 테마**, `themes/palettes.json` 단일 소스 → 앱 테마 + Zed 테마 + 미리보기 HTML | 이름은 모두 `Hyper ` 접두사 |
 | ✅ | **시스템 외형 따르기** 기본 — 라이트 Hyper Light / 다크 Hyper Dark. 직접 고르면 고정 | 레이아웃 탭·상태바·보기 메뉴의 테마 메뉴와 설정에서 켜고 끔. ⌥⌘] / ⌥⌘[ 순환 |
-| ✅ | **리본 UI** — 홈(클립보드·찾기·삽입·모드·파일) / 편집(줄·대소문자·정렬·공백·열·멀티 커서·도구) / 레이아웃(테마·패널·마크다운 미리보기·글꼴) / 고급(설정·스냅샷 폴더·다시 읽기·기본 문서) / 창(전체 화면·패널). 문서 탭 줄(새 문서·열기 버튼), 빠른 실행 저장·실행 취소·다시 실행. 창이 좁으면 작은 버튼이 아이콘만 남는 접힘 모드 | 비활성 자리표시자 없음 — 미구현 기능은 UI에 나타나지 않음 |
+| ✅ | **리본 UI** — 홈(클립보드·찾기·삽입·모드·파일) / 편집(줄·대소문자·정렬·공백·열·멀티 커서·도구·매크로) / 레이아웃(테마·패널·접기·마크다운 미리보기·글꼴) / 고급(설정·스냅샷 폴더·다시 읽기·기본 문서) / 창(전체 화면·패널). 문서 탭 줄(새 문서·열기 버튼), 빠른 실행 저장·실행 취소·다시 실행. 창이 좁으면 작은 버튼이 아이콘만 남는 접힘 모드 | 비활성 자리표시자 없음 — 미구현 기능은 UI에 나타나지 않음 |
 | ✅ | **상태바** — Ln / Col(+ 선택 길이, 문자 오프셋은 툴팁), 줄바꿈, 인코딩, COL, MD(미리보기 켜짐), 구문 언어(색이 꺼져 있으면 흐리게), 커서 수, 줄 수·크기, 상태, 테마(시스템 따르기 중이면 "· 시스템"), 확대 % | |
 | ✅ | **폰트** — Fira Code(없으면 시스템 고정폭), 한글 폴백 D2Coding ×1.2로 2:1 폭, 리거처 토글, 줄 높이 | 설정 ⌘, · [fonts.md](fonts.md) |
 | ✅ | **UI 언어** — 11개 언어(영어·한국어·중국어 간체·일본어·베트남어·힌디어·독일어·프랑스어·스페인어·포르투갈어·아랍어 — RTL 글; 실측상 창 구조(리본 그룹·사이드바·편집기·패널)는 좌→우 그대로이고 라벨·설정 행만 아랍어 읽기 방향을 따름), 기본은 시스템 언어. 설정(⌘,) › 언어 에서 선택 → "지금 재실행"(문서 저장 후 종료·재실행). 선택은 앱 도메인의 `AppleLanguages` 에 저장돼 시스템 설정 › 언어 및 지역 › 응용 프로그램 과 같은 값을 본다. 도움말 › 사용자 가이드 = 현재 언어의 `docs/guide/USER_GUIDE.<code>.md`. 첫 실행 환영문도 언어별(`Resources/Welcome/welcome.<code>.md`) | `AppLanguage`(Apps/mac) · 영어가 소스(카탈로그 키), 번역은 `l10n/ui.<code>.json` → `scripts/l10n-add.py` → 두 `Localizable.xcstrings`. `scripts/check-l10n.py`(CI)가 키 누락·자리표시자·리본 라벨 길이·언어 목록/가이드/환영문 일치를 검사. 미지원 언어(중국어 번체 등)는 영어로 폴백 |
