@@ -201,8 +201,8 @@ Abre Ajustes con **⌘,** o con la pestaña Avanzado.
 | Tema | Seguir la apariencia del sistema, selector de tema |
 | Archivos | El archivo actual, el documento predeterminado y la carpeta de instantáneas, con botones para abrirlos |
 | Apunte rápido | Atajo global (Desactivado / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), encabezado con marca de tiempo sí/no |
-| Apariencia | Estilo del cursor (Barra / Bloque / Subrayado), parpadeo, opacidad de la ventana 50–100 %, desenfoque detrás de la ventana |
 | Secretos | Ocultar bloques secretos, volver a ocultar tras (10 / 30 / 60 s / Nunca), vaciar el portapapeles tras copiar un secreto (Desactivado / 10 / 30 / 60 s) |
+| Apariencia | Estilo del cursor (Barra / Bloque / Subrayado), parpadeo, opacidad de la ventana 50–100 %, desenfoque detrás de la ventana |
 | Bloqueo de la app | Pedir Touch ID o contraseña para abrir HyperEdit (desactivado), bloquear tras inactividad (Nunca / 1 / 5 / 15 / 30 minutos), bloquear cuando el Mac entra en reposo o se bloquea la pantalla (activado; requiere la primera opción) |
 
 La visibilidad de los paneles, el ajuste de línea, los números de línea, los colores de sintaxis, las marcas de desplazamiento, la división y la pestaña de la cinta se recuerdan automáticamente.

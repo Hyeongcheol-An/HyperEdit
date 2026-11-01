@@ -53,8 +53,8 @@ public enum FileSearch {
             result.filesScanned += 1
             let text = String(decoding: data, as: UTF8.self)
             var hits = (try? SearchEngine.search(query, in: text, index: LineIndex(text: text), options: options, limit: perFileLimit)) ?? []
-            // secrets: 비밀 블록 안의 줄은 결과 목록에 평문으로 올리지 않는다 (줄 번호·일치 위치는 그대로) — 펜스가 있을 때만 스캔
-            if redactSecrets, !hits.isEmpty, text.contains("secret") { hits = SecretScanner.redacting(hits: hits, in: text) }
+            // secrets: 비밀 블록 안의 줄은 결과 목록에 평문으로 올리지 않는다 (줄 번호·일치 위치는 그대로). 스캐너는 바이트 단위라 String.contains 사전 검사보다 싸다
+            if redactSecrets, !hits.isEmpty { hits = SecretScanner.redacting(hits: hits, in: text) }
             if !hits.isEmpty {
                 result.filesMatched += 1
                 for h in hits {

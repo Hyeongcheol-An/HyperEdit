@@ -146,6 +146,7 @@ final class AppLockController: ObservableObject {
         lockOnSleep = d.object(forKey: "applock.lockOnSleep") as? Bool ?? true
         subscribeSystemEvents()
         subscribeMenuTracking()
+        HyperTextView.refusesFirstResponder = { [weak self] in self?.isLocked ?? false }   // 잠긴 동안 편집기는 첫 응답자가 되지 않는다 (시작 잠금 포함)
         rearmIdle()
         if LaunchOptions.has("--locked") || (requireOnLaunch && !Self.isAutomationRun && self.authenticator.isAvailable) {
             lock(.launch)
@@ -197,6 +198,8 @@ final class AppLockController: ObservableObject {
         model.showGoToLine = false
         model.showInsertNumber = false
         model.showSnippetPicker = false
+        model.macros.showRepeatAlert = false
+        model.macros.showSaveAlert = false
         for w in NSApp.windows {
             if let s = w.attachedSheet { w.endSheet(s, returnCode: .cancel) }
         }
@@ -276,8 +279,8 @@ final class AppLockController: ObservableObject {
         guard lockedKeyMonitor == nil else { return }
         lockedKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
             // NSEvent 는 Sendable 이 아니다 — 격리 경계 안에서는 Bool 만 계산한다 (Swift 6 경고)
-            let code = e.keyCode, flags = e.modifierFlags, chars = e.charactersIgnoringModifiers, rep = e.isARepeat
-            let pass = MainActor.assumeIsolated { self?.lockedKeyPasses(code: code, flags: flags, chars: chars, isRepeat: rep) ?? true }
+            let code = e.keyCode, flags = e.modifierFlags, chars = e.charactersIgnoringModifiers, typed = e.characters, rep = e.isARepeat
+            let pass = MainActor.assumeIsolated { self?.lockedKeyPasses(code: code, flags: flags, chars: chars, typed: typed, isRepeat: rep) ?? true }
             return pass ? e : nil
         }
     }
@@ -292,17 +295,20 @@ final class AppLockController: ObservableObject {
     /// 허용 목록의 ⌘ 키 등가물만 그대로 통과시켜 메뉴로 보내고(⌘V·⌘, 같은 나머지 ⌘ 조합과 편집기의 ⌘⌫ 키 바인딩은 버린다),
     /// Return / Enter / Space 는 잠금 해제 요청, 나머지(타이핑·⌃K 같은 Cocoa 편집 바인딩)는 버린다. 반환 nil = 이벤트 소비
     func handleLockedKeyDown(_ e: NSEvent) -> NSEvent? {
-        lockedKeyPasses(code: e.keyCode, flags: e.modifierFlags, chars: e.charactersIgnoringModifiers, isRepeat: e.isARepeat) ? e : nil
+        lockedKeyPasses(code: e.keyCode, flags: e.modifierFlags, chars: e.charactersIgnoringModifiers, typed: e.characters, isRepeat: e.isARepeat) ? e : nil
     }
 
-    /// 잠긴 동안 이 키 입력을 통과시킬지 (true = 통과). 통과시키지 않는 Return/Enter/Space 는 잠금 해제 요청
-    func lockedKeyPasses(code: UInt16, flags rawFlags: NSEvent.ModifierFlags, chars rawChars: String?, isRepeat: Bool) -> Bool {
+    /// 잠긴 동안 이 키 입력을 통과시킬지 (true = 통과). 통과시키지 않는 Return/Enter/Space 는 잠금 해제 요청.
+    /// `chars`(수정 키 무시)와 `typed`(실제 문자)가 둘 다 같은 허용 키를 가리켜야 한다 — "Dvorak – QWERTY ⌘" 같은 배열은 ⌘ 를 누르면 두 값이 달라져 메뉴가 다른 항목을 실행한다
+    func lockedKeyPasses(code: UInt16, flags rawFlags: NSEvent.ModifierFlags, chars rawChars: String?, typed rawTyped: String? = nil, isRepeat: Bool) -> Bool {
         guard isLocked else { return true }
         let flags = rawFlags.intersection([.command, .shift, .option, .control])
         if flags.contains(.command) {
             let chars = (rawChars ?? "").lowercased()
+            let typed = (rawTyped ?? "").lowercased()
             let latin = !chars.isEmpty && chars.unicodeScalars.allSatisfy { $0.isASCII }
-            return Self.allowedKeyEquivalents.contains { $0.flags == flags && (latin ? $0.char == chars : $0.keyCode == code) }
+            let typedLatin = !typed.isEmpty && typed.unicodeScalars.allSatisfy { $0.isASCII }
+            return Self.allowedKeyEquivalents.contains { $0.flags == flags && (latin ? ($0.char == chars && (!typedLatin || typed == chars)) : $0.keyCode == code) }
         }
         if !isRepeat, flags.isEmpty, [36, 76, 49].contains(code) {   // return · keypad enter · space
             Task { @MainActor in await self.requestUnlock() }

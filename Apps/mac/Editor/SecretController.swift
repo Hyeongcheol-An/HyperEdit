@@ -182,7 +182,7 @@ final class SecretController {
         }
     }
 
-    /// "secret" 과 펜스 기호가 모두 들어 있는가 — UTF-8 바이트 검색 (memmem 수준)
+    /// "secret"(대소문자 무시 — 스캐너와 같은 규칙) 과 펜스 기호가 모두 들어 있는가 — UTF-8 바이트 검색
     private static func mentionsSecretFence(_ s: String) -> Bool {
         var s = s
         return s.withUTF8 { buf -> Bool in
@@ -192,7 +192,15 @@ final class SecretController {
                     return memmem(base, buf.count, nb, n.count) != nil
                 }
             }
-            return has("secret") && (has("```") || has("~~~"))
+            guard has("```") || has("~~~") else { return false }
+            let word: [UInt8] = Array("secret".utf8)
+            guard buf.count >= word.count else { return false }
+            for i in 0...(buf.count - word.count) {
+                var j = 0
+                while j < word.count, (buf[i + j] | 0x20) == word[j] { j += 1 }   // ASCII 소문자화 (| 0x20)
+                if j == word.count { return true }
+            }
+            return false
         }
     }
 

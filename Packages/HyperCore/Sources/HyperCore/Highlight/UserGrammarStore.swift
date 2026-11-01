@@ -62,7 +62,7 @@ public final class UserGrammarStore: @unchecked Sendable {
         for f in files {
             do {
                 // 크기·종류를 먼저 본다 — 시작 시 메인 스레드에서 읽으므로 거대한 파일이나 장치 파일로의 링크가 시작을 멈추게 하면 안 된다
-                let rv = try f.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+                let rv = try f.resolvingSymlinksInPath().resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])   // 심볼릭 링크는 따라가서 검사
                 guard rv.isRegularFile == true, let size = rv.fileSize, size <= Self.maxFileSize else { throw UserGrammarError.tooLarge }
                 let data = try Data(contentsOf: f)
                 langs.append(try Self.decode(data, fileName: f.lastPathComponent))

@@ -201,8 +201,8 @@ Mở Cài đặt bằng **⌘,** hoặc tab Nâng cao.
 | Chủ đề | Theo giao diện hệ thống, bộ chọn chủ đề |
 | Tệp | Tệp hiện tại, tài liệu mặc định và thư mục bản chụp, kèm nút để mở |
 | Thêm nhanh | Phím tắt toàn cục (Tắt / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), bật/tắt tiêu đề dấu thời gian |
-| Giao diện | Kiểu con trỏ (Thanh / Khối / Gạch dưới), nhấp nháy, độ mờ đục cửa sổ 50–100 %, làm mờ sau cửa sổ |
 | Bí mật | Che khối bí mật, che lại sau (10 / 30 / 60 giây / Không bao giờ), xóa bảng nhớ tạm sau khi sao chép bí mật (Tắt / 10 / 30 / 60 giây) |
+| Giao diện | Kiểu con trỏ (Thanh / Khối / Gạch dưới), nhấp nháy, độ mờ đục cửa sổ 50–100 %, làm mờ sau cửa sổ |
 | Khóa ứng dụng | Yêu cầu Touch ID hoặc mật khẩu để mở HyperEdit (tắt), khóa khi không hoạt động (Không bao giờ / 1 / 5 / 15 / 30 phút), khóa khi máy Mac ngủ hoặc màn hình khóa (bật; cần tùy chọn đầu tiên) |
 
 Trạng thái hiện/ẩn các bảng, ngắt dòng, số dòng, màu cú pháp, dấu thanh cuộn, chia đôi khung và tab ribbon được ghi nhớ tự động.

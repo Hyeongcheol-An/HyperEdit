@@ -201,8 +201,8 @@ Abra os Ajustes com **⌘,** ou pela aba Avançado.
 | Tema | Seguir aparência do sistema, seletor de tema |
 | Arquivos | O arquivo atual, o documento padrão e a pasta de snapshots, com botões para abri-los |
 | Adição Rápida | Atalho global (Desativado / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), cabeçalho de data/hora ativado/desativado |
-| Aparência | Estilo do cursor (Barra / Bloco / Sublinhado), piscar, opacidade da janela 50–100 %, desfoque atrás da janela |
 | Segredos | Ocultar blocos secretos, ocultar de novo após (10 / 30 / 60 s / Nunca), limpar a área de transferência após copiar um segredo (Desativado / 10 / 30 / 60 s) |
+| Aparência | Estilo do cursor (Barra / Bloco / Sublinhado), piscar, opacidade da janela 50–100 %, desfoque atrás da janela |
 | Bloqueio do App | Exigir Touch ID ou senha para abrir o HyperEdit (desativado), bloquear após inatividade (Nunca / 1 / 5 / 15 / 30 minutos), bloquear quando o Mac entrar em repouso ou a tela for bloqueada (ativado; requer a primeira opção) |
 
 A visibilidade dos painéis, a quebra de linha, os números de linha, as cores de sintaxe, as marcas na barra de rolagem, a divisão e a aba da faixa são lembradas automaticamente.

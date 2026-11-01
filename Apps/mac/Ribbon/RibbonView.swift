@@ -344,6 +344,7 @@ struct RibbonGroup<Content: View>: View {
             Text(LocalizedStringKey(title)).font(.system(size: 10)).foregroundStyle(theme.foregroundMuted.color)
                 .lineLimit(1).truncationMode(.tail)
                 .frame(width: max(24, RibbonGroupSpec.contentWidth(forTitle: title, compact: compactGroups.contains(title))))
+                .help(LocalizedStringKey(title))   // 말줄임된 제목은 툴팁으로
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)

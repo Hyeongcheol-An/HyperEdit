@@ -201,8 +201,8 @@ Weil das Fenster HyperEdit nicht aktiviert, funktioniert es über einen **system
 | Theme | Erscheinungsbild des Systems folgen, Theme-Auswahl |
 | Dateien | Die aktuelle Datei, das Standarddokument und der Schnappschuss-Ordner, mit Tasten zum Öffnen |
 | Schnelleingabe | Systemweiter Kurzbefehl (Aus / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), Zeitstempel-Überschrift ein/aus |
-| Erscheinungsbild | Cursorstil (Balken / Block / Unterstrich), Blinken, Fenster-Deckkraft 50–100 %, Unschärfe hinter Fenster |
 | Geheimnisse | Geheime Blöcke maskieren, erneut maskieren nach (10 / 30 / 60 s / Nie), Zwischenablage nach Kopieren eines Geheimnisses leeren (Aus / 10 / 30 / 60 s) |
+| Erscheinungsbild | Cursorstil (Balken / Block / Unterstrich), Blinken, Fenster-Deckkraft 50–100 %, Unschärfe hinter Fenster |
 | App-Sperre | Touch ID oder Passwort zum Öffnen von HyperEdit verlangen (aus), bei Inaktivität sperren (Nie / 1 / 5 / 15 / 30 Minuten), sperren, wenn der Mac in den Ruhezustand wechselt oder der Bildschirm gesperrt wird (ein; erfordert die erste Option) |
 
 Sichtbarkeit der Panels, Zeilenumbruch, Zeilennummern, Syntaxfarben, Scrollbalken-Marker, die Teilung und der Menüband-Tab werden automatisch gemerkt.

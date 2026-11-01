@@ -201,8 +201,8 @@ Ouvrez les Réglages avec **⌘,** ou l'onglet Avancé.
 | Thème | Suivre l'apparence du système, sélecteur de thème |
 | Fichiers | Le fichier actuel, le document par défaut et le dossier des instantanés, avec des boutons pour les ouvrir |
 | Ajout rapide | Raccourci global (Désactivé / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), titre horodaté activé/désactivé |
-| Apparence | Style du curseur (Barre / Bloc / Souligné), clignotement, opacité de la fenêtre 50–100 %, flou derrière la fenêtre |
 | Secrets | Masquer les blocs secrets, masquer de nouveau après (10 / 30 / 60 s / Jamais), vider le presse-papiers après la copie d'un secret (Désactivé / 10 / 30 / 60 s) |
+| Apparence | Style du curseur (Barre / Bloc / Souligné), clignotement, opacité de la fenêtre 50–100 %, flou derrière la fenêtre |
 | Verrouillage de l'app | Exiger Touch ID ou le mot de passe pour ouvrir HyperEdit (désactivé), verrouiller après inactivité (Jamais / 1 / 5 / 15 / 30 minutes), verrouiller quand le Mac suspend son activité ou que l'écran se verrouille (activé ; nécessite la première option) |
 
 La visibilité des volets, le retour à la ligne, les numéros de ligne, la coloration syntaxique, les marqueurs de défilement, la division et l'onglet du ruban sont mémorisés automatiquement.

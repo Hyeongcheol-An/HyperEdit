@@ -99,6 +99,13 @@ extension SelfTest {
         model.quickAppend.show(); await wait(300)
         check(settingsWin.isVisible && model.quickAppend.isVisible, "applock: settings window and Quick Append panel open before locking")
         model.showGoToLine = true   // 잠글 때 떠 있던 알림은 닫혀야 한다 (시트는 오버레이가 가리지 못한다)
+        // secrets lockdown 준비: 전부 드러낸 상태 + 예약된 클립보드 소거 (잠그면 둘 다 정리되어야 한다)
+        let savedClipboard = NSPasteboard.general.string(forType: .string)
+        model.secrets.maskEnabled = true; model.secrets.revealAll()
+        model.secrets.clipboardClearDelayOverride = 60
+        NSPasteboard.general.clearContents(); NSPasteboard.general.setString("secret-copy", forType: .string)
+        model.secrets.scheduleClipboardClear()
+        check(model.secrets.revealedAll && model.secrets.clipboardClearPending, "applock: (setup) secrets revealed and a clipboard clear pending before locking")
         lock.lock()
         let lockLine = model.output.last?.text ?? ""
         await wait(400)
@@ -109,6 +116,13 @@ extension SelfTest {
         check(!settingsWin.isVisible, "applock: open settings window is closed by locking")
         check(!model.showGoToLine, "applock: an open Go to Line alert is dismissed by locking")
         check(win.firstResponder !== tv, "applock: editor resigns first responder while locked (dictation/insertText cannot reach the document)")
+        win.makeFirstResponder(tv)
+        check(win.firstResponder !== tv, "applock: editor refuses to become first responder while locked (launch lock, EditorView re-focus)")
+        check(!model.secrets.revealedAll && !model.secrets.clipboardClearPending && NSPasteboard.general.string(forType: .string) == nil,
+              "applock: locking re-masks revealed secrets and runs the pending clipboard clear (revealed=\(model.secrets.revealedAll), pending=\(model.secrets.clipboardClearPending))")
+        check(NSPasteboard.general.string(forType: .string) == nil, "applock: lockdown flush honours the change count (cleared because nothing else was copied)")
+        model.secrets.clipboardClearDelayOverride = nil
+        if let savedClipboard { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(savedClipboard, forType: .string) }
         check(!model.quickAppend.isVisible, "applock: Quick Append panel is hidden by locking")
         check(win.isVisible, "applock: document window stays open")
         lock.lock()

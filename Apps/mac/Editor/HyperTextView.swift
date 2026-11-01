@@ -70,7 +70,9 @@ final class HyperTextView: NSTextView {
     var onSnippetExpanded: ((String) -> Void)?
     var snippetSession: SnippetSession?
 
-    override var acceptsFirstResponder: Bool { true }
+    /// applock: 잠긴 동안 첫 응답자를 거절한다 — 시작 잠금은 창이 생기기 전이라 lock() 의 makeFirstResponder(nil) 이 닿지 않고, EditorView 가 창에 붙을 때 포커스를 되찾기 때문
+    nonisolated(unsafe) static var refusesFirstResponder: (() -> Bool)?
+    override var acceptsFirstResponder: Bool { !(Self.refusesFirstResponder?() ?? false) }
 
     deinit {
         blinkTimer?.invalidate()   // appearance
@@ -80,6 +82,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func becomeFirstResponder() -> Bool {   // split
+        if Self.refusesFirstResponder?() == true { return false }   // applock: makeFirstResponder 는 acceptsFirstResponder 를 묻지 않으므로 여기서 거절한다
         let ok = super.becomeFirstResponder()
         if ok { onBecomeActive?(); caretVisibilityChanged() }   // appearance
         return ok
@@ -214,16 +217,20 @@ final class HyperTextView: NSTextView {
         let native: NSTextInsertionIndicator.DisplayMode = cursorBlinks ? .automatic : .visible
         // AppKit 도 displayMode 를 바꾼다(숨길 때 .hidden, 다시 보일 때 .automatic). AppKit 이 숨긴 상태와 싸우면 KVO 가 턴마다 핑퐁하며 런루프를 점유한다
         // (실측: 타이핑 2 → 20 ms, 큰 편집 4배). 그래서 "우리가 숨겼다" 는 플래그로만 되돌린다.
+        // 우리가 숨긴 것을 되돌릴 때 캐럿이 보여야 할 상황이 아니면(비활성 창·선택 있음) .visible 을 강요하지 않고 .automatic 으로 AppKit 에 맡긴다
+        let restore: NSTextInsertionIndicator.DisplayMode = headCaretVisible ? native : .automatic
         switch cursorStyle {
         case .bar:
-            if indicatorHiddenByUs || !ind.isHidden {
-                if ind.displayMode != native { ind.displayMode = native }
+            if indicatorHiddenByUs {
+                if ind.displayMode != restore { ind.displayMode = restore }
                 indicatorHiddenByUs = false
+            } else if !ind.isHidden, ind.displayMode != native {
+                ind.displayMode = native
             }
         case .block, .underline:
             if isInHugeParagraph(selectedRange().location) {
                 // 2만 자 넘는 문단에서는 caretRect 를 구하지 않아 블록/밑줄 캐럿을 그릴 수 없다 → 시스템 막대 캐럿으로 대신한다 (QA: 캐럿이 아예 사라졌었다)
-                if indicatorHiddenByUs { if ind.displayMode != native { ind.displayMode = native }; indicatorHiddenByUs = false }
+                if indicatorHiddenByUs { if ind.displayMode != restore { ind.displayMode = restore }; indicatorHiddenByUs = false }
             } else {
                 if ind.displayMode != .hidden { ind.displayMode = .hidden }
                 indicatorHiddenByUs = true

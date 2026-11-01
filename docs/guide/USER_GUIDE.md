@@ -201,8 +201,8 @@ Open Settings with **⌘,** or the Advanced tab.
 | Theme | Follow system appearance, theme picker |
 | Files | The current file, the default document and the snapshot folder, with buttons to open them |
 | Quick Append | Global shortcut (Off / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), timestamp heading on/off |
-| Appearance | Cursor style (Bar / Block / Underline), blink, window opacity 50–100 %, blur behind window |
 | Secrets | Mask secret blocks, re-mask after (10 / 30 / 60 s / Never), clear clipboard after copying a secret (Off / 10 / 30 / 60 s) |
+| Appearance | Cursor style (Bar / Block / Underline), blink, window opacity 50–100 %, blur behind window |
 | App Lock | Require Touch ID or password to open HyperEdit (off), lock after inactivity (Never / 1 / 5 / 15 / 30 minutes), lock when the Mac sleeps or the screen locks (on; needs the first option) |
 
 Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the split and the ribbon tab are remembered automatically.

@@ -112,6 +112,7 @@ final class SecretsStore: ObservableObject {
         let count = pb.changeCount
         clipboardTask?.cancel()
         clipboardClearPending = true
+        clipboardClearCount = count
         clipboardTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             guard !Task.isCancelled, let self else { return }
@@ -129,12 +130,17 @@ final class SecretsStore: ObservableObject {
         model?.log(String(localized: "Clipboard cleared"))
     }
 
-    /// 앱 종료 직전: 예약된 소거가 있으면 기다리지 않고 지금 비운다 (타이머는 프로세스와 함께 사라진다)
+    /// 예약 시점의 changeCount — flush 도 타이머와 같은 규칙(그 사이 다른 복사가 있었으면 건드리지 않는다)을 지킨다
+    private var clipboardClearCount: Int?
+
+    /// 앱 종료·잠금 직전: 예약된 소거가 있으면 기다리지 않고 지금 비운다 (타이머는 프로세스와 함께 사라진다)
     func flushPendingClipboardClear() {
         guard clipboardClearPending else { return }
         clipboardTask?.cancel(); clipboardTask = nil
         clipboardClearPending = false
-        NSPasteboard.general.clearContents()
+        let pb = NSPasteboard.general
+        guard let count = clipboardClearCount, pb.changeCount == count else { return }   // 그 사이 다른 것을 복사했으면 그대로 둔다
+        pb.clearContents()
         model?.log(String(localized: "Clipboard cleared (secret)"))
     }
 

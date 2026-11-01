@@ -60,7 +60,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - **편집기 분할(⌘\\)** — 같은 문서를 두 편집기로 좌우 또는 상하로 나란히 봅니다(보기 › 분할, 레이아웃 탭). 두 뷰는 같은 텍스트와 하나의 undo 스택을 공유하지만(한쪽에서 입력, 다른 쪽에서 ⌘Z) 스크롤은 따로 하고, 명령·상태바·마크다운 미리보기는 마지막으로 클릭한 뷰를 따라갑니다. ⌥⌘\\ 로 다른 분할로 포커스를 옮기며, 켜져 있는 동안 상태바에 **SPLIT**이 표시됩니다.
 - **빠른 추가(⇧⌘N, 다른 앱에서는 ⌃⌥N):** HyperEdit를 활성화하지 않는 작은 떠 있는 창입니다. 메모를 쓰고 ⌘↩를 누르면 문서 끝에 덧붙여지고(기본으로 타임스탬프 헤딩 포함) 바로 저장되며 undo 한 번으로 되돌릴 수 있습니다. 창은 숨겨지고 포커스는 쓰던 앱으로 돌아갑니다. Esc로 닫으면 쓰던 글은 다음에 이어집니다. 전역 단축키(끔 / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N)는 설정에서 고르며 손쉬운 사용 권한이 필요 없습니다.
 - **구문 색(⌃⌘H)** — 파일 확장자로 언어를 고르고 상태바에 표시합니다. 메모·마크다운은 일부러 가벼운 규칙만 — URL, ISO 날짜·시각, `#` 헤딩, `[제목]` 줄, 목록 기호와 `[ ]` / `[x]` 체크박스, `#태그`, `키:` 라벨, `**굵게**`, `` `코드` ``, `⇒ → ->` 화살표 — 를 칠하고, 코드 20여 종(Swift, Python, JavaScript/TypeScript, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI)은 주석·문자열·숫자·키워드·함수·타입 이름을 칠합니다. 색은 테마의 `syntax` 팔레트에서 오고 TextKit 2 렌더링 속성으로 보이는 줄에만 입히므로 파일·undo·타이핑 속도에 영향이 없습니다. 블록 주석(`/* */`, `<!-- -->`), 여러 줄 문자열(Swift·Python 의 `"""`, JavaScript 템플릿 리터럴, Go raw 문자열, Rust `r#"…"#`), 마크다운 펜스 코드 블록은 닫힐 때까지 모든 줄이 색을 유지하고 — 펜스는 정보 문자열의 언어로 칠합니다 — 여는/닫는 기호를 입력하면 아래 줄이 바로 다시 칠해집니다. 줄별 상태 표 덕에 3만 4천 줄 파일도 약 10 ms, 키 입력당 비용은 체감되지 않습니다.
-- **사용자 정의 문법:** `~/Library/Application Support/HyperEdit/grammars/` 에 `*.json` 파일을 두면 언어를 추가하거나 내장 언어를 덮어쓸 수 있습니다 — 이름, 확장자·파일 이름, 주석 기호, 문자열 구분자, 키워드 목록. HyperEdit 가 첫 실행 때 `example.json` 과 스키마를 설명하는 README 와 함께 폴더를 만들고, **파일 › 문법 폴더 열기…** 가 Finder 에서 열며, **파일 › 문법 다시 읽기** 로 재실행 없이 반영되며, 상태바에 문법 이름이 보이고 주석 토글(⌘/)도 그 기호를 씁니다.
+- **사용자 정의 문법:** `~/Library/Application Support/HyperEdit/grammars/` 에 `*.json` 파일(1 MB 이하)을 두면 언어를 추가하거나 내장 언어를 덮어쓸 수 있습니다 — 이름, 확장자·파일 이름, 주석 기호, 문자열 구분자, 키워드 목록. HyperEdit 가 첫 실행 때 `example.json` 과 스키마를 설명하는 README 와 함께 폴더를 만들고, **파일 › 문법 폴더 열기…** 가 Finder 에서 열며, **파일 › 문법 다시 읽기** 로 재실행 없이 반영되며, 상태바에 문법 이름이 보이고 주석 토글(⌘/)도 그 기호를 씁니다.
 - **커서 스타일과 창 투명도(설정 › 외형):** 막대·블록·밑줄 캐럿과 깜빡임 끄기 — 멀티 커서·열 모드의 보조 캐럿도 같은 스타일 — 그리고 50–100 % 창 투명도로 편집기·리본·패널·상태바가 반투명해지고(글자는 불투명) 창 뒤 시스템 블러를 켤 수 있습니다. 보기 › 창 투명도 메뉴에 100 / 90 / 80 / 70 % 단계가 있습니다.
 
 ### 마크다운 미리보기
@@ -183,7 +183,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(616개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(629개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
@@ -209,7 +209,7 @@ Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.sw
   Editor/            AppKit 편집기: HyperTextView(TextKit 2, 캐럿 스타일), GutterView, EditorSession(분할), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
-Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 251개
+Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 253개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                guide/ (USER_GUIDE.md + 번역 10개) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
 l10n/                ui.<언어>.json — 언어별 평면 사전(scripts/l10n-export.py 로 내보내고 scripts/l10n-add.py 로 카탈로그에 병합) · context.json
