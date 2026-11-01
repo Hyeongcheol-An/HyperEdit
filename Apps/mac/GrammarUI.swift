@@ -4,7 +4,7 @@ import HyperCore
 
 // grammar: 사용자 정의 문법 UI — 파일 메뉴 항목("Open Grammars Folder…", "Reload Grammars"), 시작 시 로드, 리로드 뒤 문서 문법·상태바 갱신.
 // 엔진은 HyperCore `Highlight/UserGrammarStore.swift`(JSON 스키마·검증) 와 `GrammarRegistry`(사용자 문법 우선) 에 있다.
-// UI 문자열은 영어 키(LocalizedStringKey) + Localizable.xcstrings 의 한국어 번역 (l10n/grammar.ko.json).
+// UI 문자열은 영어 키(LocalizedStringKey) + Localizable.xcstrings 의 번역 (l10n/ui.<code>.json).
 
 /// 파일 메뉴 "새 문서…" 그룹 뒤: 문법 폴더 열기 · 문법 다시 읽기
 struct GrammarCommands: Commands {

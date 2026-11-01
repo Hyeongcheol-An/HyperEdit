@@ -2,7 +2,7 @@ import SwiftUI
 import HyperCore
 
 // export: 파일 메뉴 항목 + 저장 패널 액세서리(테마 · 줄 번호). 로직은 Exporter.swift.
-// UI 문자열은 영어 키(LocalizedStringKey) + Localizable.xcstrings 의 한국어 번역 (l10n/export.ko.json).
+// UI 문자열은 영어 키(LocalizedStringKey) + Localizable.xcstrings 의 번역 (l10n/ui.<code>.json).
 
 /// 파일 메뉴 끝(가져오기/내보내기 자리)에 "Export as HTML…" / "Export as PDF…" — 단축키 없음
 struct ExportCommands: Commands {
