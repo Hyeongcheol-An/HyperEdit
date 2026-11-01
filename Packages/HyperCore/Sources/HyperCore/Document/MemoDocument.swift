@@ -212,6 +212,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
 
     public func saveIfDirty() { if isDirty { save() } }
 
+    /// export: 앱 기능(내보내기 등)이 상태바의 상태 칸에 한 줄을 띄운다 — 다음 저장 메시지가 덮어쓴다. 앱이 `$status` 를 출력 로그로 흘리므로 로그에도 남는다.
+    public func showStatus(_ text: String) { status = text }
+
     private var isSaving = false
     private var saveRequestedWhileSaving = false
 

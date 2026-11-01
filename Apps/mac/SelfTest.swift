@@ -327,6 +327,7 @@ enum SelfTest {
         await runFold(model: model, check: check, log: log)
         await runQAFold(model: model, check: check, log: log)   // QA: 접기·마커·undo 추적 경계 사례
         await runQAEditTools(model: model, check: check, log: log)   // qa: 편집 도구 경계 상황
+        await runExport(model: model, check: check, log: log)   // export: HTML/PDF 내보내기 (SelfTest+Export.swift)
         runLanguage(model: model, check: check, log: log)   // l10n: 언어 설정·번들 언어·환영문
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록

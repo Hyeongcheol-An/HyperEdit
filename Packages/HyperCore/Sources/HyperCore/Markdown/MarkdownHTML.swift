@@ -14,15 +14,24 @@ public enum MarkdownHTML {
         return visitor.visit(doc)
     }
 
-    /// 테마 스타일·스크롤 동기화 스크립트가 포함된 완전한 HTML 문서.
+    /// 테마 스타일·스크롤 동기화 스크립트가 포함된 완전한 HTML 문서 (분할 미리보기용).
     /// - baseURL: 문서가 있는 폴더 — 상대 경로 이미지가 이 폴더 기준으로 풀린다 (`<base href>`).
     public static func html(for markdown: String, theme: Theme, baseURL: URL?) -> String {
+        html(for: markdown, theme: theme, baseURL: baseURL, title: nil, includeScript: true)
+    }
+
+    /// export: 제목과 스크립트 포함 여부를 고를 수 있는 변형. 내보내기(HTML 파일·PDF)는 `includeScript: false` 로 —
+    /// 미리보기 스크립트는 링크 클릭을 가로채 앱에 넘기므로 브라우저에서는 링크가 죽는다. 대신 인쇄 스타일(`printCSS`)을 더한다.
+    public static func html(for markdown: String, theme: Theme, baseURL: URL?, title: String?, includeScript: Bool) -> String {
         var base = ""
         if let u = baseURL {
             var s = u.absoluteString
             if !s.hasSuffix("/") { s += "/" }
             base = "<base href=\"\(escape(s))\">\n"
         }
+        let titleTag = title.map { "<title>\(escape($0))</title>\n" } ?? ""
+        let scriptTag = includeScript ? "<script>\n\(script)\n</script>\n" : ""
+        let extraCSS = includeScript ? "" : "\n" + printCSS
         return """
         <!DOCTYPE html>
         <html>
@@ -30,18 +39,15 @@ public enum MarkdownHTML {
         <meta charset="utf-8">
         <meta name="color-scheme" content="\(theme.isDark ? "dark" : "light")">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        \(base)<style>
-        \(css(for: theme))
+        \(titleTag)\(base)<style>
+        \(css(for: theme))\(extraCSS)
         </style>
         </head>
         <body>
         <article class="markdown-body">
         \(body(for: markdown))
         </article>
-        <script>
-        \(script)
-        </script>
-        </body>
+        \(scriptTag)</body>
         </html>
         """
     }
@@ -102,6 +108,21 @@ public enum MarkdownHTML {
         ::selection { background: \(selection); }
         """
     }
+
+    /// export: 인쇄(PDF) 스타일 — 여백은 용지 설정이 맡고, 긴 코드 줄은 잘리는 대신 접으며, 제목 바로 뒤와 표·코드 블록 안에서는 쪽을 나누지 않는다.
+    /// 배경색은 테마 그대로 찍는다 (`print-color-adjust: exact`; WKWebView 쪽은 `shouldPrintBackgrounds` 도 켠다).
+    public static let printCSS = """
+    @media print {
+      html, body { background: inherit; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { padding: 0; }
+      .markdown-body { max-width: none; }
+      pre, pre code { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; }
+      table { display: table; overflow: visible; }
+      h1, h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
+      pre, blockquote, table, img, tr { break-inside: avoid; page-break-inside: avoid; }
+      a { color: inherit; text-decoration: underline; }
+    }
+    """
 
     /// 코드·표 머리글 배경. 팔레트의 bg_alt 가 본문 배경과 거의 같으면(라이트 테마) 조금 더 띄운다.
     static func codeBackground(for theme: Theme) -> RGBA {
