@@ -118,6 +118,7 @@ struct EditorCommands: Commands {
         }
         MacroCommands(model: model)   // macro
         ExportCommands(model: model)   // export: 파일 › Export as HTML… / PDF…
+        SecretsCommands(model: model)   // secrets: 편집 메뉴 끝 — Reveal Secrets ⌥⌘S · Mask Secret Blocks · Clear Clipboard
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")

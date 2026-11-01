@@ -110,6 +110,11 @@ struct MarkdownPreviewView: NSViewRepresentable {
                 .removeDuplicates()
                 .sink { [weak self] line in self?.sync(toLine: line) }
                 .store(in: &cancellables)
+            // secrets: 비밀 블록 가리기 설정이 바뀌면 다시 렌더 (스크롤 유지)
+            NotificationCenter.default.publisher(for: .secretsSettingsDidChange)
+                .receive(on: RunLoop.main)
+                .sink { [weak self] _ in self?.render(reason: .theme) }
+                .store(in: &cancellables)
         }
 
         func tearDown() {
@@ -141,7 +146,8 @@ struct MarkdownPreviewView: NSViewRepresentable {
                 return
             }
             container?.showPlaceholder(false)
-            let text = document.textStorage.string
+            let raw = document.textStorage.string
+            let maskSecrets = AppDefaults.store.object(forKey: SecretsStore.maskKey) as? Bool ?? true   // secrets: 미리보기는 비밀 줄을 •••••••• 로 (드러내기와 무관)
             let folder = document.url.deletingLastPathComponent()
             let fileChanged = renderedURL != document.url
             renderedURL = document.url
@@ -150,7 +156,9 @@ struct MarkdownPreviewView: NSViewRepresentable {
             renderTask?.cancel()
             renderTask = Task { [weak self] in
                 // 파싱·HTML 생성은 백그라운드 (2 MB 문서도 메인 스레드를 막지 않도록)
-                let html = await Task.detached(priority: .userInitiated) { MarkdownHTML.html(for: text, theme: theme, baseURL: folder) }.value
+                let html = await Task.detached(priority: .userInitiated) {
+                    MarkdownHTML.html(for: maskSecrets ? SecretScanner.redacted(raw) : raw, theme: theme, baseURL: folder)   // secrets
+                }.value
                 guard let self, !Task.isCancelled, gen == self.generation else { return }
                 if fileChanged || reason == .file || reason == .initial {
                     // 다른 파일: 이전 스크롤 위치는 의미가 없다 → 로드 뒤 편집기의 첫 줄로 맞춘다

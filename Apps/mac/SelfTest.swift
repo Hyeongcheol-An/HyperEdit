@@ -329,6 +329,7 @@ enum SelfTest {
         await runQAEditTools(model: model, check: check, log: log)   // qa: 편집 도구 경계 상황
         await runExport(model: model, check: check, log: log)   // export: HTML/PDF 내보내기 (SelfTest+Export.swift)
         runLanguage(model: model, check: check, log: log)   // l10n: 언어 설정·번들 언어·환영문
+        await runSecrets(model: model, check: check, log: log)   // secrets: 비밀 블록 마스킹·드러내기·클립보드 소거·찾기 결과 redaction
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()

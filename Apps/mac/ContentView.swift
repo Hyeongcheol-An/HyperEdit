@@ -125,6 +125,7 @@ struct StatusBar: View {
                 cell("SPLIT", width: 56).foregroundStyle(theme.accent.color).help("Split editor on (⌘\\)")
             }
             MacroStatusCell(recorder: model.macros, theme: theme)   // macro
+            SecretsStatusCell(store: model.secrets, theme: theme)   // secrets: •••• N / REVEALED
             if caret.multiCaretCount > 1 {
                 cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")
             }

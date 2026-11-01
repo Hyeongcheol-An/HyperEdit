@@ -281,10 +281,12 @@ final class AppModel: ObservableObject {
     /// 아웃라인·타임라인 재계산 (백그라운드, 텍스트 스냅샷 기준)
     func rescanStructure() {
         scanTask?.cancel()
-        let text = document.textStorage.string
+        let raw = document.textStorage.string
         let isMD = document.url.pathExtension.lowercased() == "md"
+        let maskSecrets = secrets.maskEnabled   // secrets: 비밀 줄은 마스크로 바꾼 텍스트에서 스캔 → 아웃라인·타임라인에 비밀 줄이 오르지 않는다 (줄 수는 같다)
         scanTask = Task { [weak self] in
             let (o, t) = await Task.detached(priority: .utility) { () -> ([OutlineItem], [TimelineItem]) in
+                let text = maskSecrets ? SecretScanner.redacted(raw) : raw   // secrets
                 let idx = LineIndex(text: text)
                 return (OutlineScanner.outline(text, index: idx, isMarkdown: isMD), OutlineScanner.timeline(text, index: idx))
             }.value
@@ -375,11 +377,15 @@ final class AppModel: ObservableObject {
         let q = searchQuery, opts = searchOptions
         guard !q.isEmpty else { searchHits = []; searchError = nil; return }
         let text = document.textStorage.string
+        let maskSecrets = secrets.maskEnabled   // secrets: 비밀 줄의 결과 미리보기는 마스크로 (매치·줄 번호는 그대로)
         isSearching = true
         searchTask = Task { [weak self] in
             // 줄 인덱스는 같은 스냅샷에서 새로 만든다 — 편집 직후 250ms 안에는 document.lineIndex 가 낡아 범위 밖 접근으로 크래시할 수 있다
             let outcome: ([SearchHit], String?) = await Task.detached(priority: .userInitiated) {
-                do { return (try SearchEngine.search(q, in: text, index: LineIndex(text: text), options: opts), nil) }
+                do {
+                    let hits = try SearchEngine.search(q, in: text, index: LineIndex(text: text), options: opts)
+                    return (maskSecrets ? SecretScanner.redacting(hits: hits, in: text) : hits, nil)   // secrets
+                }
                 catch SearchError.invalidRegex(let m) { return ([], String(localized: "Regex error: \(m)")) }
                 catch { return ([], error.localizedDescription) }
             }.value
@@ -627,6 +633,8 @@ final class AppModel: ObservableObject {
     let session = EditorSession()
     // quick append: 떠 있는 입력 창 + 전역 단축키 — QuickAppend/QuickAppendController.swift
     lazy var quickAppend = QuickAppendController(model: self)
+    // secrets: 비밀 블록 설정·Reveal Secrets(⌥⌘S)·클립보드 소거 — SecretsUI.swift (편집기별 가림은 Editor/SecretController.swift)
+    lazy var secrets = SecretsStore(model: self)
 }
 
 /// 스레드 안전 취소 플래그 — 부모 Task 의 취소를 detached 작업에 전달할 때 사용
