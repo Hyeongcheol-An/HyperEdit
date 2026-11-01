@@ -1,6 +1,66 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "'blockComment' must be [open, close]": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' 는 [여는 기호, 닫는 기호] 여야 합니다"
+          }
+        }
+      }
+    },
+    "'extensions' or 'filenames' is required": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'extensions' 또는 'filenames' 가 필요합니다"
+          }
+        }
+      }
+    },
+    "'mode' must be one of code, markup, css, data, shell (got '%@')": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' 는 code, markup, css, data, shell 중 하나여야 합니다 ('%@')"
+          }
+        }
+      }
+    },
+    "'multilineStrings' has too many entries (max 127)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' 항목이 너무 많습니다 (최대 127)"
+          }
+        }
+      }
+    },
+    "'name' is required": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'name' 은 필수입니다"
+          }
+        }
+      }
+    },
+    "'strings' entries must be a single character (got '%@')": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'strings' 항목은 한 글자여야 합니다 ('%@')"
+          }
+        }
+      }
+    },
     "Blocked saving empty content (original had %lld characters). Undo (⌘Z) and save again.": {
       "localizations": {
         "ar": {
@@ -573,6 +633,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "已存储 · %@ · 原编码无法表示部分字符，已转换为 UTF-8"
+          }
+        }
+      }
+    },
+    "line %lld column %lld: %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld줄 %lld열: %@"
+          }
+        }
+      }
+    },
+    "not UTF-8 text": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UTF-8 텍스트가 아닙니다"
+          }
+        }
+      }
+    },
+    "not a grammar object: %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문법 객체가 아닙니다: %@"
           }
         }
       }

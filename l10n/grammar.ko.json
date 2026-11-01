@@ -1,0 +1,16 @@
+{
+  "Open Grammars Folder…": "문법 폴더 열기…",
+  "Reload Grammars": "문법 다시 읽기",
+  "Grammars reloaded · %lld": "문법 다시 읽음 · %lld개",
+  "User grammars loaded · %lld": "사용자 문법 읽음 · %lld개",
+  "Grammar file skipped · %@: %@": "문법 파일 건너뜀 · %@: %@",
+  "not UTF-8 text": "UTF-8 텍스트가 아닙니다",
+  "line %lld column %lld: %@": "%lld줄 %lld열: %@",
+  "not a grammar object: %@": "문법 객체가 아닙니다: %@",
+  "'name' is required": "'name' 은 필수입니다",
+  "'extensions' or 'filenames' is required": "'extensions' 또는 'filenames' 가 필요합니다",
+  "'mode' must be one of code, markup, css, data, shell (got '%@')": "'mode' 는 code, markup, css, data, shell 중 하나여야 합니다 ('%@')",
+  "'blockComment' must be [open, close]": "'blockComment' 는 [여는 기호, 닫는 기호] 여야 합니다",
+  "'strings' entries must be a single character (got '%@')": "'strings' 항목은 한 글자여야 합니다 ('%@')",
+  "'multilineStrings' has too many entries (max 127)": "'multilineStrings' 항목이 너무 많습니다 (최대 127)"
+}

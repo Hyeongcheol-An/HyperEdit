@@ -12,10 +12,10 @@ public struct CommentSyntax: Sendable {
     public var isUsable: Bool { line != nil || block != nil }
 }
 
-/// 확장자 → 주석 기호. 코드 언어는 `CodeLanguage` 의 주석 정의를 그대로 쓰고, 메모·마크다운은 여기서 정한다.
+/// 확장자 → 주석 기호. 코드 언어(사용자 정의 문법 포함)는 `CodeLanguage` 의 주석 정의를 그대로 쓰고, 메모·마크다운은 여기서 정한다.
 public enum CommentRegistry {
-    public static func syntax(for url: URL) -> CommentSyntax {
-        let grammar = GrammarRegistry.grammar(for: url)
+    public static func syntax(for url: URL, userGrammars store: UserGrammarStore = .shared) -> CommentSyntax {
+        let grammar = GrammarRegistry.grammar(for: url, userGrammars: store)
         if let code = grammar as? CodeGrammar { return code.language.commentSyntax }
         if let notes = grammar as? PlainNotesGrammar, notes.isMarkdown { return CommentSyntax(block: ("<!--", "-->")) }
         return CommentSyntax(line: "//")   // 메모(.txt · 확장자 없음) — 코드 조각이 섞인 메모라 `//` 가 가장 무난하다

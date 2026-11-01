@@ -117,6 +117,7 @@ struct EditorCommands: Commands {
             Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
         MacroCommands(model: model)   // macro
+        GrammarCommands(model: model)   // grammar: 파일 메뉴 — 문법 폴더 열기 · 문법 다시 읽기
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")

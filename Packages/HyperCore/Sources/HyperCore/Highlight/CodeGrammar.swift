@@ -11,11 +11,14 @@ public struct CodeLanguage: Sendable {
     public var lineComments: [[unichar]] = []
     public var blockComment: (start: [unichar], end: [unichar])? = nil
     public var quotes: Set<unichar> = [0x22, 0x27]
-    public var tripleQuotes = false
+    /// 여는/닫는 구분자가 같은 여러 줄 문자열 (`"""` `'''` `` ` ``). 줄에서 닫히지 않으면 다음 줄이 `.string(1-based 인덱스)` 로 시작한다.
+    public var multilineStrings: [[unichar]] = []
+    public var rawHashStrings = false          // Rust `r"…"` `r#"…"#` (여러 줄, 이스케이프 없음) → `.string(0x80 | #개수)`
     public var stringPrefixes: Set<unichar> = []
     public var keywords: Set<String> = []
     public var constants: Set<String> = []
     public var types: Set<String> = []
+    public var builtins: Set<String> = []      // 내장 함수·명령 → function (사용자 문법의 `builtins`)
     public var caseInsensitive = false
     public var hashDirective = false           // `#if` `#include` → keyword
     public var angleInclude = false            // `#include <stdio.h>` 의 `<stdio.h>` → string
@@ -32,32 +35,108 @@ public struct CodeLanguage: Sendable {
     public var dashFlags = false               // `-x` `--flag` → attribute (shell)
     public var doubleQuoteIsIdentifier = false // `"col"` → property (SQL)
     public var identifierDash = false          // 식별자에 `-` 허용 (CSS·YAML 키)
+    /// 사용자 정의 문법이 맡는 확장자·파일 이름 (소문자, `UserGrammarStore` 색인용). 내장 정의는 비어 있다 — 확장자 표는 `GrammarRegistry` 에 있다.
+    public var userExtensions: [String] = []
+    public var userFilenames: [String] = []
 
     public init(id: String, name: String) { self.id = id; self.name = name }
+
+    /// 여러 줄 상태를 만들 수 있는 정의인가 (블록 주석·여러 줄 문자열·마크업 주석). 아니면 `LineStateIndex` 가 스캔을 건너뛴다.
+    public var tracksLineState: Bool { blockComment != nil || !multilineStrings.isEmpty || rawHashStrings || mode == .markup }
 
     static func words(_ s: String) -> Set<String> { Set(s.split(separator: " ").map(String.init)) }
     static func u(_ s: String) -> [unichar] { Array(s.utf16) }
 }
 
-/// 코드 파일용 범용 줄 스캐너. 블록 주석·문자열은 같은 줄에서 닫히지 않으면 줄 끝까지로 본다.
+/// 코드 파일용 범용 줄 스캐너. 블록 주석·여러 줄 문자열이 줄에서 닫히지 않으면 줄 끝까지 칠하고 그 상태(`.blockComment` / `.string`)로 나간다 —
+/// 다음 줄은 그 상태로 들어와 닫힘까지 이어서 칠한다.
 public struct CodeGrammar: LanguageGrammar {
     public let language: CodeLanguage
     public var name: String { language.name }
+    public var tracksLineState: Bool { language.tracksLineState }
     public init(language: CodeLanguage) { self.language = language }
 
-    public func tokens(line buf: UnsafeBufferPointer<unichar>, base: Int) -> [Token] {
-        guard buf.count > 0 else { return [] }
-        return language.mode == .markup ? scanMarkup(buf, base) : scanCode(buf, base)
+    public func scanLine(_ buf: UnsafeBufferPointer<unichar>, base: Int, entering: LineState) -> (tokens: [Token], exiting: LineState) {
+        var out: [Token] = []
+        let exit = scan(buf, base, entering, emit: true, into: &out)
+        return (out, exit)
+    }
+
+    public func exitState(line buf: UnsafeBufferPointer<unichar>, entering: LineState) -> LineState {
+        var out: [Token] = []
+        return scan(buf, 0, entering, emit: false, into: &out)
+    }
+
+    /// 진입 상태의 꼬리(열린 블록 주석·문자열의 닫힘까지)를 먼저 처리하고 나머지를 보통 줄로 스캔한다. `emit == false` 면 토큰을 만들지 않는다 (상태 계산 전용).
+    private func scan(_ buf: UnsafeBufferPointer<unichar>, _ base: Int, _ entering: LineState, emit: Bool, into out: inout [Token]) -> LineState {
+        let n = buf.count
+        var start = 0
+        switch entering {
+        case .blockComment:
+            let end: [unichar] = language.mode == .markup ? Self.commentClose : (language.blockComment?.end ?? [])
+            if end.isEmpty { break }   // 이 문법에는 블록 주석이 없다 (문법 교체 직후의 낡은 상태) → 보통 줄로
+            guard let e = CharClass.find(end, in: buf, from: 0) else {
+                if emit, n > 0 { out.append(Token(location: base, length: n, kind: .comment)) }
+                return .blockComment
+            }
+            if emit { out.append(Token(location: base, length: e, kind: .comment)) }
+            start = e
+        case .string(let id):
+            guard let e = multilineClose(id, buf, from: 0) else {
+                if emit, n > 0 { out.append(Token(location: base, length: n, kind: .string)) }
+                return .string(id)
+            }
+            if emit, e > 0 { out.append(Token(location: base, length: e, kind: .string)) }
+            start = e
+        default: break
+        }
+        guard start < n else { return .normal }
+        let rest = start == 0 ? buf : UnsafeBufferPointer(rebasing: buf[start...])
+        return language.mode == .markup ? scanMarkup(rest, base + start, emit: emit, into: &out) : scanCode(rest, base + start, emit: emit, into: &out)
+    }
+
+    /// 여러 줄 문자열 id 의 닫는 구분자를 `from` 부터 찾아 그 끝(배타)을 돌려준다. id 가 이 문법에 없으면(낡은 상태) 0 — 보통 줄로 스캔한다.
+    private func multilineClose(_ id: UInt8, _ buf: UnsafeBufferPointer<unichar>, from: Int) -> Int? {
+        if id & 0x80 != 0 { return Self.rawClose(buf, from: from, hashes: Int(id & 0x7F)) }
+        let k = Int(id) - 1
+        guard k >= 0, k < language.multilineStrings.count else { return 0 }
+        return Self.close(of: language.multilineStrings[k], buf, from: from, escapes: true)
+    }
+
+    /// 닫는 구분자 `d` 를 찾는다 (백슬래시 이스케이프는 건너뜀). 반환: 닫힘 뒤 오프셋, 없으면 nil
+    private static func close(of d: [unichar], _ buf: UnsafeBufferPointer<unichar>, from: Int, escapes: Bool) -> Int? {
+        let n = buf.count
+        var j = from
+        while j + d.count <= n {
+            if escapes, buf[j] == 0x5C { j += 2; continue }
+            if buf[j] == d[0], CharClass.matches(buf, j, d) { return j + d.count }
+            j += 1
+        }
+        return nil
+    }
+
+    /// Rust raw 문자열의 닫힘: `"` 뒤에 `#` 이 hashes 개
+    private static func rawClose(_ buf: UnsafeBufferPointer<unichar>, from: Int, hashes h: Int) -> Int? {
+        let n = buf.count
+        var j = from
+        while j < n {
+            if buf[j] == 0x22 {
+                var k = j + 1, m = 0
+                while m < h, k < n, buf[k] == 0x23 { m += 1; k += 1 }
+                if m == h { return k }
+            }
+            j += 1
+        }
+        return nil
     }
 
     // MARK: - 코드 / 데이터 / 셸 / CSS
 
-    private func scanCode(_ buf: UnsafeBufferPointer<unichar>, _ base: Int) -> [Token] {
+    private func scanCode(_ buf: UnsafeBufferPointer<unichar>, _ base: Int, emit: Bool, into out: inout [Token]) -> LineState {
         let L = language
         let n = buf.count
-        var out: [Token] = []
         @inline(__always) func c(_ i: Int) -> unichar { i < n ? buf[i] : 0 }
-        @inline(__always) func add(_ from: Int, _ to: Int, _ k: TokenKind) { if to > from { out.append(Token(location: base + from, length: to - from, kind: k)) } }
+        @inline(__always) func add(_ from: Int, _ to: Int, _ k: TokenKind) { if emit, to > from { out.append(Token(location: base + from, length: to - from, kind: k)) } }
         @inline(__always) func nextNonSpace(_ from: Int) -> Int { var k = from; while k < n, CharClass.isSpace(buf[k]) { k += 1 }; return k }
         @inline(__always) func isIdent(_ ch: unichar) -> Bool { CharClass.isWord(ch) || (L.dollarIdent && ch == 0x24) || (L.identifierDash && ch == 0x2D) }
 
@@ -71,11 +150,6 @@ public struct CodeGrammar: LanguageGrammar {
 
         /// 따옴표 문자열 끝(배타) — 이스케이프 처리, 닫히지 않으면 줄 끝
         func stringEnd(from s: Int, quote q: unichar) -> Int {
-            if L.tripleQuotes, c(s + 1) == q, c(s + 2) == q {
-                var j = s + 3
-                while j + 2 < n { if buf[j] == q, buf[j + 1] == q, buf[j + 2] == q { return j + 3 }; j += 1 }
-                return n
-            }
             var j = s + 1
             while j < n {
                 if buf[j] == 0x5C { j += 2; continue }
@@ -83,6 +157,21 @@ public struct CodeGrammar: LanguageGrammar {
                 j += 1
             }
             return n
+        }
+        /// `s` 에서 여러 줄 문자열 구분자가 시작하면 그 id (1-based)
+        @inline(__always) func multilineDelimiter(at s: Int) -> Int? {
+            guard !L.multilineStrings.isEmpty, s < n else { return nil }
+            for (k, d) in L.multilineStrings.enumerated() where buf[s] == d[0] && CharClass.matches(buf, s, d) { return k + 1 }
+            return nil
+        }
+        /// `s` 에서 시작하는 문자열의 끝(배타). 여러 줄 구분자가 줄에서 닫히지 않으면 (n, 나갈 상태)
+        func stringFrom(_ s: Int) -> (end: Int, exit: LineState?) {
+            if let id = multilineDelimiter(at: s) {
+                let d = L.multilineStrings[id - 1]
+                if let e = Self.close(of: d, buf, from: s + d.count, escapes: true) { return (e, nil) }
+                return (n, .string(UInt8(id)))
+            }
+            return (stringEnd(from: s, quote: buf[s]), nil)
         }
         func numberEnd(from s: Int) -> Int {
             var j = s
@@ -118,13 +207,11 @@ public struct CodeGrammar: LanguageGrammar {
                 if lc.count == 1, lc[0] == 0x23, CharClass.isWord(prev) || prev == 0x24 { continue }
                 isLineComment = true; break
             }
-            if isLineComment { add(i, n, .comment); return out }
+            if isLineComment { add(i, n, .comment); return .normal }
             if let bc = L.blockComment, CharClass.matches(buf, i, bc.start) {
-                var j = i + bc.start.count
-                var closed = false
-                while j + bc.end.count <= n { if CharClass.matches(buf, j, bc.end) { closed = true; break }; j += 1 }
-                if closed { add(i, j + bc.end.count, .comment); i = j + bc.end.count; continue }
-                add(i, n, .comment); return out
+                // 줄에서 닫히지 않으면 줄 끝까지 주석이고 다음 줄은 `.blockComment` 로 시작한다
+                guard let e = CharClass.find(bc.end, in: buf, from: i + bc.start.count) else { add(i, n, .comment); return .blockComment }
+                add(i, e, .comment); i = e; continue
             }
 
             // Rust: 'a' 문자 vs 'a 수명
@@ -133,9 +220,10 @@ public struct CodeGrammar: LanguageGrammar {
                 if c(i + 1) == 0x5C { let e = stringEnd(from: i, quote: 0x27); add(i, e, .string); i = e; continue }
                 if CharClass.isIdentStart(c(i + 1)) { var j = i + 1; while j < n, CharClass.isWord(buf[j]) { j += 1 }; add(i, j, .attribute); i = j; continue }
             }
-            // 문자열
-            if L.quotes.contains(ch) {
-                let e = stringEnd(from: i, quote: ch)
+            // 문자열 (여러 줄 구분자 `"""` `` ` `` 는 따옴표 집합과 무관하게 본다)
+            if L.quotes.contains(ch) || multilineDelimiter(at: i) != nil {
+                let (e, exit) = stringFrom(i)
+                if let exit { add(i, n, .string); return exit }
                 var kind = TokenKind.string
                 if L.doubleQuoteIsIdentifier, ch == 0x22 || ch == 0x60 { kind = .property }
                 if L.keyBeforeColon, c(nextNonSpace(e)) == 0x3A { kind = .property; valueMode = true; afterKey = true }
@@ -240,13 +328,27 @@ public struct CodeGrammar: LanguageGrammar {
             if CharClass.isIdentStart(ch) || (L.dollarIdent && ch == 0x24) {
                 var j = i + 1
                 while j < n, isIdent(buf[j]) { j += 1 }
-                // 접두 문자열 f"…" r'…' b"…"
-                if !L.stringPrefixes.isEmpty, j - i <= 2, L.quotes.contains(c(j)) {
+                // Rust raw 문자열 r"…" r#"…"# br"…" — 이스케이프 없음, 여러 줄
+                if L.rawHashStrings, (j - i == 1 && buf[i] == 0x72) || (j - i == 2 && buf[i] == 0x62 && buf[i + 1] == 0x72), c(j) == 0x23 || c(j) == 0x22 {
+                    var h = 0, k = j
+                    while k < n, buf[k] == 0x23, h < 127 { h += 1; k += 1 }
+                    if c(k) == 0x22 {
+                        guard let e = Self.rawClose(buf, from: k + 1, hashes: h) else { add(i, n, .string); return .string(0x80 | UInt8(h)) }
+                        add(i, e, .string); i = e; continue
+                    }
+                }
+                // 접두 문자열 f"…" r'…' b"…" (f"""…""" 처럼 여러 줄 구분자가 따라와도 된다)
+                if !L.stringPrefixes.isEmpty, j - i <= 2, L.quotes.contains(c(j)) || multilineDelimiter(at: j) != nil {
                     var ok = true; var k = i; while k < j { if !L.stringPrefixes.contains(buf[k]) { ok = false }; k += 1 }
-                    if ok { let e = stringEnd(from: j, quote: buf[j]); add(i, e, .string); i = e; continue }
+                    if ok {
+                        let (e, exit) = stringFrom(j)
+                        if let exit { add(i, n, .string); return exit }
+                        add(i, e, .string); i = e; continue
+                    }
                 }
                 // Rust 매크로 name!(
                 if L.macroBang, c(j) == 0x21, c(j + 1) == 0x28 || c(j + 1) == 0x5B || c(j + 1) == 0x7B { add(i, j + 1, .function); i = j + 1; continue }
+                if !emit { i = j; expectCommand = false; continue }   // 상태 계산 전용: 종류 분류(문자열 생성·집합 조회)는 건너뛴다
                 let word = CharClass.string(buf, i, j)
                 let key = L.caseInsensitive ? word.lowercased() : word
                 let k = nextNonSpace(j)
@@ -269,8 +371,10 @@ public struct CodeGrammar: LanguageGrammar {
                 } else if L.keywords.contains(key) {
                     kind = .keyword
                     if L.commandPosition, Self.shellCommandLeaders.contains(key) { add(i, j, .keyword); expectCommand = true; i = j; continue }
-                } else if L.types.contains(word) {
+                } else if L.types.contains(key) {
                     kind = .type
+                } else if L.builtins.contains(key) {
+                    kind = .function
                 } else if valueMode {
                     kind = nil
                 } else if expectCommand {
@@ -308,7 +412,7 @@ public struct CodeGrammar: LanguageGrammar {
             if CharClass.isWord(ch) { while i < n, CharClass.isWord(buf[i]) { i += 1 }; continue }
             i += 1
         }
-        return out
+        return .normal
     }
 
     private static let important = CodeLanguage.u("!important")
@@ -330,19 +434,17 @@ public struct CodeGrammar: LanguageGrammar {
     private static let commentOpen = CodeLanguage.u("<!--")
     private static let commentClose = CodeLanguage.u("-->")
 
-    private func scanMarkup(_ buf: UnsafeBufferPointer<unichar>, _ base: Int) -> [Token] {
+    private func scanMarkup(_ buf: UnsafeBufferPointer<unichar>, _ base: Int, emit: Bool, into out: inout [Token]) -> LineState {
         let n = buf.count
-        var out: [Token] = []
         @inline(__always) func c(_ i: Int) -> unichar { i < n ? buf[i] : 0 }
-        @inline(__always) func add(_ from: Int, _ to: Int, _ k: TokenKind) { if to > from { out.append(Token(location: base + from, length: to - from, kind: k)) } }
+        @inline(__always) func add(_ from: Int, _ to: Int, _ k: TokenKind) { if emit, to > from { out.append(Token(location: base + from, length: to - from, kind: k)) } }
         @inline(__always) func isName(_ ch: unichar) -> Bool { CharClass.isWord(ch) || ch == 0x2D || ch == 0x3A || ch == 0x2E }
         var i = 0
         while i < n {
             let ch = buf[i]
             if ch == 0x3C, CharClass.matches(buf, i, Self.commentOpen) {
-                var j = i + 4
-                while j + 3 <= n, !CharClass.matches(buf, j, Self.commentClose) { j += 1 }
-                let e = j + 3 <= n ? j + 3 : n
+                // `<!-- … -->` 가 줄에서 닫히지 않으면 다음 줄은 `.blockComment`
+                guard let e = CharClass.find(Self.commentClose, in: buf, from: i + 4) else { add(i, n, .comment); return .blockComment }
                 add(i, e, .comment); i = e; continue
             }
             if ch == 0x3C {
@@ -381,7 +483,7 @@ public struct CodeGrammar: LanguageGrammar {
             }
             i += 1
         }
-        return out
+        return .normal
     }
 }
 
@@ -391,7 +493,7 @@ public extension CodeLanguage {
     static let swift: CodeLanguage = {
         var l = CodeLanguage(id: "swift", name: "Swift")
         l.lineComments = [u("//")]; l.blockComment = (u("/*"), u("*/"))
-        l.quotes = [0x22]
+        l.quotes = [0x22]; l.multilineStrings = [u("\"\"\"")]
         l.hashDirective = true; l.atRole = .attribute
         l.keywords = words("import class struct enum protocol extension func var let if else guard for while repeat in return switch case default break continue fallthrough where defer do try catch throw throws rethrows as is init deinit static final override public private fileprivate internal open mutating nonmutating inout associatedtype typealias some any await async actor get set willSet didSet lazy weak unowned subscript operator precedencegroup indirect convenience required optional dynamic isolated nonisolated consuming borrowing macro package")
         l.constants = words("true false nil self Self super")
@@ -401,7 +503,7 @@ public extension CodeLanguage {
     static let python: CodeLanguage = {
         var l = CodeLanguage(id: "python", name: "Python")
         l.lineComments = [u("#")]
-        l.tripleQuotes = true; l.stringPrefixes = [0x66, 0x46, 0x72, 0x52, 0x62, 0x42, 0x75, 0x55]
+        l.multilineStrings = [u("\"\"\""), u("'''")]; l.stringPrefixes = [0x66, 0x46, 0x72, 0x52, 0x62, 0x42, 0x75, 0x55]
         l.atRole = .attribute
         l.keywords = words("and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield match case print")
         l.constants = words("True False None self cls NotImplemented Ellipsis")
@@ -412,7 +514,7 @@ public extension CodeLanguage {
     static let javascript: CodeLanguage = {
         var l = CodeLanguage(id: "javascript", name: "JavaScript")
         l.lineComments = [u("//")]; l.blockComment = (u("/*"), u("*/"))
-        l.quotes = [0x22, 0x27, 0x60]
+        l.quotes = [0x22, 0x27, 0x60]; l.multilineStrings = [u("`")]   // 템플릿 리터럴은 여러 줄
         l.dollarIdent = true; l.atRole = .attribute
         l.keywords = words("async await break case catch class const continue debugger default delete do else export extends finally for function if import in instanceof let new of return static super switch throw try typeof var void while with yield interface type enum implements declare namespace public private protected readonly abstract as from get set keyof satisfies override module require")
         l.constants = words("true false null undefined NaN Infinity this")
@@ -490,7 +592,7 @@ public extension CodeLanguage {
     static let go: CodeLanguage = {
         var l = CodeLanguage(id: "go", name: "Go")
         l.lineComments = [u("//")]; l.blockComment = (u("/*"), u("*/"))
-        l.quotes = [0x22, 0x27, 0x60]
+        l.quotes = [0x22, 0x27, 0x60]; l.multilineStrings = [u("`")]   // raw 문자열은 여러 줄
         l.keywords = words("break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var")
         l.constants = words("true false nil iota")
         l.types = words("int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 uintptr float32 float64 complex64 complex128 string bool byte rune error any")
@@ -501,7 +603,7 @@ public extension CodeLanguage {
         var l = CodeLanguage(id: "rust", name: "Rust")
         l.lineComments = [u("//")]; l.blockComment = (u("/*"), u("*/"))
         l.quotes = [0x22]
-        l.rustLifetimes = true; l.macroBang = true
+        l.rustLifetimes = true; l.macroBang = true; l.rawHashStrings = true
         l.keywords = words("as async await break const continue crate dyn else enum extern fn for if impl in let loop match mod move mut pub ref return static struct super trait type unsafe use where while macro_rules union")
         l.constants = words("true false self Self None Some Ok Err")
         l.types = words("i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f32 f64 str bool char")
