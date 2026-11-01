@@ -62,7 +62,7 @@ bash scripts/check-sensitive.sh
 
 ## Commit convention
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org) because [semantic-release](https://semantic-release.gitbook.io) derives versions and the changelog from them. Subjects may be in Korean or English.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org) because [semantic-release](https://semantic-release.gitbook.io) derives versions and the changelog from them. **Write the subject in English** — it is copied verbatim into the GitHub release notes and `CHANGELOG.md`; the body may be Korean or English. Hand-written notes for a release go in `docs/release-notes/v<version>.md` (English) and are appended to the release body automatically.
 
 | Type | Effect on release | Example |
 |---|---|---|

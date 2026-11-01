@@ -3,7 +3,7 @@
 #
 #   scripts/update-cask.sh <version> [out-dir] [--push]
 #
-# sha256 은 dist/HyperEdit-<version>.dmg 에서 계산하므로 scripts/make-dmg.sh 뒤에 실행한다.
+# sha256 은 dist/HyperEdit-<version>-universal.dmg 에서 계산하므로 scripts/make-dmg.sh 뒤에 실행한다.
 # --push 와 HOMEBREW_TAP_DEPLOY_KEY(쓰기 권한 deploy key 의 개인키) 가 있으면
 # github.com/Hyeongcheol-An/homebrew-tap 을 클론해 Casks/hyperedit.rb 를 갱신·푸시한다.
 # 없으면 out-dir(기본 Casks/) 에 파일만 쓴다 — 저장소 자체도 `brew tap Hyeongcheol-An/hyperedit https://github.com/Hyeongcheol-An/HyperEdit` 로 tap 가능.
@@ -17,7 +17,7 @@ TAP_REPO="git@github.com:Hyeongcheol-An/homebrew-tap.git"
 # GitHub 의 공개 SSH 호스트 키(ed25519) — 러너에서 처음 접속할 때 TOFU 대신 고정 검증
 GITHUB_HOST_KEY="github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
 
-DMG="dist/HyperEdit-${VERSION}.dmg"
+DMG="dist/HyperEdit-${VERSION}-universal.dmg"
 [ -f "$DMG" ] || { echo "missing $DMG"; exit 1; }
 SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
 
@@ -28,7 +28,7 @@ cask "hyperedit" do
   version "${VERSION}"
   sha256 "${SHA}"
 
-  url "https://github.com/Hyeongcheol-An/HyperEdit/releases/download/v#{version}/HyperEdit-#{version}.dmg"
+  url "https://github.com/Hyeongcheol-An/HyperEdit/releases/download/v#{version}/HyperEdit-#{version}-universal.dmg"
   name "HyperEdit"
   desc "Ribbon-style plain-text editor for one large notes file"
   homepage "https://github.com/Hyeongcheol-An/HyperEdit"

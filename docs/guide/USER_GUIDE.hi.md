@@ -43,7 +43,7 @@ brew install --cask hyperedit
 
 बाद में `brew upgrade --cask hyperedit` से अपडेट करें। Homebrew 7 पहले आपसे टैप पर भरोसा करने को कह सकता है: `brew trust Hyeongcheol-An/tap`।
 
-**DMG:** [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases) से `HyperEdit-x.y.z.dmg` डाउनलोड करें, उसे खोलें और `HyperEdit.app` को `Applications` में खींचें। डाउनलोड की जाँच के लिए `SHA256SUMS` को DMG के बगल में रखें और `shasum -a 256 -c SHA256SUMS` चलाएँ।
+**DMG:** [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases) से `HyperEdit-x.y.z-universal.dmg` डाउनलोड करें, उसे खोलें और `HyperEdit.app` को `Applications` में खींचें। डाउनलोड की जाँच के लिए `SHA256SUMS` को DMG के बगल में रखें और `shasum -a 256 -c SHA256SUMS` चलाएँ।
 
 HyperEdit में कोई नेटवर्क कोड और कोई टेलीमेट्री नहीं है: यह कभी घर फ़ोन नहीं करता, और अपडेट आप करते हैं, यह नहीं।
 

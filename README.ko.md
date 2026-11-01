@@ -23,7 +23,7 @@ HyperEdit는 메모·로그·코드 조각이 수만 줄 쌓인 텍스트 파일
 
 ## 설치
 
-**요구 사항:** macOS 15 (Sequoia) 이상. 유니버설 바이너리(Apple Silicon·Intel).
+**요구 사항:** macOS 15 (Sequoia) 이상. 유니버설 바이너리 하나가 Apple Silicon(arm64)과 Intel(x86_64) Mac 에서 네이티브로 실행되며, DMG 이름은 `HyperEdit-x.y.z-universal.dmg` 입니다.
 
 **Homebrew**
 
@@ -36,7 +36,7 @@ Homebrew 7에서는 먼저 tap 을 신뢰하라고 물을 수 있습니다: `bre
 
 **DMG**
 
-[GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases)에서 `HyperEdit-x.y.z.dmg`를 내려받아 열고 `HyperEdit.app`을 `Applications`로 드래그합니다. Developer ID로 서명·공증된 빌드라 Gatekeeper 경고 없이 바로 열립니다. 내려받은 파일을 검증하려면 `SHA256SUMS`를 DMG 옆에 두고 실행하세요.
+[GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases)에서 `HyperEdit-x.y.z-universal.dmg`를 내려받아 열고 `HyperEdit.app`을 `Applications`로 드래그합니다. Developer ID로 서명·공증된 빌드라 Gatekeeper 경고 없이 바로 열립니다. 내려받은 파일을 검증하려면 `SHA256SUMS`를 DMG 옆에 두고 실행하세요.
 
 ```sh
 shasum -a 256 -c SHA256SUMS
@@ -201,7 +201,7 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 
 ## 릴리스 과정
 
-커밋은 [Conventional Commits](https://www.conventionalcommits.org/ko/)를 따릅니다(제목은 한국어·영어 모두 가능). `main`에 push될 때마다 [semantic-release](https://semantic-release.gitbook.io)가 커밋으로 다음 버전을 계산하고 `CHANGELOG.md`·`VERSION`·`Config/Version.xcconfig`를 갱신한 뒤, DMG를 빌드·서명·공증하고, `SHA256SUMS`와 Zed 테마 파일을 첨부한 GitHub Release를 만들고, `Hyeongcheol-An/homebrew-tap`의 Homebrew cask를 갱신합니다. `feat:` → 마이너, `fix:` / `perf:` → 패치, `docs:` / `chore:` / `refactor:` → 릴리스 없음. 워크플로는 Developer ID·공증 시크릿이 없으면 릴리스를 만들지 않습니다(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 서명 없는 빌드를 허용할 수 있습니다). Release 빌드는 심볼과 미사용 코드를 제거하며(`project.yml`의 `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), v0.6에서 유니버설 바이너리가 13.5 MB에서 6.5 MB로 줄었습니다. 로컬 커밋 메시지 훅은 `scripts/install-hooks.sh`로 설치합니다.
+커밋은 [Conventional Commits](https://www.conventionalcommits.org/ko/)를 따르고, 제목은 semantic-release 가 릴리스 노트로 쓰므로 영어로 적습니다(본문은 한국어 가능). `main`에 push될 때마다 [semantic-release](https://semantic-release.gitbook.io)가 커밋으로 다음 버전을 계산하고 `CHANGELOG.md`·`VERSION`·`Config/Version.xcconfig`를 갱신한 뒤, DMG를 빌드·서명·공증하고, `SHA256SUMS`와 Zed 테마 파일을 첨부한 GitHub Release를 만들고, `Hyeongcheol-An/homebrew-tap`의 Homebrew cask를 갱신합니다. `feat:` → 마이너, `fix:` / `perf:` → 패치, `docs:` / `chore:` / `refactor:` → 릴리스 없음. 워크플로는 Developer ID·공증 시크릿이 없으면 릴리스를 만들지 않습니다(포크는 저장소 변수 `ALLOW_UNSIGNED_RELEASE=true`로 서명 없는 빌드를 허용할 수 있습니다). Release 빌드는 심볼과 미사용 코드를 제거하며(`project.yml`의 `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), v0.6에서 유니버설 바이너리가 13.5 MB에서 6.5 MB로 줄었습니다. 로컬 커밋 메시지 훅은 `scripts/install-hooks.sh`로 설치합니다.
 
 ## 로드맵과 제한
 

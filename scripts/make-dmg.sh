@@ -2,7 +2,7 @@
 # DMG 패키징 (+ Developer ID 서명 · 공증 · 스테이플). 사용: scripts/make-dmg.sh [version]
 #   서명 모드(자동 판별): Developer ID Application 인증서 → developer-id / Apple Development → dev(자동 서명) / 없음 → ad-hoc
 #   공증(있을 때만): ASC_KEY_ID + ASC_ISSUER_ID + (ASC_KEY_P8_PATH | ASC_KEY_P8[base64]) 또는 keychain 프로필 NOTARY_PROFILE(기본 HyperEdit)
-#   결과: dist/HyperEdit-<version>.dmg, dist/SHA256SUMS
+#   결과: dist/HyperEdit-<version>-universal.dmg, dist/SHA256SUMS
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION="${1:-$(cat VERSION)}"
@@ -81,7 +81,7 @@ STAGE="$PWD/build/dmg-stage"; rm -rf "$STAGE"; mkdir -p "$STAGE"
 ditto "$APP" "$STAGE/HyperEdit.app"
 ln -s /Applications "$STAGE/Applications"
 cp build/VolumeIcon.icns "$STAGE/.VolumeIcon.icns"
-OUT="dist/HyperEdit-$VERSION.dmg"; rm -f "$OUT" build/rw.dmg
+OUT="dist/HyperEdit-$VERSION-universal.dmg"; rm -f "$OUT" build/rw.dmg
 hdiutil create -volname "HyperEdit $VERSION" -srcfolder "$STAGE" -ov -format UDRW -fs HFS+ build/rw.dmg >/dev/null 2>&1
 MOUNT_DIR="$(hdiutil attach build/rw.dmg -readwrite -noverify -noautoopen -nobrowse 2>/dev/null | awk -F'\t' '/\/Volumes\//{print $NF}' | tail -1)"
 [ -n "$MOUNT_DIR" ] || { echo "::error::hdiutil attach 실패"; exit 1; }
@@ -97,5 +97,5 @@ if [ "$NOTARIZE" = 1 ]; then
   xcrun stapler staple "$OUT" >/dev/null || { echo "::error::stapler 실패 (dmg)"; exit 1; }; echo "stapled: dmg"
   spctl -a -t open --context context:primary-signature -v "$OUT" 2>&1 | tail -1
 fi
-( cd dist && shasum -a 256 "HyperEdit-$VERSION.dmg" > SHA256SUMS )
+( cd dist && shasum -a 256 "HyperEdit-$VERSION-universal.dmg" > SHA256SUMS )
 echo "dmg: $OUT ($(du -h "$OUT" | cut -f1)) · mode=$MODE notarized=$NOTARIZE"; cat dist/SHA256SUMS

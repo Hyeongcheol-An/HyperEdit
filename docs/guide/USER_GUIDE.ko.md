@@ -43,7 +43,7 @@ brew install --cask hyperedit
 
 이후 업데이트는 `brew upgrade --cask hyperedit`로 합니다. Homebrew 7에서는 먼저 tap을 신뢰하라고 물을 수 있습니다: `brew trust Hyeongcheol-An/tap`.
 
-**DMG:** [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases)에서 `HyperEdit-x.y.z.dmg`를 내려받아 열고 `HyperEdit.app`을 `Applications`로 드래그합니다. 내려받은 파일을 검증하려면 `SHA256SUMS`를 DMG 옆에 두고 `shasum -a 256 -c SHA256SUMS`를 실행하세요.
+**DMG:** [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases)에서 `HyperEdit-x.y.z-universal.dmg`를 내려받아 열고 `HyperEdit.app`을 `Applications`로 드래그합니다. 내려받은 파일을 검증하려면 `SHA256SUMS`를 DMG 옆에 두고 `shasum -a 256 -c SHA256SUMS`를 실행하세요.
 
 HyperEdit에는 네트워크 코드도 텔레메트리도 없습니다: 어디에도 접속하지 않으며, 업데이트는 앱이 알아서 하는 일이 아니라 사용자가 직접 하는 일입니다.
 

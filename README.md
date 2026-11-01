@@ -23,7 +23,7 @@ HyperEdit is for people who keep a single, ever-growing text file — tens of th
 
 ## Install
 
-**Requirements:** macOS 15 (Sequoia) or later. Universal binary (Apple Silicon and Intel).
+**Requirements:** macOS 15 (Sequoia) or later. One universal binary runs natively on Apple Silicon (arm64) and Intel (x86_64) Macs; the DMG is named `HyperEdit-x.y.z-universal.dmg`.
 
 **Homebrew**
 
@@ -36,7 +36,7 @@ Homebrew 7 may ask you to trust the tap first: `brew trust Hyeongcheol-An/tap`.
 
 **DMG**
 
-Download `HyperEdit-x.y.z.dmg` from [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases), open it and drag `HyperEdit.app` to `Applications`. Builds are Developer ID signed and notarized, so Gatekeeper opens them without warnings. To verify a download, put `SHA256SUMS` next to the DMG and run:
+Download `HyperEdit-x.y.z-universal.dmg` from [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases), open it and drag `HyperEdit.app` to `Applications`. Builds are Developer ID signed and notarized, so Gatekeeper opens them without warnings. To verify a download, put `SHA256SUMS` next to the DMG and run:
 
 ```sh
 shasum -a 256 -c SHA256SUMS
@@ -201,7 +201,7 @@ Config/              Version.xcconfig (managed by semantic-release) · Signing.x
 
 ## Release process
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org) (Korean or English subjects are fine). On every push to `main`, [semantic-release](https://semantic-release.gitbook.io) computes the next version from the commits, updates `CHANGELOG.md`, `VERSION` and `Config/Version.xcconfig`, builds, signs and notarizes the DMG, publishes a GitHub Release with `SHA256SUMS` and the Zed theme file, and updates the Homebrew cask in `Hyeongcheol-An/homebrew-tap`. `feat:` → minor, `fix:` / `perf:` → patch, `docs:` / `chore:` / `refactor:` → no release. The workflow refuses to publish without the Developer ID and notarization secrets (forks can set the repository variable `ALLOW_UNSIGNED_RELEASE=true` to allow unsigned builds). Release builds strip symbols and dead code (`project.yml`: `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), which took the universal binary from 13.5 MB to 6.5 MB in v0.6. Install the local commit-message hook with `scripts/install-hooks.sh`.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org); subjects are written in English because semantic-release turns them into the release notes (bodies may be Korean). On every push to `main`, [semantic-release](https://semantic-release.gitbook.io) computes the next version from the commits, updates `CHANGELOG.md`, `VERSION` and `Config/Version.xcconfig`, builds, signs and notarizes the DMG, publishes a GitHub Release (English notes from the commits plus `docs/release-notes/vX.Y.Z.md` when that file exists) with `SHA256SUMS` and the Zed theme file, and updates the Homebrew cask in `Hyeongcheol-An/homebrew-tap`. `feat:` → minor, `fix:` / `perf:` → patch, `docs:` / `chore:` / `refactor:` → no release. The workflow refuses to publish without the Developer ID and notarization secrets (forks can set the repository variable `ALLOW_UNSIGNED_RELEASE=true` to allow unsigned builds). Release builds strip symbols and dead code (`project.yml`: `DEAD_CODE_STRIPPING`, `STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE: all`), which took the universal binary from 13.5 MB to 6.5 MB in v0.6. Install the local commit-message hook with `scripts/install-hooks.sh`.
 
 ## Roadmap and limitations
 
