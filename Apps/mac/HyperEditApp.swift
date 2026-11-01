@@ -117,6 +117,7 @@ struct EditorCommands: Commands {
             Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
         MacroCommands(model: model)   // macro
+        SecretsCommands(model: model)   // secrets: 편집 메뉴 끝 — Reveal Secrets ⌥⌘S · Mask Secret Blocks · Clear Clipboard
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")

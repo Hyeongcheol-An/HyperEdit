@@ -46,6 +46,15 @@ final class FoldController {
     /// 접힘 집합이 바뀜 (스크롤 마커 등이 다시 그린다)
     var onChange: (() -> Void)?
 
+    // secrets: 비밀 블록 마스킹이 같은 NSTextLayoutManagerDelegate 를 쓴다 (레이아웃 매니저의 delegate 는 하나) — SecretController 가 설치하는 훅.
+    // 숨은 문단(접힘)이 우선이고, 그 다음에 "이 문단을 가릴까" 를 묻는다. 접힘이 없어도 가릴 줄이 있으면 delegate 를 유지한다 (updateLayoutDelegate).
+    /// 가릴 줄이 하나라도 있는가
+    var hasMasks: (() -> Bool)?
+    /// 문단 시작 오프셋이 가릴 줄이면 그 문단의 프래그먼트(MaskedLayoutFragment)를, 아니면 nil
+    var maskedFragment: ((_ paragraphStart: Int, _ element: NSTextElement, _ range: NSTextRange?) -> NSTextLayoutFragment?)?
+    /// 편집 통지 전달 (편집 전 좌표, textWillChange 와 같은 인자) — 비밀 범위 오프셋 추적용
+    var onEdit: ((_ edits: [(NSRange, String)], _ alreadyApplied: Bool) -> Void)?
+
     private(set) var folds: [FoldSpan] = []              // hiddenStart 오름차순
     private(set) var candidates: [FoldCandidate] = []    // headerStart 오름차순
     private var merged: [NSRange] = []                   // folds 의 숨김 구간 합집합 (정렬, 겹침 없음)
@@ -314,6 +323,7 @@ final class FoldController {
 
     private func textWillChange(_ edits: [(NSRange, String)], alreadyApplied: Bool) {
         editGeneration &+= 1
+        onEdit?(edits, alreadyApplied)   // secrets: 비밀 범위도 같은 통지로 옮긴다
         guard !folds.isEmpty || !candidates.isEmpty else { return }
         let before = folds
         var dropped: [FoldSpan] = []
@@ -482,11 +492,16 @@ final class FoldController {
         return nil
     }
 
+    /// 레이아웃 delegate 는 접힘이나 가릴 줄(secrets)이 하나라도 있을 때만 설치한다 — delegate 가 있으면 TextKit 이 키 입력마다 프래그먼트를 만드는 경로가
+    /// 느려진다 (실측 약 1 ms/키). 접힘·마스크 집합이 비거나 생길 때 부른다 (SecretController 도 부른다)
+    func updateLayoutDelegate() {
+        guard Self.isEnabled, let lm = textView?.textLayoutManager else { return }
+        let want: NSTextLayoutManagerDelegate? = (folds.isEmpty && !(hasMasks?() ?? false)) ? nil : layoutDelegate   // secrets
+        if (lm.delegate as AnyObject?) !== (want as AnyObject?) { lm.delegate = want }
+    }
+
     private func rebuildMerged() {
-        if let lm = textView?.textLayoutManager {
-            let want: NSTextLayoutManagerDelegate? = folds.isEmpty ? nil : layoutDelegate
-            if (lm.delegate as AnyObject?) !== (want as AnyObject?) { lm.delegate = want }
-        }
+        updateLayoutDelegate()
         var out: [NSRange] = []
         out.reserveCapacity(folds.count)
         for f in folds {
@@ -501,7 +516,8 @@ final class FoldController {
 
     /// 범위의 레이아웃 프래그먼트를 다시 만들게 한다. 실측(macOS 27 TextKit 2): invalidateLayout(for:) 은 기존 프래그먼트 객체를 재사용해
     /// delegate 를 다시 부르지 않으므로, 테마 적용과 같은 속성 편집 통지로 보이는 프래그먼트를 재생성한다 (문자열·undo·dirty 에는 영향 없음).
-    private func invalidateLayout(from start: Int, to end: Int) {
+    /// SecretController 도 가림 상태가 바뀐 문단을 다시 만들 때 쓴다 (secrets)
+    func invalidateLayout(from start: Int, to end: Int) {
         guard let tv = textView, let ts = tv.textStorage else { return }
         let len = ts.length
         let a = max(0, min(start, len)), b = max(a, min(end, len))
@@ -530,17 +546,21 @@ final class FoldedLayoutFragment: NSTextLayoutFragment {
     override func draw(at point: CGPoint, in context: CGContext) {}
 }
 
-/// 문단마다 "숨길까" 를 FoldController 에 묻는다 (NSTextView 는 기본 delegate 를 두지 않는다 — 실측)
+/// 문단마다 "숨길까" 를 FoldController 에 묻고 (NSTextView 는 기본 delegate 를 두지 않는다 — 실측), 숨기지 않으면 "가릴까"(secrets) 를 묻는다
 final class FoldLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
     weak var controller: FoldController?
 
     func textLayoutManager(_ textLayoutManager: NSTextLayoutManager, textLayoutFragmentFor location: NSTextLocation, in textElement: NSTextElement) -> NSTextLayoutFragment {
         let range = textElement.elementRange
-        let hidden = MainActor.assumeIsolated { () -> Bool in
-            guard let c = controller, c.hasFolds, let cs = textLayoutManager.textContentManager as? NSTextContentStorage else { return false }
-            return c.isOffsetHidden(cs.offset(from: cs.documentRange.location, to: location))
+        return MainActor.assumeIsolated { () -> NSTextLayoutFragment in
+            guard let c = controller, let cs = textLayoutManager.textContentManager as? NSTextContentStorage else {
+                return NSTextLayoutFragment(textElement: textElement, range: range)
+            }
+            let offset = cs.offset(from: cs.documentRange.location, to: location)
+            if c.hasFolds, c.isOffsetHidden(offset) { return FoldedLayoutFragment(textElement: textElement, range: range) }
+            if let masked = c.maskedFragment?(offset, textElement, range) { return masked }   // secrets: 비밀 줄
+            return NSTextLayoutFragment(textElement: textElement, range: range)
         }
-        return hidden ? FoldedLayoutFragment(textElement: textElement, range: range) : NSTextLayoutFragment(textElement: textElement, range: range)
     }
 }
 

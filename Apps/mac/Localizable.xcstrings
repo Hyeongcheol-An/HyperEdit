@@ -449,6 +449,26 @@
         }
       }
     },
+    "%lld s": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld초"
+          }
+        }
+      }
+    },
+    "%lld secret blocks masked — the caret reveals a block, ⌥⌘S reveals all": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 블록 %lld개 가림 — 캐럿을 넣으면 그 블록이, ⌥⌘S 는 전부 드러납니다"
+          }
+        }
+      }
+    },
     "'%@' not found": {
       "localizations": {
         "ar": {
@@ -2433,6 +2453,26 @@
         }
       }
     },
+    "Clear Clipboard": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "클립보드 비우기"
+          }
+        }
+      }
+    },
+    "Clear clipboard after copying a secret": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀을 복사한 뒤 클립보드 비우기"
+          }
+        }
+      }
+    },
     "Clipboard": {
       "localizations": {
         "ar": {
@@ -2493,6 +2533,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "剪贴板"
+          }
+        }
+      }
+    },
+    "Clipboard cleared": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "클립보드 비움"
+          }
+        }
+      }
+    },
+    "Clipboard cleared (secret)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "클립보드 비움 (비밀)"
           }
         }
       }
@@ -11265,6 +11325,16 @@
         }
       }
     },
+    "Lines inside a fenced block whose info string starts with `secret` (```secret, ```secret bank) are drawn as •••••••• in the editor, the find results, the outline and the Markdown preview. Moving the caret into a block reveals it; ⌥⌘S reveals all blocks until they are masked again. The file itself is saved as plain text — this hides, it does not encrypt.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "정보 문자열이 `secret` 로 시작하는 펜스 블록(```secret, ```secret 은행)의 안쪽 줄은 편집기·찾기 결과·아웃라인·마크다운 미리보기에서 •••••••• 로 표시됩니다. 캐럿을 블록 안에 두면 그 블록이 드러나고, ⌥⌘S 는 다시 가릴 때까지 모든 블록을 드러냅니다. 파일은 평문으로 저장됩니다 — 가릴 뿐 암호화하지 않습니다."
+          }
+        }
+      }
+    },
     "Ln %@, Col %@": {
       "localizations": {
         "ar": {
@@ -12609,6 +12679,36 @@
         }
       }
     },
+    "Mask Secret Blocks": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 블록 가리기"
+          }
+        }
+      }
+    },
+    "Mask Secrets": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 가리기"
+          }
+        }
+      }
+    },
+    "Mask secret blocks": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 블록 가리기"
+          }
+        }
+      }
+    },
     "Mask: *.md;*.txt (empty = all)": {
       "localizations": {
         "ar": {
@@ -13501,6 +13601,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "为最近录制的宏命名 — 它会出现在“宏”菜单中"
+          }
+        }
+      }
+    },
+    "Never": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "수동"
           }
         }
       }
@@ -17409,6 +17519,16 @@
         }
       }
     },
+    "Re-mask after": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다시 가리기까지"
+          }
+        }
+      }
+    },
     "Re-read the file — unsaved changes are discarded": {
       "localizations": {
         "ar": {
@@ -19201,6 +19321,16 @@
         }
       }
     },
+    "Reveal Secrets": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 드러내기"
+          }
+        }
+      }
+    },
     "Reveal in Finder": {
       "localizations": {
         "ar": {
@@ -20861,6 +20991,106 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在搜索…"
+          }
+        }
+      }
+    },
+    "Secret block masking is off (Settings › Secrets)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 블록 가리기가 꺼져 있습니다 (설정 › 비밀)"
+          }
+        }
+      }
+    },
+    "Secret block masking off — secret lines are shown": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 블록 가리기 꺼짐 — 비밀 줄이 그대로 보입니다"
+          }
+        }
+      }
+    },
+    "Secret blocks masked": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 블록 가림"
+          }
+        }
+      }
+    },
+    "Secrets": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀"
+          }
+        }
+      }
+    },
+    "Secrets masked": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 가림"
+          }
+        }
+      }
+    },
+    "Secrets masked again automatically": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀을 자동으로 다시 가렸습니다"
+          }
+        }
+      }
+    },
+    "Secrets revealed · masked again in %lld s (⌥⌘S)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 드러냄 · %lld초 뒤 다시 가림 (⌥⌘S)"
+          }
+        }
+      }
+    },
+    "Secrets revealed · ⌥⌘S masks them again": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 드러냄 · ⌥⌘S 로 다시 가림"
+          }
+        }
+      }
+    },
+    "Secrets revealed — masked again automatically after %lld s (⌥⌘S masks now)": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 드러남 — %lld초 뒤 자동으로 다시 가립니다 (⌥⌘S 로 지금 가리기)"
+          }
+        }
+      }
+    },
+    "Secrets revealed — ⌥⌘S masks them again": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "비밀 드러남 — ⌥⌘S 로 다시 가립니다"
           }
         }
       }

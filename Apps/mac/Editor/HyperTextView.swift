@@ -38,6 +38,14 @@ final class HyperTextView: NSTextView {
     var foldPillFillColor = NSColor.controlBackgroundColor
     var foldPillRects: [(NSRect, Int)] = []
 
+    // MARK: 비밀 블록 훅 (SecretController 가 설치 — 이 뷰는 비밀 범위를 모른다)   // secrets
+    /// 가릴 줄이 하나라도 있는가 — 접힘처럼 undo/redo 의 사후 편집 통지가 필요하다
+    var hasMasks: (() -> Bool)?   // secrets
+    /// 문단 시작 오프셋이 지금 가려져 있는가 (셀프테스트용)
+    var isOffsetMasked: ((Int) -> Bool)?   // secrets
+    /// 복사·잘라내기가 끝난 뒤 복사된 범위를 알린다 — 비밀 줄이 섞였으면 클립보드 자동 소거
+    var onDidCopy: ((_ ranges: [NSRange]) -> Void)?   // secrets
+
     /// 열 모드 (UltraEdit Alt+C): 켜져 있으면 드래그와 ⇧방향키가 사각형 블록을 만든다
     var columnModeEnabled = false {
         didSet {
@@ -263,6 +271,7 @@ final class HyperTextView: NSTextView {
         onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
         tracksUntrackedLineChanges = false
         hasFolds = nil; isOffsetHidden = nil; foldedSpan = nil; foldPills = nil; onFoldPillClick = nil
+        hasMasks = nil; isOffsetMasked = nil; onDidCopy = nil   // secrets
         snippetProvider = nil; macroSink = nil
         onBecomeActive = nil; onMultiChange = nil; onDidMoveToWindow = nil
     }
@@ -314,7 +323,7 @@ final class HyperTextView: NSTextView {
         if expectingTrackedEdit { expectingTrackedEdit = false; return }
         // 추적되지 않은 편집은 undo/redo 이거나 프로그램적 전체 교체(파일 열기·다시 읽기)다. 접힘이 없고 undo 도 아니면 할 일이 없다 —
         // 여기서 교체 문자열을 복사하면 8 MB 문서를 열 때마다 8 MB 를 복사하게 된다.
-        let foldsActive = hasFolds?() ?? false
+        let foldsActive = (hasFolds?() ?? false) || (hasMasks?() ?? false)   // secrets: 비밀 범위도 undo/redo 뒤 옮겨야 한다
         guard foldsActive || undoInProgress else { return }
         let edited = ts.editedRange
         guard edited.location != NSNotFound else { return }
@@ -580,16 +589,27 @@ final class HyperTextView: NSTextView {
     // MARK: - 클립보드 (열 블록은 줄 단위)
 
     override func copy(_ sender: Any?) {
-        guard let m = multi, m.ranges.contains(where: { $0.length > 0 }) else { super.copy(sender); return }
+        guard let m = multi, m.ranges.contains(where: { $0.length > 0 }) else {
+            let ranges = selectedRanges.map(\.rangeValue)
+            super.copy(sender)
+            onDidCopy?(ranges)   // secrets
+            return
+        }
         let ns = string as NSString
         let text = m.ranges.map { ns.substring(with: $0) }.joined(separator: "\n")
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
+        onDidCopy?(m.ranges)   // secrets: 멀티 캐럿·열 블록 복사
     }
 
     override func cut(_ sender: Any?) {
-        guard let m = multi else { super.cut(sender); return }
+        guard let m = multi else {
+            let ranges = selectedRanges.map(\.rangeValue)
+            super.cut(sender)
+            onDidCopy?(ranges)   // secrets (AppKit 의 cut 이 copy 를 거치면 두 번 통지되지만 소거 예약은 마지막 것으로 갈음된다)
+            return
+        }
         guard m.ranges.contains(where: { $0.length > 0 }) else { return }   // 길이 0 캐럿뿐이면 지울 선택이 없다 (앞 글자를 지우면 안 됨)
         copy(sender)
         multiDelete(backward: false)

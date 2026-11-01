@@ -86,6 +86,7 @@ struct EditorView: NSViewRepresentable {
         private var syntaxColors: [TokenKind: NSColor] = [:]
         private(set) var highlightEnabled: Bool
         private var foldController: FoldController?    // fold
+        private var secretController: SecretController?   // secrets
         private var markerView: ScrollMarkerView?      // markers
 
         init(model: AppModel, role: EditorRole = .primary) {
@@ -106,6 +107,7 @@ struct EditorView: NSViewRepresentable {
             cancellables.removeAll()
             docCancellables.removeAll()
             foldController?.unbind()   // fold: 보관 코디네이터가 줄 인덱스 발행마다 재스캔하지 않게
+            secretController?.unbind()   // secrets
             markerView?.unbind()       // markers
             session.retire(self)
         }
@@ -261,6 +263,9 @@ struct EditorView: NSViewRepresentable {
             let fold = FoldController(textView: textView, gutter: gutter, log: { [weak self] in self?.model.log($0) })   // fold
             fold.bind(document: document)                                                                                   // fold
             foldController = fold                                                                                           // fold
+            let secret = SecretController(textView: textView, fold: fold, store: model.secrets, log: { [weak self] in self?.model.log($0) })   // secrets: 비밀 블록 마스킹 (같은 layout delegate)
+            secret.bind(document: document)                                                                                 // secrets
+            secretController = secret                                                                                       // secrets
             let markers = ScrollMarkerView(model: model, scrollView: scrollView, documentProvider: { [weak self] in self?.document })   // markers
             markers.foldLines = { [weak fold] in fold?.foldedHeaderLines ?? [] }                                           // markers
             markers.bind(document: document)                                                                                // markers
@@ -307,6 +312,7 @@ struct EditorView: NSViewRepresentable {
             appliedThemeID = nil
             bindDocument()
             foldController?.bind(document: newDoc)   // fold
+            secretController?.bind(document: newDoc)   // secrets
             markerView?.bind(document: newDoc)       // markers
             grammar = GrammarRegistry.grammar(for: newDoc.url)
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) } else { invalidateHighlight() }
@@ -368,6 +374,7 @@ struct EditorView: NSViewRepresentable {
             scrollView?.backgroundColor = theme.background.nsColor
             gutter?.apply(theme: theme, baseFont: base)
             foldController?.apply(theme: theme)   // fold
+            secretController?.apply(theme: theme)   // secrets: 가림막 색·글꼴
             markerView?.apply(theme: theme)       // markers
             container?.layer?.backgroundColor = theme.background.nsColor.cgColor
             tv.needsDisplay = true
@@ -812,6 +819,7 @@ struct EditorView: NSViewRepresentable {
             if line != lastCaretLine { lastCaretLine = line; gutter?.needsDisplay = true }
             if isActive { scheduleSaveViewState() }
             foldController?.selectionDidChange()   // fold: 캐럿이 숨은 줄로 들어가면 펼친다 (뷰마다)
+            secretController?.selectionDidChange()   // secrets: 캐럿이 든 비밀 블록을 드러내고, 떠난 블록을 다시 가린다 (뷰마다)
         }
     }
 }
