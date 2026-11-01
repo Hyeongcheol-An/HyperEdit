@@ -28,7 +28,8 @@ HyperEdit est un éditeur de texte brut rapide pour macOS, conçu autour d'un se
 20. [Fichiers écrits par HyperEdit](#20-fichiers-écrits-par-hyperedit)
 21. [Dépannage](#21-dépannage)
 22. [Limitations connues](#22-limitations-connues)
-23. [Obtenir de l'aide](#23-obtenir-de-laide)
+23. [Blocs secrets et verrouillage de l'app](#23-blocs-secrets-et-verrouillage-de-lapp)
+24. [Obtenir de l'aide](#24-obtenir-de-laide)
 
 ## 1. Installation et mise à jour
 
@@ -167,11 +168,14 @@ Comme le panneau n'active pas HyperEdit, il fonctionne aussi depuis n'importe qu
 ## 15. Aperçu Markdown et coloration syntaxique
 
 - **Aperçu Markdown (⇧⌘P)** divise la fenêtre avec, à droite, un rendu du fichier actuel : titres, listes et listes de tâches, tableaux, code délimité, citations, liens et images, stylés avec le thème actuel. Il suit la position de défilement de l'éditeur et se met à jour peu après la fin de la saisie. Les liens s'ouvrent dans votre navigateur ; le HTML brut du fichier est affiché comme texte, jamais exécuté. Les fichiers de plus de 2 Mo affichent un avis au lieu d'un aperçu. La barre d'état affiche **MD** quand il est actif.
-- **Coloration syntaxique (⌃⌘H)** est choisie selon l'extension du fichier et indiquée dans la barre d'état. Les notes et le Markdown reçoivent un jeu de règles léger — URL, dates et heures, titres, lignes `[Titre]`, puces de liste et cases `[ ]` / `[x]`, `#tags`, étiquettes `clé:`, `**gras**`, `` `code` `` et flèches `⇒ → ->` — et une vingtaine de langages de programmation reçoivent commentaires, chaînes, nombres, mots-clés, noms de fonctions et de types. Les couleurs ne sont dessinées que sur les lignes visibles, elles ne modifient donc jamais le fichier et ne ralentissent pas la saisie. La coloration se fait ligne par ligne : un commentaire ou une chaîne sur plusieurs lignes n'est coloré que sur la ligne où il commence.
+- **Coloration syntaxique (⌃⌘H)** est choisie selon l'extension du fichier et indiquée dans la barre d'état. Les notes et le Markdown reçoivent un jeu de règles léger — URL, dates et heures, titres, lignes `[Titre]`, puces de liste et cases `[ ]` / `[x]`, `#tags`, étiquettes `clé:`, `**gras**`, `` `code` `` et flèches `⇒ → ->` — et une vingtaine de langages de programmation reçoivent commentaires, chaînes, nombres, mots-clés, noms de fonctions et de types. Les couleurs ne sont dessinées que sur les lignes visibles, elles ne modifient donc jamais le fichier et ne ralentissent pas la saisie. Les constructions qui s'étendent sur plusieurs lignes gardent leur couleur jusqu'à leur fermeture : commentaires de bloc (`/* */`, `<!-- -->`), chaînes multilignes (`"""` de Swift et Python, littéraux de gabarit JavaScript, chaînes brutes Go, `r#"…"#` de Rust) et blocs de code délimités Markdown, colorés avec le langage nommé dans la chaîne d'info (```` ```python ````). Taper un délimiteur d'ouverture ou de fermeture recolore immédiatement les lignes suivantes.
+- **Grammaires définies par l'utilisateur.** Pour colorer un langage que HyperEdit ne connaît pas, ou pour modifier un langage intégré, placez un fichier `*.json` dans `~/Library/Application Support/HyperEdit/grammars/`. **Fichier › Ouvrir le dossier des grammaires…** crée le dossier avec un `example.json` à copier et un README qui explique chaque clé — `name`, `extensions` ou `filenames`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **Fichier › Recharger les grammaires** applique vos modifications sans redémarrer ; la barre d'état affiche le nom de la grammaire, Commenter (⌘/) utilise ses marqueurs de commentaire, et un fichier qui ne peut pas être analysé est ignoré avec un message dans le volet Sortie.
 
 ## 16. Thèmes, polices et texte CJK
 
 **Thèmes.** 22 palettes — 5 claires, 17 sombres — sont livrées avec l'app. Par défaut, elle suit l'apparence du système : **Hyper Light** en mode clair, **Hyper Dark** en mode sombre. Choisissez un thème dans l'onglet Disposition, le menu de thème de la barre d'état, **Présentation › Thème** ou ⌥⌘] / ⌥⌘[ pour le fixer ; **Suivre l'apparence du système** se trouve dans les mêmes menus et dans les Réglages. Les mêmes palettes sont disponibles pour l'éditeur Zed (`hyperedit-themes.json` dans chaque version publiée).
+
+**Curseur et opacité de la fenêtre.** Réglages › **Apparence** choisit la forme du curseur — **Barre** (par défaut), **Bloc** (la cellule du caractère est teintée de la couleur du curseur pour que le caractère reste lisible) ou **Souligné** — et s'il clignote ; les curseurs supplémentaires du multi-curseur et du mode colonne utilisent la même forme. **Opacité de la fenêtre** (50–100 %) rend toute la fenêtre translucide — éditeur, ruban, volets et barre d'état compris — tandis que le texte, les icônes et les bordures restent opaques, et **Flou derrière la fenêtre** ajoute le flou du système. Présentation › Opacité de la fenêtre propose les paliers 100 / 90 / 80 / 70 %.
 
 **Polices.** HyperEdit utilise **Fira Code** lorsqu'elle est installée, et la police à chasse fixe du système sinon. Le texte coréen est dessiné avec une police distincte — **D2Coding** par défaut, lorsqu'elle est installée — mise à l'échelle pour qu'une syllabe hangeul fasse exactement deux cellules latines de large, ce qui garde droits les tableaux alignés par tabulations. Les ligatures, la hauteur de ligne, les deux familles de polices et l'échelle du hangeul sont dans les Réglages. Le texte chinois et japonais utilise les polices de secours du système et compte aussi pour deux cellules dans Aligner les colonnes.
 
@@ -183,6 +187,7 @@ Comme le panneau n'active pas HyperEdit, il fonctionne aussi depuis n'importe qu
 - **Sécurité.** Un tampon vide n'est jamais écrit par-dessus un fichier qui avait du contenu. Si l'enregistrement échoue quand vous quittez, une copie de secours est écrite dans le dossier des instantanés et il vous est demandé si vous voulez quitter quand même.
 - **Encodages.** Les fichiers sont lus d'abord en UTF-8, puis en EUC-KR (CP949), CP1252 et Latin-1, et enregistrés dans le même encodage (un BOM UTF-8 est préservé). Si vous tapez un caractère que l'encodage d'origine ne peut pas stocker, le fichier est enregistré en UTF-8 et la barre d'état l'indique. Un fichier qui ne peut être décodé dans aucun de ces encodages n'est pas ouvert du tout plutôt que d'être endommagé.
 - **Les fins de ligne** (UNIX / DOS / MAC) sont détectées et préservées ; l'Ajout rapide et les outils de texte utilisent celles du fichier.
+- **Exportation.** **Fichier › Exporter en HTML…** enregistre le document sous forme d'un fichier HTML autonome — le Markdown rendu comme dans l'aperçu, les notes et le code sous forme de bloc avec coloration syntaxique — et **Fichier › Exporter en PDF…** imprime la même page dans un PDF paginé (Letter aux États-Unis, au Canada et au Mexique, A4 ailleurs ; marges de 36 pt ; ni en-tête ni pied de page). Le panneau d'enregistrement permet de choisir le thème (actuel, Hyper Light, Hyper Dark) et, pour les notes et le code, les numéros de ligne. La page exportée ne contient aucun script et ne charge rien depuis le réseau ; les chemins d'images relatifs sont conservés, enregistrez donc le HTML à côté du fichier Markdown. L'exportation PDF fonctionne pour les fichiers jusqu'à 2 Mo. Les blocs secrets (section 23) sont exportés sous la forme `••••••••`.
 
 ## 18. Référence des réglages
 
@@ -196,6 +201,8 @@ Ouvrez les Réglages avec **⌘,** ou l'onglet Avancé.
 | Thème | Suivre l'apparence du système, sélecteur de thème |
 | Fichiers | Le fichier actuel, le document par défaut et le dossier des instantanés, avec des boutons pour les ouvrir |
 | Ajout rapide | Raccourci global (Désactivé / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), titre horodaté activé/désactivé |
+| Apparence | Style du curseur (Barre / Bloc / Souligné), clignotement, opacité de la fenêtre 50–100 %, flou derrière la fenêtre |
+| Secrets | Masquer les blocs secrets, masquer de nouveau après (10 / 30 / 60 s / Jamais), vider le presse-papiers après la copie d'un secret (Désactivé / 10 / 30 / 60 s) |
 
 La visibilité des volets, le retour à la ligne, les numéros de ligne, la coloration syntaxique, les marqueurs de défilement, la division et l'onglet du ruban sont mémorisés automatiquement.
 
@@ -225,7 +232,9 @@ La visibilité des volets, le retour à la ligne, les numéros de ligne, la colo
 | ⌥⌘L | Numéros de ligne | ⌥Z | Retour à la ligne |
 | ⇧⌘P | Aperçu Markdown | ⌃⌘H | Coloration syntaxique |
 | ⌥⌘] / ⌥⌘[ | Thème suivant / précédent | ⌘= / ⌘- / ⌘0 | Zoom avant / arrière / réinitialiser |
-| ⌘, | Réglages | ⌘Q | Quitter (enregistre d'abord) |
+| ⌥⌘S | Révéler / masquer les blocs secrets | ⌘, | Réglages |
+| ⌃⌘L | Verrouiller HyperEdit (Touch ID) | | |
+| ⌘Q | Quitter (enregistre d'abord) | | |
 
 ## 20. Fichiers écrits par HyperEdit
 
@@ -237,6 +246,7 @@ HyperEdit ne touche qu'aux fichiers que vous ouvrez et à ses propres données :
 | `~/Library/Application Support/HyperEdit/snapshots/` | Instantanés pris avant enregistrement et copies de secours |
 | `~/Library/Application Support/HyperEdit/bookmarks/` | Un fichier JSON par document comportant des signets |
 | `~/Library/Application Support/HyperEdit/snippets.json` | Vos snippets |
+| `~/Library/Application Support/HyperEdit/grammars/` | Grammaires définies par l'utilisateur (`*.json`), avec `example.json` et un README |
 | `~/Library/Application Support/HyperEdit/macros/macros.json` | Macros sauvegardées |
 | `~/Library/Preferences/io.github.hyeongcheol-an.hyperedit.plist` | Préférences, dont la langue de l'interface |
 
@@ -253,15 +263,43 @@ Rien n'est écrit à côté de vos documents, et rien ne quitte votre Mac.
 
 ## 22. Limitations connues
 
-- La coloration syntaxique se fait ligne par ligne et il n'y a pas de grammaire définie par l'utilisateur. L'aperçu Markdown est une vue, pas un éditeur.
+- La coloration syntaxique suit les commentaires de bloc, les chaînes multilignes et les blocs délimités Markdown d'une ligne à l'autre, mais seuls les délimiteurs de chaîne identiques à l'ouverture et à la fermeture et une seule paire de commentaires de bloc par langage sont pris en charge, et les grammaires utilisateur sont des listes de mots sans règles d'expressions régulières. L'aperçu Markdown est une vue, pas un éditeur.
 - Les macros n'enregistrent que l'édition au clavier (pas de souris, de sélection ni d'étapes multi-curseur). Calculer et Aligner les colonnes ne gèrent que l'arithmétique simple et les tableaux à tabulations / barres verticales.
-- Les snippets et les macros se modifient sous forme de fichiers JSON ; il n'y a pas d'éditeur graphique pour eux.
+- Les snippets, les macros et les grammaires utilisateur se modifient sous forme de fichiers JSON ; il n'y a pas d'éditeur graphique pour eux.
+- L'exportation écrit uniquement le document entier, sans exportation de la sélection ni de plusieurs fichiers, sans options de page ou de police, ni table des matières PDF.
+- Les blocs secrets ne sont masqués qu'à l'écran : le fichier, les enregistrements automatiques, les instantanés et les résultats de Rechercher dans les fichiers provenant d'autres fichiers sont en texte brut, et la barre de masquage indique la longueur de chaque ligne. Le verrouillage de l'app masque la fenêtre ; il ne chiffre rien, et une feuille ouverte au moment du verrouillage (Atteindre la ligne, Insérer un numéro, le sélecteur de snippets) reste au-dessus de l'écran de verrouillage sans afficher le document.
 - Les replis durent le temps de la session et ne sont pas enregistrés par fichier ; un glisser de souris à travers une ligne repliée sélectionne quand même le texte masqué.
 - Les documents constitués d'une seule ligne d'un mégaoctet ou plus sont lents à ouvrir et à parcourir ; Compacter JSON avertit avant d'en produire un.
 - Fichiers locaux uniquement ; pas de synchronisation cloud ni d'app iOS pour l'instant.
 - Les langues autres que les onze listées retombent sur l'anglais.
 
-## 23. Obtenir de l'aide
+## 23. Blocs secrets et verrouillage de l'app
+
+**Blocs secrets.** Un bloc de code délimité dont la chaîne d'info commence par `secret` est masqué dans l'éditeur :
+
+````markdown
+```secret bank
+login: me@example.com
+password: hunter2
+```
+````
+
+Chaque ligne entre les délimiteurs est dessinée comme une barre vide avec `••••••••` ; les lignes de délimitation restent visibles pour que vous voyiez où se trouve le bloc et à quoi il sert. La règle est la même dans les fichiers Markdown et texte brut. Placez le curseur dans le bloc — en cliquant dessus, avec ↑ / ↓, Atteindre la ligne, un résultat de recherche ou un signet — et le bloc entier est révélé et modifiable ; sortez le curseur et il est de nouveau masqué. Seul l'affichage change : le texte est toujours dans le fichier, donc Rechercher, Remplacer, l'annulation et l'enregistrement fonctionnent exactement comme avant.
+
+- **Révéler les secrets (⌥⌘S)** dans le menu Édition affiche tous les blocs à la fois ; après le délai **Réglages › Secrets › Masquer de nouveau après** (10 / 30 / 60 s, 30 s par défaut, ou Jamais), ils sont de nouveau masqués et le volet Sortie le consigne. La barre d'état affiche `REVEALED` pendant ce temps et `•••• N` tant que N blocs sont masqués. **Édition › Masquer les blocs secrets** désactive entièrement le masquage.
+- Les lignes secrètes sont affichées comme `••••••••` dans la liste Résultats de recherche (l'occurrence et le numéro de ligne fonctionnent toujours), ignorées par le Plan et la Chronologie, et caviardées dans l'aperçu Markdown et dans les exportations HTML / PDF.
+- **Vidage automatique du presse-papiers.** Lorsqu'une copie ou une coupe touche une ligne secrète — y compris les copies multi-curseur et en mode colonne — le presse-papiers est vidé après le délai **Réglages › Secrets › Vider le presse-papiers après la copie d'un secret** (Désactivé / 10 / 30 / 60 s, 30 s par défaut), sauf si vous avez copié autre chose entre-temps. **Édition › Vider le presse-papiers** le vide immédiatement.
+- Les blocs secrets se replient comme n'importe quel bloc délimité (⌥⌘←).
+
+> Masquer n'est pas chiffrer. Le fichier, les enregistrements automatiques et les instantanés sont en texte brut, et toute personne qui possède le fichier peut lire les secrets. La fonction les tient à l'écart de votre écran, des captures d'écran, des résultats de recherche, de l'aperçu et des exportations pendant que vous travaillez.
+
+**Verrouillage de l'app (Touch ID).** **HyperEdit › Verrouiller HyperEdit (⌃⌘L)** (le menu de l'application, sous Réglages…) recouvre toute la fenêtre — ruban, barre latérale, éditeur, volets et barre d'état — d'un écran de verrouillage opaque dans le thème actuel, ferme une fenêtre Réglages ouverte et masque le panneau d'Ajout rapide. Rien du document, pas même le nom du fichier, n'est affiché tant que l'app est verrouillée. Cliquez sur **Déverrouiller** (ou appuyez sur Retour) pour vous authentifier avec **Touch ID** ; si Touch ID échoue ou si le Mac n'en a pas, macOS se rabat sur votre mot de passe de session. Annuler laisse HyperEdit verrouillé et le bouton permet de réessayer.
+
+- **Réglages › Verrouillage de l'app.** *Exiger Touch ID ou le mot de passe pour ouvrir HyperEdit* (désactivé par défaut) démarre l'app verrouillée : le document est chargé et l'enregistrement automatique continue de fonctionner, mais rien n'est visible tant que vous ne vous êtes pas authentifié. *Verrouiller après inactivité* (Jamais / 1 / 5 / 15 / 30 minutes, Jamais par défaut) verrouille après ce délai sans frappe de touche ni clic dans HyperEdit, indépendamment de l'option de lancement. *Verrouiller quand le Mac suspend son activité ou que l'écran se verrouille* (activé par défaut) s'applique tant que l'option de lancement est activée. Une légende indique si Touch ID est disponible sur ce Mac.
+- Tant que l'app est verrouillée, la saisie au clavier est ignorée et la barre des menus ne peut pas être ouverte ; seuls ⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F et le menu du Dock fonctionnent encore. Le raccourci global d'Ajout rapide affiche la demande de déverrouillage au lieu du panneau et ouvre le panneau une fois que vous vous êtes authentifié.
+- Il s'agit d'un verrou de confidentialité pour l'écran, pas d'un chiffrement : les fichiers sur le disque sont inchangés et lisibles par n'importe quelle autre app. L'option *Exiger…* ne peut pas être activée tant que le Mac n'a ni Touch ID ni mot de passe de session, vous ne pouvez donc pas vous retrouver bloqué dehors.
+
+## 24. Obtenir de l'aide
 
 - Rapports de bugs et idées : [GitHub Issues](https://github.com/Hyeongcheol-An/HyperEdit/issues) et [Discussions](https://github.com/Hyeongcheol-An/HyperEdit/discussions).
 - Problèmes de sécurité : voir [SECURITY.md](../../SECURITY.md) pour un signalement privé.

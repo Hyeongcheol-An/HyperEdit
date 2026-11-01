@@ -28,7 +28,8 @@ HyperEdit là trình soạn thảo văn bản thuần nhanh cho macOS, được 
 20. [Các tệp HyperEdit ghi](#20-các-tệp-hyperedit-ghi)
 21. [Khắc phục sự cố](#21-khắc-phục-sự-cố)
 22. [Hạn chế đã biết](#22-hạn-chế-đã-biết)
-23. [Nhận trợ giúp](#23-nhận-trợ-giúp)
+23. [Khối bí mật và khóa ứng dụng](#23-khối-bí-mật-và-khóa-ứng-dụng)
+24. [Nhận trợ giúp](#24-nhận-trợ-giúp)
 
 ## 1. Cài đặt và cập nhật
 
@@ -167,11 +168,14 @@ Vì bảng này không kích hoạt HyperEdit, nó cũng hoạt động từ b�
 ## 15. Xem trước Markdown và màu cú pháp
 
 - **Xem trước Markdown (⇧⌘P)** chia cửa sổ với một khung hiển thị tệp hiện tại đã kết xuất ở bên phải: tiêu đề, danh sách và danh sách việc cần làm, bảng, khối mã rào, trích dẫn, liên kết và hình ảnh, theo phong cách của chủ đề hiện tại. Nó theo vị trí cuộn của trình soạn thảo và kết xuất lại ngay sau khi bạn ngừng gõ. Liên kết mở trong trình duyệt của bạn; HTML thô trong tệp được hiện dưới dạng văn bản, không bao giờ được thực thi. Tệp trên 2 MB hiện thông báo thay vì xem trước. Thanh trạng thái hiện **MD** khi đang bật.
-- **Màu cú pháp (⌃⌘H)** được chọn theo phần mở rộng tệp và hiện trên thanh trạng thái. Ghi chú và Markdown có bộ quy tắc nhẹ — URL, ngày và giờ, tiêu đề, dòng `[Tiêu đề]`, ký hiệu danh sách và ô việc `[ ]` / `[x]`, `#thẻ`, nhãn `key:`, `**đậm**`, `` `mã` `` và mũi tên `⇒ → ->` — và khoảng 20 ngôn ngữ lập trình có chú thích, chuỗi, số, từ khóa, tên hàm và tên kiểu. Màu chỉ được vẽ trên các dòng nhìn thấy, nên không bao giờ thay đổi tệp hay làm chậm việc gõ. Tô màu theo dòng: chú thích hoặc chuỗi trải nhiều dòng chỉ được tô ở dòng mở đầu.
+- **Màu cú pháp (⌃⌘H)** được chọn theo phần mở rộng tệp và hiện trên thanh trạng thái. Ghi chú và Markdown có bộ quy tắc nhẹ — URL, ngày và giờ, tiêu đề, dòng `[Tiêu đề]`, ký hiệu danh sách và ô việc `[ ]` / `[x]`, `#thẻ`, nhãn `key:`, `**đậm**`, `` `mã` `` và mũi tên `⇒ → ->` — và khoảng 20 ngôn ngữ lập trình có chú thích, chuỗi, số, từ khóa, tên hàm và tên kiểu. Màu chỉ được vẽ trên các dòng nhìn thấy, nên không bao giờ thay đổi tệp hay làm chậm việc gõ. Các cấu trúc trải nhiều dòng giữ màu cho đến khi đóng lại: chú thích khối (`/* */`, `<!-- -->`), chuỗi nhiều dòng (`"""` của Swift và Python, template literal của JavaScript, raw string của Go, `r#"…"#` của Rust) và khối mã rào của Markdown, được tô màu theo ngôn ngữ ghi trong chuỗi thông tin (```` ```python ````). Gõ một ký hiệu mở hoặc đóng sẽ tô lại màu các dòng bên dưới ngay lập tức.
+- **Ngữ pháp do người dùng định nghĩa.** Để tô màu một ngôn ngữ HyperEdit chưa biết, hoặc thay đổi một ngôn ngữ có sẵn, hãy đặt một tệp `*.json` vào `~/Library/Application Support/HyperEdit/grammars/`. **Tệp › Mở thư mục ngữ pháp…** tạo thư mục kèm một `example.json` để bạn sao chép và một README giải thích mọi khóa — `name`, `extensions` hoặc `filenames`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **Tệp › Tải lại ngữ pháp** áp dụng thay đổi mà không cần khởi động lại; thanh trạng thái hiện tên ngữ pháp, Bật/tắt chú thích (⌘/) dùng ký hiệu chú thích của nó, và tệp không phân tích được sẽ bị bỏ qua kèm thông báo trong bảng Đầu ra.
 
 ## 16. Chủ đề, phông chữ và chữ CJK
 
 **Chủ đề.** 22 bảng màu — 5 sáng, 17 tối — đi kèm ứng dụng. Mặc định nó theo giao diện hệ thống: **Hyper Light** ở chế độ sáng, **Hyper Dark** ở chế độ tối. Chọn một chủ đề từ tab Bố cục, menu chủ đề trên thanh trạng thái, **Hiển thị › Chủ đề** hoặc ⌥⌘] / ⌥⌘[ để cố định; **Theo giao diện hệ thống** nằm trong cùng các menu đó và trong Cài đặt. Các bảng màu này cũng có sẵn cho trình soạn thảo Zed (`hyperedit-themes.json` trong mỗi bản phát hành).
+
+**Con trỏ và độ mờ đục cửa sổ.** Cài đặt › **Giao diện** chọn hình dạng con trỏ — **Thanh** (mặc định), **Khối** (ô ký tự được tô bằng màu con trỏ để ký tự vẫn dễ đọc) hoặc **Gạch dưới** — và có nhấp nháy hay không; các con trỏ phụ của đa con trỏ và chế độ cột dùng cùng hình dạng. **Độ mờ đục cửa sổ** (50–100 %) làm toàn bộ cửa sổ trong suốt một phần — trình soạn thảo, ribbon, các bảng và thanh trạng thái như nhau — trong khi chữ, biểu tượng và đường viền vẫn đục, và **Làm mờ sau cửa sổ** thêm hiệu ứng làm mờ của hệ thống. Hiển thị › Độ mờ đục cửa sổ có các mức 100 / 90 / 80 / 70 %.
 
 **Phông chữ.** HyperEdit dùng **Fira Code** khi đã cài và phông monospace của hệ thống khi chưa. Chữ Hàn được vẽ bằng một phông riêng — mặc định là **D2Coding**, khi đã cài — được co giãn sao cho một âm tiết Hangul rộng đúng bằng hai ô Latin, giúp các bảng căn bằng tab luôn thẳng. Chữ ghép, chiều cao dòng, cả hai họ phông và tỷ lệ Hangul đều nằm trong Cài đặt. Chữ Trung và Nhật dùng phông dự phòng của hệ thống và cũng tính là hai ô trong Căn chỉnh cột.
 
@@ -183,6 +187,7 @@ Vì bảng này không kích hoạt HyperEdit, nó cũng hoạt động từ b�
 - **An toàn.** Bộ đệm trống không bao giờ được ghi đè lên tệp từng có nội dung. Nếu lưu thất bại khi bạn thoát, một bản sao khẩn cấp được ghi vào thư mục bản chụp và bạn được hỏi có vẫn thoát hay không.
 - **Bảng mã.** Tệp được đọc dưới dạng UTF-8 trước, rồi EUC-KR (CP949), CP1252 và Latin-1, và được lưu bằng cùng bảng mã (BOM UTF-8 được giữ nguyên). Nếu bạn gõ một ký tự mà bảng mã gốc không lưu được, tệp được lưu dưới dạng UTF-8 và thanh trạng thái sẽ báo. Tệp không giải mã được bằng bất kỳ bảng mã nào trong số này sẽ không được mở, thay vì bị hỏng.
 - **Kết thúc dòng** (UNIX / DOS / MAC) được phát hiện và giữ nguyên; Thêm nhanh và các công cụ văn bản dùng kiểu của chính tệp.
+- **Xuất.** **Tệp › Xuất dưới dạng HTML…** lưu tài liệu thành một tệp HTML độc lập — Markdown được kết xuất như khung xem trước, ghi chú và mã thành một khối có màu cú pháp — và **Tệp › Xuất dưới dạng PDF…** in cùng trang đó ra PDF có phân trang (Letter ở Mỹ, Canada và Mexico, A4 ở nơi khác; lề 36 pt; không có đầu trang hay chân trang). Bảng lưu cho phép chọn chủ đề (hiện tại, Hyper Light, Hyper Dark) và, với ghi chú và mã, số dòng. Trang được xuất không chứa script và không tải gì từ mạng; đường dẫn ảnh tương đối được giữ nguyên, nên hãy lưu tệp HTML cạnh tệp Markdown. Xuất PDF hoạt động với tệp tối đa 2 MB. Khối bí mật (mục 23) được xuất thành `••••••••`.
 
 ## 18. Tham khảo cài đặt
 
@@ -196,6 +201,8 @@ Mở Cài đặt bằng **⌘,** hoặc tab Nâng cao.
 | Chủ đề | Theo giao diện hệ thống, bộ chọn chủ đề |
 | Tệp | Tệp hiện tại, tài liệu mặc định và thư mục bản chụp, kèm nút để mở |
 | Thêm nhanh | Phím tắt toàn cục (Tắt / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), bật/tắt tiêu đề dấu thời gian |
+| Giao diện | Kiểu con trỏ (Thanh / Khối / Gạch dưới), nhấp nháy, độ mờ đục cửa sổ 50–100 %, làm mờ sau cửa sổ |
+| Bí mật | Che khối bí mật, che lại sau (10 / 30 / 60 giây / Không bao giờ), xóa bảng nhớ tạm sau khi sao chép bí mật (Tắt / 10 / 30 / 60 giây) |
 
 Trạng thái hiện/ẩn các bảng, ngắt dòng, số dòng, màu cú pháp, dấu thanh cuộn, chia đôi khung và tab ribbon được ghi nhớ tự động.
 
@@ -225,7 +232,9 @@ Trạng thái hiện/ẩn các bảng, ngắt dòng, số dòng, màu cú pháp,
 | ⌥⌘L | Số dòng | ⌥Z | Ngắt dòng |
 | ⇧⌘P | Xem trước Markdown | ⌃⌘H | Màu cú pháp |
 | ⌥⌘] / ⌥⌘[ | Chủ đề kế tiếp / trước | ⌘= / ⌘- / ⌘0 | Phóng to / thu nhỏ / đặt lại |
-| ⌘, | Cài đặt | ⌘Q | Thoát (lưu trước) |
+| ⌥⌘S | Hiện / che khối bí mật | ⌘, | Cài đặt |
+| ⌃⌘L | Khóa HyperEdit (Touch ID) | | |
+| ⌘Q | Thoát (lưu trước) | | |
 
 ## 20. Các tệp HyperEdit ghi
 
@@ -237,6 +246,7 @@ HyperEdit chỉ đụng đến các tệp bạn mở và dữ liệu của chín
 | `~/Library/Application Support/HyperEdit/snapshots/` | Bản chụp trước khi lưu và bản sao khẩn cấp |
 | `~/Library/Application Support/HyperEdit/bookmarks/` | Một tệp JSON cho mỗi tài liệu có dấu trang |
 | `~/Library/Application Support/HyperEdit/snippets.json` | Đoạn mẫu của bạn |
+| `~/Library/Application Support/HyperEdit/grammars/` | Ngữ pháp do người dùng định nghĩa (`*.json`), kèm `example.json` và một README |
 | `~/Library/Application Support/HyperEdit/macros/macros.json` | Macro đã lưu |
 | `~/Library/Preferences/io.github.hyeongcheol-an.hyperedit.plist` | Tùy chọn, bao gồm ngôn ngữ giao diện |
 
@@ -253,15 +263,43 @@ Không có gì được ghi cạnh tài liệu của bạn, và không có gì r
 
 ## 22. Hạn chế đã biết
 
-- Màu cú pháp theo dòng và không có ngữ pháp do người dùng định nghĩa. Xem trước Markdown là khung xem, không phải trình soạn thảo.
+- Màu cú pháp theo được chú thích khối, chuỗi nhiều dòng và khối rào Markdown qua nhiều dòng, nhưng chỉ hỗ trợ ký hiệu chuỗi có mở và đóng giống nhau và một cặp chú thích khối cho mỗi ngôn ngữ, còn ngữ pháp người dùng là danh sách từ, không có quy tắc biểu thức chính quy. Xem trước Markdown là khung xem, không phải trình soạn thảo.
 - Macro chỉ ghi thao tác chỉnh sửa bằng bàn phím (không có bước chuột, vùng chọn hay đa con trỏ). Tính toán và Căn chỉnh cột chỉ xử lý số học đơn giản và bảng tab / ống đứng.
-- Đoạn mẫu và macro được chỉnh sửa dưới dạng tệp JSON; không có trình soạn thảo đồ họa cho chúng.
+- Đoạn mẫu, macro và ngữ pháp người dùng được chỉnh sửa dưới dạng tệp JSON; không có trình soạn thảo đồ họa cho chúng.
+- Xuất chỉ ghi toàn bộ tài liệu, không có xuất vùng chọn hay nhiều tệp, không có tùy chọn trang hay phông chữ, và không có mục lục PDF.
+- Khối bí mật chỉ được che trên màn hình: tệp, bản tự động lưu, bản chụp và kết quả Tìm trong tệp từ các tệp khác đều là văn bản thuần, và thanh che cho thấy độ dài của từng dòng. Khóa ứng dụng che cửa sổ; nó không mã hóa gì cả, và một bảng đang mở khi bạn khóa (Đi tới dòng, Chèn số, bộ chọn đoạn mẫu) vẫn nằm trên màn hình khóa nhưng không hiện tài liệu.
 - Vùng thu gọn tồn tại trong phiên và không được lưu theo tệp; kéo chuột qua dòng đã thu gọn vẫn chọn văn bản bị ẩn.
 - Tài liệu chỉ có một dòng dài từ một megabyte trở lên mở và di chuyển chậm; Rút gọn JSON cảnh báo trước khi tạo ra dòng như vậy.
 - Chỉ tệp cục bộ; chưa có đồng bộ đám mây và chưa có ứng dụng iOS.
 - Ngôn ngữ ngoài mười một ngôn ngữ đã liệt kê sẽ dùng tiếng Anh.
 
-## 23. Nhận trợ giúp
+## 23. Khối bí mật và khóa ứng dụng
+
+**Khối bí mật.** Khối mã rào có chuỗi thông tin bắt đầu bằng `secret` sẽ được che trong trình soạn thảo:
+
+````markdown
+```secret bank
+login: me@example.com
+password: hunter2
+```
+````
+
+Mọi dòng giữa hai hàng rào được vẽ thành một thanh trống với `••••••••`; các dòng rào vẫn hiển thị để bạn thấy khối nằm ở đâu và dùng cho việc gì. Quy tắc giống nhau trong tệp Markdown và văn bản thuần. Đưa con trỏ vào khối — nhấp vào, dùng ↑ / ↓, Đi tới dòng, một kết quả tìm kiếm hoặc một dấu trang — thì toàn bộ khối được hiện ra và có thể chỉnh sửa; đưa con trỏ ra ngoài thì khối được che lại. Chỉ có phần hiển thị thay đổi: văn bản vẫn nằm trong tệp, nên Tìm, Thay thế, hoàn tác và lưu hoạt động y như trước.
+
+- **Hiện bí mật (⌥⌘S)** trong menu Chỉnh sửa hiện mọi khối cùng lúc; sau khoảng **Cài đặt › Bí mật › Che lại sau** (10 / 30 / 60 giây, mặc định 30 giây, hoặc Không bao giờ) chúng được che lại và bảng Đầu ra ghi lại việc đó. Trong lúc đó thanh trạng thái hiện `REVEALED`, và `•••• N` khi có N khối đang được che. **Chỉnh sửa › Che khối bí mật** tắt hoàn toàn tính năng che.
+- Dòng bí mật được hiện là `••••••••` trong danh sách Kết quả tìm kiếm (kết quả khớp và số dòng vẫn hoạt động), bị Dàn ý và Dòng thời gian bỏ qua, và được ẩn đi trong xem trước Markdown cũng như trong bản xuất HTML / PDF.
+- **Tự động xóa bảng nhớ tạm.** Khi thao tác sao chép hoặc cắt chạm vào một dòng bí mật — kể cả sao chép bằng đa con trỏ và chế độ cột — bảng nhớ tạm được xóa sau khoảng **Cài đặt › Bí mật › Xóa bảng nhớ tạm sau khi sao chép bí mật** (Tắt / 10 / 30 / 60 giây, mặc định 30 giây), trừ khi trong lúc đó bạn đã sao chép thứ khác. **Chỉnh sửa › Xóa bảng nhớ tạm** xóa ngay lập tức.
+- Khối bí mật thu gọn được như mọi khối rào khác (⌥⌘←).
+
+> Che không phải là mã hóa. Tệp, bản tự động lưu và bản chụp đều là văn bản thuần, và bất kỳ ai có tệp đều đọc được bí mật. Tính năng này giữ chúng khỏi màn hình, ảnh chụp màn hình, kết quả tìm kiếm, khung xem trước và bản xuất trong khi bạn làm việc.
+
+**Khóa ứng dụng (Touch ID).** **HyperEdit › Khóa HyperEdit (⌃⌘L)** (menu ứng dụng, bên dưới Cài đặt…) che toàn bộ cửa sổ — ribbon, thanh bên, trình soạn thảo, các bảng và thanh trạng thái — bằng một màn hình khóa đục theo chủ đề hiện tại, đóng cửa sổ Cài đặt đang mở và ẩn bảng Thêm nhanh. Không có gì về tài liệu, kể cả tên tệp, được hiện ra khi đang khóa. Nhấp **Mở khóa** (hoặc nhấn Return) để xác thực bằng **Touch ID**; nếu Touch ID không thành công hoặc máy Mac không có Touch ID, macOS chuyển sang mật khẩu đăng nhập của bạn. Hủy thì HyperEdit vẫn bị khóa và nút sẽ thử lại.
+
+- **Cài đặt › Khóa ứng dụng.** *Yêu cầu Touch ID hoặc mật khẩu để mở HyperEdit* (mặc định tắt) khởi động ứng dụng ở trạng thái khóa: tài liệu được tải và tự động lưu vẫn hoạt động, nhưng không có gì hiển thị cho đến khi bạn xác thực. *Khóa khi không hoạt động* (Không bao giờ / 1 / 5 / 15 / 30 phút, mặc định Không bao giờ) khóa sau khoảng thời gian đó không có lần nhấn phím hay nhấp chuột nào trong HyperEdit, độc lập với tùy chọn khởi động. *Khóa khi máy Mac ngủ hoặc màn hình khóa* (mặc định bật) áp dụng khi tùy chọn khởi động đang bật. Một dòng chú thích cho biết máy Mac này có Touch ID hay không.
+- Khi đang khóa, mọi thao tác bàn phím bị chặn và không thể mở thanh menu; chỉ ⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F và menu Dock vẫn hoạt động. Phím tắt toàn cục của Thêm nhanh hiện lời nhắc mở khóa thay cho bảng và mở bảng sau khi bạn đã xác thực.
+- Đây là khóa riêng tư cho màn hình, không phải mã hóa: các tệp trên đĩa không thay đổi và mọi ứng dụng khác đều đọc được. Không thể bật tùy chọn *Yêu cầu…* khi máy Mac không có cả Touch ID lẫn mật khẩu đăng nhập, nên bạn không thể tự khóa mình ở ngoài.
+
+## 24. Nhận trợ giúp
 
 - Báo lỗi và ý tưởng: [GitHub Issues](https://github.com/Hyeongcheol-An/HyperEdit/issues) và [Discussions](https://github.com/Hyeongcheol-An/HyperEdit/discussions).
 - Vấn đề bảo mật: xem [SECURITY.md](../../SECURITY.md) để báo cáo riêng tư.

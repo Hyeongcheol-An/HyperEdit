@@ -451,20 +451,128 @@
     },
     "%lld s": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ث"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld सेकंड"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld초"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld giây"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒"
           }
         }
       }
     },
     "%lld secret blocks masked — the caret reveals a block, ⌥⌘S reveals all": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم إخفاء %lld كتلة سرية — يُظهر المؤشر الكتلة التي يدخلها، و⌥⌘S يُظهرها كلها"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld geheime Blöcke maskiert – der Cursor zeigt einen Block, ⌥⌘S zeigt alle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bloques secretos ocultos — el cursor muestra un bloque, ⌥⌘S los muestra todos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld blocs secrets masqués — le curseur révèle un bloc, ⌥⌘S les révèle tous"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld गोपनीय ब्लॉक छिपाए गए — कर्सर ले जाने पर वह ब्लॉक दिखता है, ⌥⌘S सभी दिखाता है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 個のシークレットブロックを非表示 — カーソルを置くとそのブロックを、⌥⌘S ですべてを表示"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 블록 %lld개 가림 — 캐럿을 넣으면 그 블록이, ⌥⌘S 는 전부 드러납니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld blocos secretos ocultos — o cursor revela um bloco, ⌥⌘S revela todos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã che %lld khối bí mật — đặt con trỏ vào để hiện một khối, ⌥⌘S hiện tất cả"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已遮盖 %lld 个机密块 — 光标移入可显示该块，⌥⌘S 显示全部"
           }
         }
       }
@@ -663,10 +771,64 @@
     },
     "1 minute": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "دقيقة واحدة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 minuto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 minute"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 मिनट"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 分"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "1분"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 minuto"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 phút"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 分钟"
           }
         }
       }
@@ -737,30 +899,192 @@
     },
     "15 minutes": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 دقيقة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 Minuten"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 minutos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 minutes"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 मिनट"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 分"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "15분"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 minutos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 phút"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 分钟"
           }
         }
       }
     },
     "30 minutes": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 دقيقة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 Minuten"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 minutos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 minutes"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 मिनट"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 分"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "30분"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 minutos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 phút"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 分钟"
           }
         }
       }
     },
     "5 minutes": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 دقائق"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Minuten"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 minutos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 minutes"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 मिनट"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 分"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "5분"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 minutos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 phút"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 分钟"
           }
         }
       }
@@ -895,10 +1219,64 @@
     },
     "Add a line-number column to the exported code or notes": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة عمود أرقام الأسطر إلى الكود أو الملاحظات المُصدَّرة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportiertem Code oder Notizen eine Spalte mit Zeilennummern hinzufügen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añade una columna de números de línea al código o las notas exportados"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajoute une colonne de numéros de ligne au code ou aux notes exportés"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "निर्यात किए गए कोड या नोट्स में पंक्ति संख्या का कॉलम जोड़ें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き出すコードやメモに行番号の列を付けます"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "내보낸 코드·메모에 줄 번호 열을 붙입니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adiciona uma coluna de números de linha ao código ou às notas exportados"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm cột số dòng vào mã hoặc ghi chú được xuất"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "为导出的代码或笔记添加行号列"
           }
         }
       }
@@ -1161,40 +1539,256 @@
     },
     "App Lock": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قفل التطبيق"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Sperre"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqueo de la app"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouillage de l'app"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ऐप लॉक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリのロック"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "앱 잠금"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqueio do App"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa ứng dụng"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用锁定"
           }
         }
       }
     },
     "App Lock needs Touch ID or a login password on this Mac.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يتطلب قفل التطبيق وجود Touch ID أو كلمة سر تسجيل الدخول على جهاز Mac هذا."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die App-Sperre benötigt Touch ID oder ein Anmeldepasswort auf diesem Mac."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El bloqueo de la app necesita Touch ID o una contraseña de inicio de sesión en este Mac."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le verrouillage de l'app nécessite Touch ID ou un mot de passe de session sur ce Mac."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ऐप लॉक के लिए इस Mac पर Touch ID या लॉगिन पासवर्ड होना चाहिए।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリのロックを使うには、この Mac に Touch ID またはログインパスワードが必要です。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "앱 잠금을 쓰려면 이 Mac 에 Touch ID 또는 로그인 암호가 있어야 합니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Bloqueio do App precisa de Touch ID ou de uma senha de login neste Mac."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa ứng dụng cần Touch ID hoặc mật khẩu đăng nhập trên máy Mac này."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用锁定要求此 Mac 设置了 Touch ID 或登录密码。"
           }
         }
       }
     },
     "App Lock: this Mac has no Touch ID or login password, so HyperEdit was unlocked without authentication. %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قفل التطبيق: لا يوجد على جهاز Mac هذا Touch ID ولا كلمة سر لتسجيل الدخول، لذا فُتح قفل HyperEdit دون مصادقة. %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Sperre: Dieser Mac hat weder Touch ID noch ein Anmeldepasswort, daher wurde HyperEdit ohne Authentifizierung entsperrt. %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqueo de la app: este Mac no tiene Touch ID ni contraseña de inicio de sesión, así que HyperEdit se desbloqueó sin autenticación. %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouillage de l'app : ce Mac n'a ni Touch ID ni mot de passe de session, HyperEdit a donc été déverrouillé sans authentification. %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ऐप लॉक: इस Mac पर न Touch ID है न लॉगिन पासवर्ड, इसलिए HyperEdit बिना प्रमाणीकरण के अनलॉक किया गया। %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリのロック: この Mac には Touch ID もログインパスワードもないため、認証なしで HyperEdit のロックを解除しました。%@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "앱 잠금: 이 Mac 에 Touch ID 도 로그인 암호도 없어 인증 없이 잠금을 해제했습니다. %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqueio do App: este Mac não tem Touch ID nem senha de login, então o HyperEdit foi desbloqueado sem autenticação. %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa ứng dụng: máy Mac này không có Touch ID hay mật khẩu đăng nhập nên HyperEdit đã được mở khóa mà không cần xác thực. %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用锁定：此 Mac 没有 Touch ID 或登录密码，因此 HyperEdit 未经验证即已解锁。%@"
           }
         }
       }
     },
     "Appearance": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المظهر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erscheinungsbild"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apariencia"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apparence"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपीयरेंस"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外観"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "외형"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aparência"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giao diện"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观"
           }
         }
       }
@@ -1329,10 +1923,64 @@
     },
     "Authentication failed — try again.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فشلت المصادقة — حاول مرة أخرى."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authentifizierung fehlgeschlagen – versuche es erneut."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error de autenticación — inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de l'authentification — réessayez."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "प्रमाणीकरण विफल — फिर से प्रयास करें।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "認証に失敗しました — もう一度お試しください。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "인증에 실패했습니다 — 다시 시도하세요."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha na autenticação — tente de novo."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xác thực không thành công — hãy thử lại."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "验证失败 — 请重试。"
           }
         }
       }
@@ -1403,70 +2051,448 @@
     },
     "Bar": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شريط"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balken"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बार"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "縦棒"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "막대"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "竖线"
           }
         }
       }
     },
     "Below 100% the window, editor and panels show what is behind them; text, icons and borders stay opaque. Blur applies only while the window is translucent.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "دون 100% تُظهر النافذة والمحرر واللوحات ما خلفها؛ وتبقى النصوص والأيقونات والحدود معتمة. لا يُطبَّق التمويه إلا عندما تكون النافذة شبه شفافة."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unter 100 % zeigen Fenster, Editor und Panels, was dahinter liegt; Text, Symbole und Rahmen bleiben deckend. Die Unschärfe wirkt nur, solange das Fenster durchscheinend ist."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo del 100 %, la ventana, el editor y los paneles dejan ver lo que hay detrás; el texto, los iconos y los bordes siguen opacos. El desenfoque solo se aplica mientras la ventana es translúcida."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En dessous de 100 %, la fenêtre, l'éditeur et les volets laissent voir ce qui se trouve derrière eux ; le texte, les icônes et les bordures restent opaques. Le flou ne s'applique que lorsque la fenêtre est translucide."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "100% से कम होने पर विंडो, एडिटर और पैनल के पीछे की चीज़ें दिखती हैं; टेक्स्ट, आइकन और किनारे अपारदर्शी रहते हैं। ब्लर केवल तभी लागू होता है जब विंडो पारभासी हो।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "100% 未満にすると、ウインドウ・エディタ・パネルの背後が透けて見えます。テキスト・アイコン・境界線は不透明のままです。ぼかしはウインドウが半透明のときだけ適用されます。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "100% 미만이면 창·편집기·패널 뒤가 비칩니다. 글자·아이콘·구분선은 불투명하게 유지되며, 블러는 창이 반투명일 때만 적용됩니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abaixo de 100%, a janela, o editor e os painéis deixam ver o que está atrás deles; texto, ícones e bordas continuam opacos. O desfoque só se aplica enquanto a janela está translúcida."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dưới 100%, cửa sổ, trình soạn thảo và các bảng sẽ để lộ những gì phía sau; chữ, biểu tượng và đường viền vẫn đục. Làm mờ chỉ áp dụng khi cửa sổ trong suốt một phần."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低于 100% 时，窗口、编辑器和面板会透出后方的内容；文字、图标和边框保持不透明。模糊仅在窗口半透明时生效。"
           }
         }
       }
     },
     "Blink": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وميض"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinken"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parpadeo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clignotement"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ब्लिंक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点滅"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "깜빡임"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piscar"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhấp nháy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闪烁"
           }
         }
       }
     },
     "Block": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كتلة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Block"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloque"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloc"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ब्लॉक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブロック"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "블록"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloco"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khối"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "方块"
           }
         }
       }
     },
     "Block and Underline carets are drawn under the glyph in the theme's cursor color; extra carets (multi-caret, column mode) use the same style and do not blink.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُرسم مؤشرا الكتلة والتسطير تحت الحرف بلون مؤشر السمة؛ وتستخدم المؤشرات الإضافية (المؤشرات المتعددة ووضع الأعمدة) النمط نفسه ولا تومض."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Block- und Unterstrich-Cursor werden in der Cursorfarbe des Themes unter das Zeichen gezeichnet; zusätzliche Cursor (Multi-Cursor, Spaltenmodus) verwenden denselben Stil und blinken nicht."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los cursores Bloque y Subrayado se dibujan bajo el carácter con el color de cursor del tema; los cursores adicionales (multicursor, modo columna) usan el mismo estilo y no parpadean."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les curseurs Bloc et Souligné sont dessinés sous le caractère dans la couleur de curseur du thème ; les curseurs supplémentaires (multi-curseur, mode colonne) utilisent le même style et ne clignotent pas."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ब्लॉक और अंडरलाइन कर्सर थीम के कर्सर रंग में अक्षर के नीचे बनाए जाते हैं; अतिरिक्त कर्सर (मल्टी-कर्सर, कॉलम मोड) भी यही शैली उपयोग करते हैं और ब्लिंक नहीं करते।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブロックと下線のカーソルは、テーマのカーソル色で文字の下に描かれます。追加のカーソル (マルチカーソル・列モード) も同じスタイルで、点滅しません。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "블록·밑줄 캐럿은 테마의 커서색으로 글자 아래에 그려집니다. 보조 캐럿(멀티 커서·열 모드)도 같은 스타일이며 깜빡이지 않습니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os cursores Bloco e Sublinhado são desenhados sob o glifo na cor de cursor do tema; os cursores extras (multicursor, modo coluna) usam o mesmo estilo e não piscam."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con trỏ Khối và Gạch dưới được vẽ dưới ký tự bằng màu con trỏ của chủ đề; các con trỏ phụ (đa con trỏ, chế độ cột) dùng cùng kiểu và không nhấp nháy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "方块和下划线光标以主题的光标颜色绘制在字符下方；额外的光标（多光标、列模式）使用相同样式且不闪烁。"
           }
         }
       }
     },
     "Blur Behind Window": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمويه خلف النافذة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unschärfe hinter Fenster"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desenfocar el fondo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flou derrière la fenêtre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "विंडो के पीछे ब्लर"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウの背後をぼかす"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "창 뒤 블러"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desfoque Atrás da Janela"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Làm mờ sau cửa sổ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口背景模糊"
           }
         }
       }
     },
     "Blur behind window": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمويه خلف النافذة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unschärfe hinter Fenster"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desenfocar detrás de la ventana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flou derrière la fenêtre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "विंडो के पीछे ब्लर"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウの背後をぼかす"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "창 뒤 블러"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desfoque atrás da janela"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Làm mờ sau cửa sổ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口背景模糊"
           }
         }
       }
@@ -2625,20 +3651,128 @@
     },
     "Clear Clipboard": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح الحافظة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenablage leeren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaciar portapapeles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le presse-papiers"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लिपबोर्ड साफ़ करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリップボードを消去"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "클립보드 비우기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limpar Área de Transferência"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa bảng nhớ tạm"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除剪贴板"
           }
         }
       }
     },
     "Clear clipboard after copying a secret": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح الحافظة بعد نسخ سر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenablage nach Kopieren eines Geheimnisses leeren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaciar el portapapeles tras copiar un secreto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le presse-papiers après la copie d'un secret"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय कॉपी करने के बाद क्लिपबोर्ड साफ़ करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットのコピー後にクリップボードを消去"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀을 복사한 뒤 클립보드 비우기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limpar a área de transferência após copiar um segredo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa bảng nhớ tạm sau khi sao chép bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拷贝机密内容后清除剪贴板"
           }
         }
       }
@@ -2709,20 +3843,128 @@
     },
     "Clipboard cleared": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم مسح الحافظة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenablage geleert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portapapeles vaciado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presse-papiers vidé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लिपबोर्ड साफ़ किया"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリップボードを消去しました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "클립보드 비움"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Área de transferência limpa"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xóa bảng nhớ tạm"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已清除剪贴板"
           }
         }
       }
     },
     "Clipboard cleared (secret)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم مسح الحافظة (سر)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenablage geleert (Geheimnis)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portapapeles vaciado (secreto)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presse-papiers vidé (secret)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लिपबोर्ड साफ़ किया (गोपनीय)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリップボードを消去しました (シークレット)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "클립보드 비움 (비밀)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Área de transferência limpa (segredo)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xóa bảng nhớ tạm (bí mật)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已清除剪贴板（机密）"
           }
         }
       }
@@ -2921,10 +4163,64 @@
     },
     "Colors of the exported file — the theme you are using now, or a fixed light / dark palette": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ألوان الملف المُصدَّر — السمة التي تستخدمها الآن، أو لوحة ألوان فاتحة / داكنة ثابتة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farben der exportierten Datei – das aktuell verwendete Theme oder eine feste helle / dunkle Palette"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colores del archivo exportado — el tema que usas ahora o una paleta clara / oscura fija"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couleurs du fichier exporté — le thème que vous utilisez actuellement, ou une palette claire / sombre fixe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "निर्यात की गई फ़ाइल के रंग — अभी उपयोग हो रही थीम, या एक स्थिर लाइट / डार्क पैलेट"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き出すファイルの色 — 現在使っているテーマ、または固定のライト / ダークパレット"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "내보낸 파일의 색 — 지금 쓰는 테마 또는 고정된 라이트 / 다크 팔레트"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cores do arquivo exportado — o tema que você está usando agora ou uma paleta clara / escura fixa"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Màu của tệp được xuất — chủ đề bạn đang dùng hoặc bảng màu sáng / tối cố định"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出文件的颜色 — 当前使用的主题，或固定的浅色 / 深色配色"
           }
         }
       }
@@ -3571,10 +4867,64 @@
     },
     "Current": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الحالية"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actual"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actuel"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "वर्तमान"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "현재"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atual"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện tại"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前"
           }
         }
       }
@@ -3709,10 +5059,64 @@
     },
     "Cursor style": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نمط المؤشر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursorstil"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilo del cursor"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Style du curseur"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कर्सर शैली"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カーソルのスタイル"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "커서 스타일"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilo do cursor"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểu con trỏ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "光标样式"
           }
         }
       }
@@ -5063,70 +6467,448 @@
     },
     "Export as HTML": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير بتنسيق HTML"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als HTML exportieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como HTML"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter en HTML"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML के रूप में निर्यात करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML として書き出す"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HTML로 내보내기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como HTML"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất dưới dạng HTML"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出为 HTML"
           }
         }
       }
     },
     "Export as HTML…": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير بتنسيق HTML…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als HTML exportieren…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como HTML…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter en HTML…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML के रूप में निर्यात करें…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML として書き出す…"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HTML로 내보내기…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como HTML…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất dưới dạng HTML…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出为 HTML…"
           }
         }
       }
     },
     "Export as PDF": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير بتنسيق PDF"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als PDF exportieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como PDF"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter en PDF"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF के रूप में निर्यात करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF として書き出す"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "PDF로 내보내기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como PDF"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất dưới dạng PDF"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出为 PDF"
           }
         }
       }
     },
     "Export as PDF…": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير بتنسيق PDF…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als PDF exportieren…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como PDF…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter en PDF…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF के रूप में निर्यात करें…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF として書き出す…"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "PDF로 내보내기…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar como PDF…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất dưới dạng PDF…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出为 PDF…"
           }
         }
       }
     },
     "Export failed · %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فشل التصدير · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export fehlgeschlagen · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error al exportar · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de l'exportation · %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "निर्यात विफल · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き出しに失敗 · %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "내보내기 실패 · %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha ao exportar · %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất thất bại · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出失败 · %@"
           }
         }
       }
     },
     "Exported HTML · %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم تصدير HTML · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML exportiert · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML exportado · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML exporté · %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML निर्यात किया · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML を書き出しました · %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HTML 내보내기 완료 · %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML exportado · %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xuất HTML · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已导出 HTML · %@"
           }
         }
       }
     },
     "Exported PDF · %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم تصدير PDF · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF exportiert · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF exportado · %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF exporté · %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF निर्यात किया · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF を書き出しました · %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "PDF 내보내기 완료 · %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF exportado · %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xuất PDF · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已导出 PDF · %@"
           }
         }
       }
@@ -8461,20 +10243,128 @@
     },
     "Grammar file skipped · %@: %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم تخطي ملف قواعد الصياغة · %@: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammatikdatei übersprungen · %@: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archivo de gramática omitido · %@: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichier de grammaire ignoré · %@ : %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "व्याकरण फ़ाइल छोड़ी गई · %@: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文法ファイルをスキップ · %@: %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "문법 파일 건너뜀 · %@: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arquivo de gramática ignorado · %@: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ qua tệp ngữ pháp · %@: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已跳过语法文件 · %@: %@"
           }
         }
       }
     },
     "Grammars reloaded · %lld": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمت إعادة تحميل قواعد الصياغة · %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammatiken neu geladen · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gramáticas recargadas · %lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammaires rechargées · %lld"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "व्याकरण फिर से लोड हुए · %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文法を再読み込み · %lld 件"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "문법 다시 읽음 · %lld개"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gramáticas recarregadas · %lld"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tải lại ngữ pháp · %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已重新载入语法 · %lld 个"
           }
         }
       }
@@ -9185,60 +11075,384 @@
     },
     "HyperEdit is locked": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit مقفل"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit ist gesperrt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit está bloqueado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit est verrouillé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit लॉक है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit はロックされています"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 가 잠겨 있습니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O HyperEdit está bloqueado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit đang bị khóa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit 已锁定"
           }
         }
       }
     },
     "HyperEdit locked": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم قفل HyperEdit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit gesperrt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit verrouillé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit लॉक किया गया"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit をロックしました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 잠김"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã khóa HyperEdit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit 已锁定"
           }
         }
       }
     },
     "HyperEdit locked after %lld min of inactivity": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم قفل HyperEdit بعد %lld دقيقة دون نشاط"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit nach %lld Min. Inaktivität gesperrt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado tras %lld min de inactividad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit verrouillé après %lld min d'inactivité"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld मिनट निष्क्रियता के बाद HyperEdit लॉक किया गया"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 分間操作がなかったため HyperEdit をロックしました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld분 동안 입력이 없어 HyperEdit 잠김"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado após %lld min de inatividade"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã khóa HyperEdit sau %lld phút không hoạt động"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闲置 %lld 分钟，HyperEdit 已锁定"
           }
         }
       }
     },
     "HyperEdit locked — Touch ID or password required to open": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم قفل HyperEdit — يلزم Touch ID أو كلمة السر لفتحه"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit gesperrt – zum Öffnen sind Touch ID oder Passwort erforderlich"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado — se requiere Touch ID o contraseña para abrirlo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit verrouillé — Touch ID ou mot de passe requis pour l'ouvrir"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit लॉक है — खोलने के लिए Touch ID या पासवर्ड आवश्यक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit をロックしました — 開くには Touch ID またはパスワードが必要です"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 잠김 — 열려면 Touch ID 또는 암호가 필요합니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado — Touch ID ou senha necessários para abrir"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã khóa HyperEdit — cần Touch ID hoặc mật khẩu để mở"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit 已锁定 — 需要 Touch ID 或密码才能打开"
           }
         }
       }
     },
     "HyperEdit locked — the Mac is going to sleep": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم قفل HyperEdit — جهاز Mac يدخل في وضع السكون"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit gesperrt – der Mac wechselt in den Ruhezustand"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado — el Mac va a entrar en reposo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit verrouillé — le Mac suspend son activité"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit लॉक किया गया — Mac स्लीप में जा रहा है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit をロックしました — Mac がスリープします"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 잠김 — Mac 이 잠자기에 들어갑니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado — o Mac vai entrar em repouso"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã khóa HyperEdit — máy Mac sắp chuyển sang chế độ ngủ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit 已锁定 — Mac 即将进入睡眠"
           }
         }
       }
     },
     "HyperEdit locked — the screen was locked": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم قفل HyperEdit — تم قفل الشاشة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit gesperrt – der Bildschirm wurde gesperrt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado — se bloqueó la pantalla"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit verrouillé — l'écran a été verrouillé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit लॉक किया गया — स्क्रीन लॉक हुई"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit をロックしました — 画面がロックされました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 잠김 — 화면이 잠겼습니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit bloqueado — a tela foi bloqueada"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã khóa HyperEdit — màn hình đã bị khóa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit 已锁定 — 屏幕已锁定"
           }
         }
       }
@@ -9309,10 +11523,64 @@
     },
     "HyperEdit unlocked": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم فتح قفل HyperEdit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit entsperrt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit desbloqueado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit déverrouillé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit अनलॉक किया गया"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit のロックを解除しました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 잠금 해제됨"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit desbloqueado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã mở khóa HyperEdit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit 已解锁"
           }
         }
       }
@@ -11623,20 +13891,128 @@
     },
     "Line numbers": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أرقام الأسطر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeilennummern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Números de línea"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numéros de ligne"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पंक्ति संख्या"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行番号"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "줄 번호"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Números de linha"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số dòng"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行号"
           }
         }
       }
     },
     "Line numbers apply to notes and code files, not to rendered Markdown": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُطبَّق أرقام الأسطر على الملاحظات وملفات الكود، لا على Markdown المصيَّر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeilennummern gelten für Notizen und Codedateien, nicht für gerendertes Markdown"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los números de línea se aplican a notas y archivos de código, no al Markdown renderizado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les numéros de ligne s'appliquent aux notes et aux fichiers de code, pas au Markdown rendu"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पंक्ति संख्या नोट्स और कोड फ़ाइलों पर लागू होती है, रेंडर किए गए Markdown पर नहीं"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行番号はメモとコードファイルにだけ付きます (レンダリングした Markdown には付きません)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "줄 번호는 메모·코드 파일에만 붙습니다 (렌더링된 마크다운에는 없음)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os números de linha valem para notas e arquivos de código, não para Markdown renderizado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số dòng chỉ áp dụng cho ghi chú và tệp mã, không áp dụng cho Markdown đã kết xuất"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行号仅用于笔记和代码文件，不用于渲染后的 Markdown"
           }
         }
       }
@@ -11707,10 +14083,64 @@
     },
     "Lines inside a fenced block whose info string starts with `secret` (```secret, ```secret bank) are drawn as •••••••• in the editor, the find results, the outline and the Markdown preview. Moving the caret into a block reveals it; ⌥⌘S reveals all blocks until they are masked again. The file itself is saved as plain text — this hides, it does not encrypt.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُعرض الأسطر داخل الكتلة المسوَّرة التي تبدأ سلسلة معلوماتها بـ `secret` (```secret، ```secret bank) على شكل •••••••• في المحرر ونتائج البحث والمخطط التفصيلي ومعاينة Markdown. نقل المؤشر إلى داخل الكتلة يُظهرها؛ و⌥⌘S يُظهر كل الكتل إلى أن تُخفى مجددًا. يُحفظ الملف نفسه نصًا عاديًا — هذا إخفاء وليس تشفيرًا."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeilen in einem umzäunten Block, dessen Info-String mit `secret` beginnt (```secret, ```secret bank), werden im Editor, in den Suchergebnissen, in der Gliederung und in der Markdown-Vorschau als •••••••• dargestellt. Bewegst du den Cursor in einen Block, wird er sichtbar; ⌥⌘S zeigt alle Blöcke, bis sie wieder maskiert werden. Die Datei selbst wird als reiner Text gesichert – das verbirgt nur, es verschlüsselt nicht."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las líneas dentro de un bloque delimitado cuya cadena de información empieza por `secret` (```secret, ```secret banco) se dibujan como •••••••• en el editor, los resultados de búsqueda, el esquema y la vista previa de Markdown. Al mover el cursor dentro de un bloque, este se muestra; ⌥⌘S muestra todos los bloques hasta que se vuelven a ocultar. El archivo se guarda como texto sin formato — esto oculta, no cifra."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lignes d'un bloc délimité dont la chaîne d'info commence par `secret` (```secret, ```secret banque) sont affichées comme •••••••• dans l'éditeur, les résultats de recherche, le plan et l'aperçu Markdown. Placer le curseur dans un bloc le révèle ; ⌥⌘S révèle tous les blocs jusqu'à ce qu'ils soient de nouveau masqués. Le fichier lui-même est enregistré en texte brut — cela masque, cela ne chiffre pas."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जिस फ़ेंस्ड ब्लॉक की इन्फ़ो स्ट्रिंग `secret` से शुरू होती है (```secret, ```secret bank), उसके भीतर की पंक्तियाँ एडिटर, खोज परिणाम, आउटलाइन और Markdown प्रीव्यू में •••••••• के रूप में दिखती हैं। कर्सर को ब्लॉक में ले जाने पर वह दिखता है; ⌥⌘S सभी ब्लॉक तब तक दिखाता है जब तक वे फिर से छिपाए न जाएँ। फ़ाइल स्वयं सादे टेक्स्ट के रूप में सहेजी जाती है — यह केवल छिपाता है, एन्क्रिप्ट नहीं करता।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "情報文字列が `secret` で始まるフェンスブロック (```secret、```secret bank) の内側の行は、エディタ・検索結果・アウトライン・Markdown プレビューで •••••••• と表示されます。カーソルをブロック内に移動するとそのブロックが表示され、⌥⌘S は再び非表示にするまですべてのブロックを表示します。ファイル自体はプレーンテキストで保存されます — 隠すだけで、暗号化はしません。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "정보 문자열이 `secret` 로 시작하는 펜스 블록(```secret, ```secret 은행)의 안쪽 줄은 편집기·찾기 결과·아웃라인·마크다운 미리보기에서 •••••••• 로 표시됩니다. 캐럿을 블록 안에 두면 그 블록이 드러나고, ⌥⌘S 는 다시 가릴 때까지 모든 블록을 드러냅니다. 파일은 평문으로 저장됩니다 — 가릴 뿐 암호화하지 않습니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As linhas dentro de um bloco cercado cuja string de informação começa com `secret` (```secret, ```secret banco) são mostradas como •••••••• no editor, nos resultados da busca, na estrutura e na pré-visualização Markdown. Mover o cursor para dentro de um bloco o revela; ⌥⌘S revela todos os blocos até que sejam ocultados de novo. O arquivo em si é salvo como texto simples — isto oculta, não criptografa."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các dòng bên trong khối rào có chuỗi thông tin bắt đầu bằng `secret` (```secret, ```secret ngân hàng) được hiển thị là •••••••• trong trình soạn thảo, kết quả tìm kiếm, dàn ý và xem trước Markdown. Đưa con trỏ vào một khối sẽ hiện khối đó; ⌥⌘S hiện tất cả các khối cho đến khi chúng được che lại. Bản thân tệp vẫn được lưu dưới dạng văn bản thuần — tính năng này chỉ che, không mã hóa."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信息字符串以 `secret` 开头的围栏代码块（```secret、```secret 银行）中的行，在编辑器、查找结果、大纲和 Markdown 预览中显示为 ••••••••。将光标移入块中即可显示该块；⌥⌘S 会显示所有块，直到再次遮盖。文件本身以纯文本存储 — 这只是隐藏，并非加密。"
           }
         }
       }
@@ -11845,40 +14275,256 @@
     },
     "Lock HyperEdit": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قفل HyperEdit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit sperren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear HyperEdit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouiller HyperEdit"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit लॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit をロック"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 잠금"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear HyperEdit"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa HyperEdit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定 HyperEdit"
           }
         }
       }
     },
     "Lock after inactivity": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القفل بعد عدم النشاط"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei Inaktivität sperren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear tras inactividad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouiller après inactivité"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "निष्क्रियता के बाद लॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作がないときにロック"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "입력이 없으면 잠금"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear após inatividade"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa khi không hoạt động"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闲置后锁定"
           }
         }
       }
     },
     "Lock when the Mac sleeps or the screen locks": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القفل عند دخول Mac في وضع السكون أو قفل الشاشة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sperren, wenn der Mac in den Ruhezustand wechselt oder der Bildschirm gesperrt wird"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear cuando el Mac entra en reposo o se bloquea la pantalla"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verrouiller quand le Mac suspend son activité ou que l'écran se verrouille"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac स्लीप में जाने या स्क्रीन लॉक होने पर लॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac のスリープ時または画面のロック時にロック"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "Mac 이 잠자기에 들어가거나 화면이 잠기면 잠금"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear quando o Mac entrar em repouso ou a tela for bloqueada"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa khi máy Mac ngủ hoặc màn hình khóa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac 睡眠或屏幕锁定时锁定"
           }
         }
       }
     },
     "Locking covers the window with an opaque screen and blocks Quick Append until you authenticate; it does not encrypt your files. ⌃⌘L locks at any time, even with these options off.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يغطي القفل النافذة بشاشة معتمة ويمنع الإضافة السريعة حتى تتم المصادقة؛ ولا يشفّر ملفاتك. ⌃⌘L يقفل في أي وقت، حتى مع إيقاف هذه الخيارات."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Sperren verdeckt das Fenster mit einer undurchsichtigen Fläche und blockiert die Schnelleingabe, bis du dich authentifizierst; deine Dateien werden nicht verschlüsselt. ⌃⌘L sperrt jederzeit, auch wenn diese Optionen aus sind."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El bloqueo cubre la ventana con una pantalla opaca y bloquea Apunte rápido hasta que te autentiques; no cifra tus archivos. ⌃⌘L bloquea en cualquier momento, aunque estas opciones estén desactivadas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le verrouillage recouvre la fenêtre d'un écran opaque et bloque l'Ajout rapide jusqu'à ce que vous vous authentifiiez ; il ne chiffre pas vos fichiers. ⌃⌘L verrouille à tout moment, même si ces options sont désactivées."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लॉक करने पर विंडो एक अपारदर्शी स्क्रीन से ढक जाती है और प्रमाणीकरण तक क्विक अपेंड रुका रहता है; यह आपकी फ़ाइलों को एन्क्रिप्ट नहीं करता। ⌃⌘L ये विकल्प बंद होने पर भी कभी भी लॉक करता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックするとウインドウを不透明な画面で覆い、認証するまでクイック追加も使えなくなります。ファイルは暗号化されません。⌃⌘L は、これらのオプションがオフでもいつでもロックします。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "잠그면 창을 불투명한 화면으로 가리고 인증할 때까지 빠른 추가도 막습니다. 파일을 암호화하지는 않습니다. ⌃⌘L 은 이 옵션들이 꺼져 있어도 언제든 잠급니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear cobre a janela com uma tela opaca e impede a Adição Rápida até você se autenticar; não criptografa seus arquivos. ⌃⌘L bloqueia a qualquer momento, mesmo com estas opções desativadas."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi khóa, cửa sổ được che bằng một màn hình đục và Thêm nhanh bị chặn cho đến khi bạn xác thực; tệp của bạn không bị mã hóa. ⌃⌘L khóa bất cứ lúc nào, kể cả khi các tùy chọn này đang tắt."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定后，窗口会被不透明的屏幕遮住，快速追加也会被阻止，直到完成验证；它不会加密文件。即使这些选项均已关闭，⌃⌘L 也可随时锁定。"
           }
         }
       }
@@ -13101,30 +15747,192 @@
     },
     "Mask Secret Blocks": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إخفاء الكتل السرية"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheime Blöcke maskieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar bloques secretos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer les blocs secrets"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय ब्लॉक छिपाएँ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットブロックを隠す"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 블록 가리기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar Blocos Secretos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Che khối bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮盖机密块"
           }
         }
       }
     },
     "Mask Secrets": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إخفاء الأسرار"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse maskieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar secretos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer les secrets"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय छिपाएँ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを隠す"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 가리기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar Segredos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Che bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮盖机密"
           }
         }
       }
     },
     "Mask secret blocks": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إخفاء الكتل السرية"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheime Blöcke maskieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar bloques secretos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer les blocs secrets"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय ब्लॉक छिपाएँ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットブロックを隠す"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 블록 가리기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar blocos secretos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Che khối bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮盖机密块"
           }
         }
       }
@@ -14027,10 +16835,64 @@
     },
     "Never": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أبدًا"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nunca"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jamais"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कभी नहीं"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "しない"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "안 함"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nunca"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không bao giờ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永不"
           }
         }
       }
@@ -14485,10 +17347,64 @@
     },
     "No Touch ID or login password is set up on this Mac — App Lock cannot be turned on.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يتم إعداد Touch ID ولا كلمة سر لتسجيل الدخول على جهاز Mac هذا — لا يمكن تشغيل قفل التطبيق."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem Mac sind weder Touch ID noch ein Anmeldepasswort eingerichtet – die App-Sperre kann nicht aktiviert werden."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac no tiene configurado Touch ID ni contraseña de inicio de sesión — no se puede activar el bloqueo de la app."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni Touch ID ni mot de passe de session n'est configuré sur ce Mac — le verrouillage de l'app ne peut pas être activé."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस Mac पर न Touch ID सेट है न लॉगिन पासवर्ड — ऐप लॉक चालू नहीं किया जा सकता।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac には Touch ID もログインパスワードも設定されていないため、アプリのロックをオンにできません。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "이 Mac 에는 Touch ID 도 로그인 암호도 설정돼 있지 않아 앱 잠금을 켤 수 없습니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac não tem Touch ID nem senha de login configurados — o Bloqueio do App não pode ser ativado."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Máy Mac này chưa thiết lập Touch ID hay mật khẩu đăng nhập — không thể bật Khóa ứng dụng."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 Mac 未设置 Touch ID 或登录密码 — 无法开启应用锁定。"
           }
         }
       }
@@ -15583,10 +18499,64 @@
     },
     "Open Grammars Folder…": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فتح مجلد قواعد الصياغة…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammatikordner öffnen…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir carpeta de gramáticas…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir le dossier des grammaires…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "व्याकरण फ़ोल्डर खोलें…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文法フォルダを開く…"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "문법 폴더 열기…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Pasta de Gramáticas…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở thư mục ngữ pháp…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开语法文件夹…"
           }
         }
       }
@@ -16233,10 +19203,64 @@
     },
     "PDF export is available for files up to 2 MB": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التصدير بتنسيق PDF متاح للملفات حتى 2 ميغابايت"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF-Export ist für Dateien bis 2 MB verfügbar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La exportación a PDF está disponible para archivos de hasta 2 MB"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'exportation PDF est disponible pour les fichiers jusqu'à 2 Mo"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF निर्यात 2 MB तक की फ़ाइलों के लिए उपलब्ध है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF の書き出しは 2 MB までのファイルで使えます"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "PDF 내보내기는 2 MB 이하 파일에서 쓸 수 있습니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A exportação em PDF está disponível para arquivos de até 2 MB"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ xuất PDF được tệp tối đa 2 MB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF 导出仅支持 2 MB 以内的文件"
           }
         }
       }
@@ -17971,10 +20995,64 @@
     },
     "Re-mask after": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعادة الإخفاء بعد"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut maskieren nach"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a ocultar tras"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquer de nouveau après"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इतने समय बाद फिर छिपाएँ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再び隠すまでの時間"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "다시 가리기까지"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar de novo após"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Che lại sau"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动重新遮盖"
           }
         }
       }
@@ -18621,10 +21699,64 @@
     },
     "Reload Grammars": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعادة تحميل قواعد الصياغة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammatiken neu laden"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recargar gramáticas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recharger les grammaires"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "व्याकरण फिर से लोड करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文法を再読み込み"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "문법 다시 읽기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recarregar Gramáticas"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tải lại ngữ pháp"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新载入语法"
           }
         }
       }
@@ -19719,10 +22851,64 @@
     },
     "Require Touch ID or password to open HyperEdit": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طلب Touch ID أو كلمة السر لفتح HyperEdit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID oder Passwort zum Öffnen von HyperEdit verlangen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedir Touch ID o contraseña para abrir HyperEdit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exiger Touch ID ou le mot de passe pour ouvrir HyperEdit"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit खोलने के लिए Touch ID या पासवर्ड आवश्यक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HyperEdit を開くときに Touch ID またはパスワードを要求"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "HyperEdit 를 열 때 Touch ID 또는 암호 요구"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exigir Touch ID ou senha para abrir o HyperEdit"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu Touch ID hoặc mật khẩu để mở HyperEdit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 HyperEdit 时要求 Touch ID 或密码"
           }
         }
       }
@@ -19793,20 +22979,128 @@
     },
     "Return unlocks · ⌃⌘L locks at any time": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return يفتح القفل · ⌃⌘L يقفل في أي وقت"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return entsperrt · ⌃⌘L sperrt jederzeit"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return desbloquea · ⌃⌘L bloquea en cualquier momento"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour déverrouille · ⌃⌘L verrouille à tout moment"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return से अनलॉक · ⌃⌘L से कभी भी लॉक"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return でロック解除 · ⌃⌘L でいつでもロック"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "Return 잠금 해제 · ⌃⌘L 언제든 잠금"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return desbloqueia · ⌃⌘L bloqueia a qualquer momento"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return để mở khóa · ⌃⌘L khóa bất cứ lúc nào"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按 Return 解锁 · ⌃⌘L 随时锁定"
           }
         }
       }
     },
     "Reveal Secrets": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار الأسرار"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse einblenden"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar secretos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Révéler les secrets"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय दिखाएँ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを表示"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 드러내기"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revelar Segredos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示机密"
           }
         }
       }
@@ -21477,100 +24771,640 @@
     },
     "Secret block masking is off (Settings › Secrets)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إخفاء الكتل السرية متوقف (الإعدادات › الأسرار)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maskierung geheimer Blöcke ist aus (Einstellungen › Geheimnisse)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ocultación de bloques secretos está desactivada (Ajustes › Secretos)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le masquage des blocs secrets est désactivé (Réglages › Secrets)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय ब्लॉक छिपाना बंद है (सेटिंग्ज़ › गोपनीय)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットブロックの非表示はオフです (設定 › シークレット)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 블록 가리기가 꺼져 있습니다 (설정 › 비밀)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A ocultação de blocos secretos está desativada (Ajustes › Segredos)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tính năng che khối bí mật đang tắt (Cài đặt › Bí mật)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机密块遮盖已关闭（设置 › 机密）"
           }
         }
       }
     },
     "Secret block masking off — secret lines are shown": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إخفاء الكتل السرية متوقف — الأسطر السرية ظاهرة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maskierung geheimer Blöcke aus – geheime Zeilen werden angezeigt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultación de bloques secretos desactivada — las líneas secretas se muestran"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masquage des blocs secrets désactivé — les lignes secrètes sont affichées"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय ब्लॉक छिपाना बंद — गोपनीय पंक्तियाँ दिख रही हैं"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットブロックの非表示をオフ — シークレットの行がそのまま表示されます"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 블록 가리기 꺼짐 — 비밀 줄이 그대로 보입니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultação de blocos secretos desativada — as linhas secretas estão visíveis"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tắt che khối bí mật — các dòng bí mật đang hiển thị"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机密块遮盖已关闭 — 机密行将直接显示"
           }
         }
       }
     },
     "Secret blocks masked": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم إخفاء الكتل السرية"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheime Blöcke maskiert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloques secretos ocultos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blocs secrets masqués"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय ब्लॉक छिपाए गए"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットブロックを非表示"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 블록 가림"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blocos secretos ocultos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã che khối bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已遮盖机密块"
           }
         }
       }
     },
     "Secrets": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأسرار"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレット"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机密"
           }
         }
       }
     },
     "Secrets masked": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم إخفاء الأسرار"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse maskiert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos ocultos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets masqués"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय छिपाए गए"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを非表示"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 가림"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos ocultos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã che bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已遮盖机密"
           }
         }
       }
     },
     "Secrets masked again automatically": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُعيد إخفاء الأسرار تلقائيًا"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse automatisch wieder maskiert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos ocultados de nuevo automáticamente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets de nouveau masqués automatiquement"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय अपने आप फिर से छिपाए गए"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを自動的に再び非表示にしました"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀을 자동으로 다시 가렸습니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos ocultos de novo automaticamente"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tự động che lại bí mật"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已自动重新遮盖机密"
           }
         }
       }
     },
     "Secrets revealed · masked again in %lld s (⌥⌘S)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأسرار ظاهرة · تُخفى مجددًا بعد %lld ث (⌥⌘S)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse eingeblendet · in %lld s wieder maskiert (⌥⌘S)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos visibles · se ocultan de nuevo en %lld s (⌥⌘S)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets révélés · de nouveau masqués dans %lld s (⌥⌘S)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय दिखाए गए · %lld सेकंड में फिर छिपेंगे (⌥⌘S)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを表示 · %lld 秒後に再び非表示 (⌥⌘S)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 드러냄 · %lld초 뒤 다시 가림 (⌥⌘S)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos revelados · ocultos de novo em %lld s (⌥⌘S)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã hiện bí mật · che lại sau %lld giây (⌥⌘S)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已显示机密 · %lld 秒后重新遮盖 (⌥⌘S)"
           }
         }
       }
     },
     "Secrets revealed · ⌥⌘S masks them again": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأسرار ظاهرة · ⌥⌘S يخفيها مجددًا"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse eingeblendet · ⌥⌘S maskiert sie wieder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos visibles · ⌥⌘S los vuelve a ocultar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets révélés · ⌥⌘S les masque de nouveau"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय दिखाए गए · ⌥⌘S फिर से छिपाता है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを表示 · ⌥⌘S で再び非表示"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 드러냄 · ⌥⌘S 로 다시 가림"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos revelados · ⌥⌘S os oculta de novo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã hiện bí mật · ⌥⌘S để che lại"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已显示机密 · ⌥⌘S 可重新遮盖"
           }
         }
       }
     },
     "Secrets revealed — masked again automatically after %lld s (⌥⌘S masks now)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأسرار ظاهرة — تُخفى مجددًا تلقائيًا بعد %lld ث (⌥⌘S يخفيها الآن)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse eingeblendet – nach %lld s automatisch wieder maskiert (⌥⌘S maskiert sofort)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos visibles — se ocultan de nuevo automáticamente tras %lld s (⌥⌘S los oculta ya)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets révélés — de nouveau masqués automatiquement après %lld s (⌥⌘S pour masquer maintenant)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय दिखाए गए — %lld सेकंड बाद अपने आप फिर छिपेंगे (⌥⌘S अभी छिपाता है)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを表示しました — %lld 秒後に自動的に再び非表示になります (⌥⌘S で今すぐ非表示)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 드러남 — %lld초 뒤 자동으로 다시 가립니다 (⌥⌘S 로 지금 가리기)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos revelados — ocultos de novo automaticamente após %lld s (⌥⌘S oculta agora)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã hiện bí mật — tự động che lại sau %lld giây (⌥⌘S để che ngay)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机密已显示 — %lld 秒后自动重新遮盖（⌥⌘S 立即遮盖）"
           }
         }
       }
     },
     "Secrets revealed — ⌥⌘S masks them again": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأسرار ظاهرة — ⌥⌘S يخفيها مجددًا"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheimnisse eingeblendet – ⌥⌘S maskiert sie wieder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secretos visibles — ⌥⌘S los vuelve a ocultar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secrets révélés — ⌥⌘S les masque de nouveau"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "गोपनीय दिखाए गए — ⌥⌘S उन्हें फिर से छिपाता है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを表示しました — ⌥⌘S で再び非表示になります"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "비밀 드러남 — ⌥⌘S 로 다시 가립니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segredos revelados — ⌥⌘S os oculta de novo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã hiện bí mật — ⌥⌘S để che lại"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机密已显示 — ⌥⌘S 可重新遮盖"
           }
         }
       }
@@ -25353,10 +29187,64 @@
     },
     "This Mac has no Touch ID — the login password is used.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يوجد Touch ID على جهاز Mac هذا — تُستخدم كلمة سر تسجيل الدخول."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Mac hat kein Touch ID – das Anmeldepasswort wird verwendet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac no tiene Touch ID — se usa la contraseña de inicio de sesión."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce Mac n'a pas Touch ID — le mot de passe de session est utilisé."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस Mac पर Touch ID नहीं है — लॉगिन पासवर्ड उपयोग होता है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac には Touch ID がないため、ログインパスワードを使います。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "이 Mac 에는 Touch ID 가 없어 로그인 암호를 사용합니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac não tem Touch ID — a senha de login é usada."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Máy Mac này không có Touch ID — sẽ dùng mật khẩu đăng nhập."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 Mac 没有 Touch ID — 将使用登录密码。"
           }
         }
       }
@@ -26003,10 +29891,64 @@
     },
     "Touch ID is available — the login password is the fallback.": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID متاح — وكلمة سر تسجيل الدخول هي البديل."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID ist verfügbar – das Anmeldepasswort dient als Ersatz."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID está disponible — la contraseña de inicio de sesión sirve de alternativa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID est disponible — le mot de passe de session sert de solution de secours."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID उपलब्ध है — विकल्प के रूप में लॉगिन पासवर्ड है।"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID を使えます — 使えないときはログインパスワードで代用します。"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "Touch ID 를 쓸 수 있습니다 — 실패하면 로그인 암호로 대신합니다."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID disponível — a senha de login é a alternativa."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có thể dùng Touch ID — mật khẩu đăng nhập là phương án dự phòng."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以使用 Touch ID — 登录密码作为备用方式。"
           }
         }
       }
@@ -26525,10 +30467,64 @@
     },
     "Underline": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تسطير"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unterstrich"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subrayado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Souligné"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अंडरलाइन"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下線"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "밑줄"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sublinhado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gạch dưới"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下划线"
           }
         }
       }
@@ -26983,30 +30979,192 @@
     },
     "Unlock": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فتح القفل"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entsperren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquear"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouiller"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अनलॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロック解除"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "잠금 해제"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquear"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解锁"
           }
         }
       }
     },
     "Unlock with Touch ID or your password": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح القفل باستخدام Touch ID أو كلمة السر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Touch ID oder deinem Passwort entsperren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquea con Touch ID o tu contraseña"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouillez avec Touch ID ou votre mot de passe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID या अपने पासवर्ड से अनलॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID またはパスワードでロック解除"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "Touch ID 또는 암호로 잠금 해제"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloqueie com Touch ID ou com sua senha"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa bằng Touch ID hoặc mật khẩu của bạn"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 Touch ID 或密码解锁"
           }
         }
       }
     },
     "Unlock with your password": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح القفل باستخدام كلمة السر"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit deinem Passwort entsperren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquea con tu contraseña"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déverrouillez avec votre mot de passe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपने पासवर्ड से अनलॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードでロック解除"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "암호로 잠금 해제"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloqueie com sua senha"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa bằng mật khẩu của bạn"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用密码解锁"
           }
         }
       }
@@ -27141,10 +31299,64 @@
     },
     "User grammars loaded · %lld": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم تحميل قواعد صياغة المستخدم · %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eigene Grammatiken geladen · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gramáticas de usuario cargadas · %lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammaires utilisateur chargées · %lld"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "उपयोगकर्ता व्याकरण लोड हुए · %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ユーザ文法を読み込み · %lld 件"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "사용자 문법 읽음 · %lld개"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gramáticas do usuário carregadas · %lld"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tải ngữ pháp người dùng · %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已载入用户语法 · %lld 个"
           }
         }
       }
@@ -27535,20 +31747,128 @@
     },
     "Window Opacity": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عتامة النافذة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenster-Deckkraft"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacidad de la ventana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacité de la fenêtre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "विंडो अपारदर्शिता"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウの不透明度"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "창 투명도"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacidade da Janela"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Độ mờ đục cửa sổ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口不透明度"
           }
         }
       }
     },
     "Window opacity": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عتامة النافذة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenster-Deckkraft"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacidad de la ventana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacité de la fenêtre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "विंडो अपारदर्शिता"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウインドウの不透明度"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "창 투명도"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacidade da janela"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Độ mờ đục cửa sổ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口不透明度"
           }
         }
       }
@@ -27875,10 +32195,64 @@
     },
     "unlock your documents": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فتح قفل مستنداتك"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "deine Dokumente zu entsperren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "desbloquear tus documentos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "déverrouiller vos documents"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपने दस्तावेज़ अनलॉक करें"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書類のロックを解除"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "문서 잠금을 해제"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "desbloquear seus documentos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mở khóa tài liệu của bạn"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解锁你的文稿"
           }
         }
       }

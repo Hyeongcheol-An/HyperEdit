@@ -28,7 +28,8 @@ HyperEdit ist ein schneller Editor für reinen Text unter macOS, gebaut um eine 
 20. [Dateien, die HyperEdit schreibt](#20-dateien-die-hyperedit-schreibt)
 21. [Fehlerbehebung](#21-fehlerbehebung)
 22. [Bekannte Einschränkungen](#22-bekannte-einschränkungen)
-23. [Hilfe erhalten](#23-hilfe-erhalten)
+23. [Geheime Blöcke und App-Sperre](#23-geheime-blöcke-und-app-sperre)
+24. [Hilfe erhalten](#24-hilfe-erhalten)
 
 ## 1. Installation und Aktualisierung
 
@@ -167,11 +168,14 @@ Weil das Fenster HyperEdit nicht aktiviert, funktioniert es über einen **system
 ## 15. Markdown-Vorschau und Syntaxfarben
 
 - **Markdown-Vorschau (⇧⌘P)** teilt das Fenster und zeigt rechts eine gerenderte Ansicht der aktuellen Datei: Überschriften, Listen und Aufgabenlisten, Tabellen, eingezäunter Code, Zitate, Links und Bilder, gestaltet im aktuellen Theme. Sie folgt der Scrollposition des Editors und wird kurz nach dem Ende der Eingabe neu gerendert. Links öffnen sich in deinem Browser; rohes HTML in der Datei wird als Text angezeigt, nie ausgeführt. Dateien über 2 MB zeigen statt der Vorschau einen Hinweis. Die Statusleiste zeigt **MD**, solange sie an ist.
-- **Syntaxfarben (⌃⌘H)** richten sich nach der Dateiendung und werden in der Statusleiste angezeigt. Notizen und Markdown bekommen ein leichtes Regelwerk – URLs, Datums- und Zeitangaben, Überschriften, `[Titel]`-Zeilen, Listenzeichen und `[ ]` / `[x]`-Aufgabenkästchen, `#tags`, `key:`-Beschriftungen, `**fett**`, `` `code` `` und `⇒ → ->`-Pfeile – und rund 20 Programmiersprachen bekommen Kommentare, Strings, Zahlen, Schlüsselwörter, Funktions- und Typnamen. Die Farben werden nur auf den sichtbaren Zeilen gezeichnet, sodass sie weder die Datei verändern noch das Tippen verlangsamen. Die Einfärbung ist zeilenbasiert: Ein Kommentar oder String über mehrere Zeilen wird nur in der Zeile eingefärbt, in der er beginnt.
+- **Syntaxfarben (⌃⌘H)** richten sich nach der Dateiendung und werden in der Statusleiste angezeigt. Notizen und Markdown bekommen ein leichtes Regelwerk – URLs, Datums- und Zeitangaben, Überschriften, `[Titel]`-Zeilen, Listenzeichen und `[ ]` / `[x]`-Aufgabenkästchen, `#tags`, `key:`-Beschriftungen, `**fett**`, `` `code` `` und `⇒ → ->`-Pfeile – und rund 20 Programmiersprachen bekommen Kommentare, Strings, Zahlen, Schlüsselwörter, Funktions- und Typnamen. Die Farben werden nur auf den sichtbaren Zeilen gezeichnet, sodass sie weder die Datei verändern noch das Tippen verlangsamen. Konstrukte über mehrere Zeilen behalten ihre Farbe, bis sie geschlossen werden: Blockkommentare (`/* */`, `<!-- -->`), mehrzeilige Strings (Swift und Python `"""`, JavaScript-Template-Literale, Go-Raw-Strings, Rust `r#"…"#`) und eingezäunte Markdown-Codeblöcke, die in der im Info-String genannten Sprache eingefärbt werden (```` ```python ````). Tippst du ein öffnendes oder schließendes Trennzeichen, werden die Zeilen darunter sofort neu eingefärbt.
+- **Benutzerdefinierte Grammatiken.** Um eine Sprache einzufärben, die HyperEdit nicht kennt, oder eine eingebaute zu ändern, lege eine `*.json`-Datei in `~/Library/Application Support/HyperEdit/grammars/`. **Ablage › Grammatikordner öffnen…** legt den Ordner mit einer `example.json` zum Kopieren und einer README an, die jeden Schlüssel erklärt – `name`, `extensions` oder `filenames`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **Ablage › Grammatiken neu laden** übernimmt deine Änderungen ohne Neustart; die Statusleiste zeigt den Namen der Grammatik, Kommentieren (⌘/) verwendet ihre Kommentarzeichen, und eine Datei, die sich nicht parsen lässt, wird mit einer Meldung im Panel „Ausgabe“ übersprungen.
 
 ## 16. Themes, Schriften und CJK-Text
 
 **Themes.** 22 Paletten – 5 helle, 17 dunkle – werden mit der App ausgeliefert. Standardmäßig folgt sie dem Erscheinungsbild des Systems: **Hyper Light** im hellen Modus, **Hyper Dark** im Dunkelmodus. Wähle ein Theme im Tab „Layout“, im Theme-Menü der Statusleiste, unter **Darstellung › Theme** oder mit ⌥⌘] / ⌥⌘[, um es festzulegen; **Erscheinungsbild des Systems folgen** steht in denselben Menüs und in den Einstellungen. Dieselben Paletten gibt es für den Editor Zed (`hyperedit-themes.json` bei jedem Release).
+
+**Cursor und Fenster-Deckkraft.** Einstellungen › **Erscheinungsbild** wählt die Form des Cursors – **Balken** (Standard), **Block** (die Zeichenzelle wird in der Cursorfarbe getönt, damit das Zeichen lesbar bleibt) oder **Unterstrich** – und ob er blinkt; die zusätzlichen Cursor von Multi-Cursor und Spaltenmodus verwenden dieselbe Form. **Fenster-Deckkraft** (50–100 %) macht das ganze Fenster durchscheinend – Editor, Menüband, Panels und Statusleiste gleichermaßen –, während Text, Symbole und Rahmen deckend bleiben, und **Unschärfe hinter Fenster** fügt die Unschärfe des Systems hinzu. Darstellung › Fenster-Deckkraft bietet die Stufen 100 / 90 / 80 / 70 %.
 
 **Schriften.** HyperEdit verwendet **Fira Code**, wenn sie installiert ist, und sonst die dicktengleiche Systemschrift. Koreanischer Text wird mit einer eigenen Schrift gezeichnet – standardmäßig **D2Coding**, wenn installiert –, so skaliert, dass eine Hangul-Silbe genau zwei lateinische Zellen breit ist, was tabulatorausgerichtete Tabellen gerade hält. Ligaturen, Zeilenhöhe, beide Schriftfamilien und die Hangul-Skalierung stehen in den Einstellungen. Chinesischer und japanischer Text verwendet die Ersatzschriften des Systems und zählt in „Tabelle ausrichten“ ebenfalls als zwei Zellen.
 
@@ -183,6 +187,7 @@ Weil das Fenster HyperEdit nicht aktiviert, funktioniert es über einen **system
 - **Sicherheit.** Ein leerer Puffer wird nie über eine Datei geschrieben, die Inhalt hatte. Schlägt das Sichern beim Beenden fehl, wird eine Notfallkopie in den Schnappschuss-Ordner geschrieben, und du wirst gefragt, ob du trotzdem beenden willst.
 - **Codierungen.** Dateien werden zuerst als UTF-8 gelesen, dann als EUC-KR (CP949), CP1252 und Latin-1, und in derselben Codierung gesichert (ein UTF-8-BOM bleibt erhalten). Tippst du ein Zeichen, das die ursprüngliche Codierung nicht speichern kann, wird die Datei als UTF-8 gesichert, und die Statusleiste sagt es dir. Eine Datei, die sich in keiner dieser Codierungen decodieren lässt, wird gar nicht erst geöffnet, statt beschädigt zu werden.
 - **Zeilenenden** (UNIX / DOS / MAC) werden erkannt und beibehalten; Schnelleingabe und die Textwerkzeuge verwenden das der Datei.
+- **Export.** **Ablage › Als HTML exportieren…** sichert das Dokument als eine eigenständige HTML-Datei – Markdown gerendert wie in der Vorschau, Notizen und Code als syntaxgefärbter Block –, und **Ablage › Als PDF exportieren…** druckt dieselbe Seite in ein PDF mit Seitenumbrüchen (Letter in den USA, Kanada und Mexiko, sonst A4; 36 pt Ränder; keine Kopf- oder Fußzeile). Im Sichern-Dialog wählst du das Theme (aktuell, Hyper Light, Hyper Dark) und für Notizen und Code Zeilennummern. Die exportierte Seite enthält keine Skripte und lädt nichts aus dem Netz; relative Bildpfade bleiben erhalten, also sichere die HTML-Datei neben der Markdown-Datei. Der PDF-Export funktioniert für Dateien bis 2 MB. Geheime Blöcke (Abschnitt 23) werden als `••••••••` exportiert.
 
 ## 18. Einstellungen im Überblick
 
@@ -196,6 +201,8 @@ Weil das Fenster HyperEdit nicht aktiviert, funktioniert es über einen **system
 | Theme | Erscheinungsbild des Systems folgen, Theme-Auswahl |
 | Dateien | Die aktuelle Datei, das Standarddokument und der Schnappschuss-Ordner, mit Tasten zum Öffnen |
 | Schnelleingabe | Systemweiter Kurzbefehl (Aus / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), Zeitstempel-Überschrift ein/aus |
+| Erscheinungsbild | Cursorstil (Balken / Block / Unterstrich), Blinken, Fenster-Deckkraft 50–100 %, Unschärfe hinter Fenster |
+| Geheimnisse | Geheime Blöcke maskieren, erneut maskieren nach (10 / 30 / 60 s / Nie), Zwischenablage nach Kopieren eines Geheimnisses leeren (Aus / 10 / 30 / 60 s) |
 
 Sichtbarkeit der Panels, Zeilenumbruch, Zeilennummern, Syntaxfarben, Scrollbalken-Marker, die Teilung und der Menüband-Tab werden automatisch gemerkt.
 
@@ -225,7 +232,9 @@ Sichtbarkeit der Panels, Zeilenumbruch, Zeilennummern, Syntaxfarben, Scrollbalke
 | ⌥⌘L | Zeilennummern | ⌥Z | Zeilenumbruch |
 | ⇧⌘P | Markdown-Vorschau | ⌃⌘H | Syntaxfarben |
 | ⌥⌘] / ⌥⌘[ | Nächstes / vorheriges Theme | ⌘= / ⌘- / ⌘0 | Vergrößern / verkleinern / zurücksetzen |
-| ⌘, | Einstellungen | ⌘Q | Beenden (sichert zuerst) |
+| ⌥⌘S | Geheime Blöcke einblenden / maskieren | ⌘, | Einstellungen |
+| ⌃⌘L | HyperEdit sperren (Touch ID) | | |
+| ⌘Q | Beenden (sichert zuerst) | | |
 
 ## 20. Dateien, die HyperEdit schreibt
 
@@ -237,6 +246,7 @@ HyperEdit rührt nur die Dateien an, die du öffnest, und seine eigenen Daten:
 | `~/Library/Application Support/HyperEdit/snapshots/` | Schnappschüsse vor dem Sichern und Notfallkopien |
 | `~/Library/Application Support/HyperEdit/bookmarks/` | Eine JSON-Datei pro Dokument mit Lesezeichen |
 | `~/Library/Application Support/HyperEdit/snippets.json` | Deine Snippets |
+| `~/Library/Application Support/HyperEdit/grammars/` | Benutzerdefinierte Grammatiken (`*.json`), mit `example.json` und einer README |
 | `~/Library/Application Support/HyperEdit/macros/macros.json` | Gesicherte Makros |
 | `~/Library/Preferences/io.github.hyeongcheol-an.hyperedit.plist` | Einstellungen, einschließlich der Sprache der Oberfläche |
 
@@ -253,15 +263,43 @@ Nichts wird neben deine Dokumente geschrieben, und nichts verlässt deinen Mac.
 
 ## 22. Bekannte Einschränkungen
 
-- Syntaxfarben sind zeilenbasiert, und es gibt keine benutzerdefinierte Grammatik. Die Markdown-Vorschau ist eine Ansicht, kein Editor.
+- Syntaxfarben folgen Blockkommentaren, mehrzeiligen Strings und Markdown-Zäunen über Zeilen hinweg, unterstützt werden aber nur String-Trennzeichen, die gleich öffnen und schließen, und ein Blockkommentar-Paar pro Sprache; benutzerdefinierte Grammatiken sind Wortlisten ohne Regeln mit regulären Ausdrücken. Die Markdown-Vorschau ist eine Ansicht, kein Editor.
 - Makros zeichnen nur Tastaturbearbeitungen auf (keine Maus-, Auswahl- oder Multi-Cursor-Schritte). Berechnen und Tabelle ausrichten beherrschen nur einfache Arithmetik und Tab- / Pipe-Tabellen.
-- Snippets und Makros werden als JSON-Dateien bearbeitet; es gibt keinen grafischen Editor dafür.
+- Snippets, Makros und benutzerdefinierte Grammatiken werden als JSON-Dateien bearbeitet; es gibt keinen grafischen Editor dafür.
+- Der Export schreibt nur das ganze Dokument – ohne Export einer Auswahl oder mehrerer Dateien, ohne Seiten- oder Schriftoptionen und ohne PDF-Inhaltsverzeichnis.
+- Geheime Blöcke werden nur auf dem Bildschirm maskiert: Die Datei, automatische Sicherungen, Schnappschüsse und Ergebnisse von „In Dateien suchen“ aus anderen Dateien sind reiner Text, und der Maskierungsbalken zeigt, wie lang jede Zeile ist. Die App-Sperre verbirgt das Fenster; sie verschlüsselt nichts, und ein Dialog, der beim Sperren offen war (Gehe zu Zeile, Nummern einfügen, die Snippet-Auswahl), bleibt über dem Sperrbildschirm, ohne das Dokument zu zeigen.
 - Faltungen bleiben für die Sitzung erhalten und werden nicht pro Datei gesichert; ein Mausziehen über eine eingeklappte Zeile wählt den verborgenen Text trotzdem aus.
 - Dokumente, die aus einer einzigen Zeile von einem Megabyte oder mehr bestehen, lassen sich nur langsam öffnen und durchlaufen; „JSON minifizieren“ warnt, bevor es eine solche erzeugt.
 - Nur lokale Dateien; keine Cloud-Synchronisierung und noch keine iOS-App.
 - Andere als die elf aufgeführten Sprachen fallen auf Englisch zurück.
 
-## 23. Hilfe erhalten
+## 23. Geheime Blöcke und App-Sperre
+
+**Geheime Blöcke.** Ein eingezäunter Codeblock, dessen Info-String mit `secret` beginnt, wird im Editor maskiert:
+
+````markdown
+```secret bank
+login: me@example.com
+password: hunter2
+```
+````
+
+Jede Zeile zwischen den Zäunen wird als leerer Balken mit `••••••••` gezeichnet; die Zaunzeilen bleiben sichtbar, damit du siehst, wo der Block ist und wofür er dient. Die Regel gilt gleichermaßen in Markdown- und reinen Textdateien. Bewege den Cursor in den Block – per Klick, mit ↑ / ↓, Gehe zu Zeile, einem Suchtreffer oder einem Lesezeichen –, und der ganze Block wird sichtbar und bearbeitbar; verlässt der Cursor ihn, wird er wieder maskiert. Nur die Anzeige ändert sich: Der Text steht weiterhin in der Datei, sodass Suchen, Ersetzen, Widerrufen und Sichern genau wie zuvor funktionieren.
+
+- **Geheimnisse einblenden (⌥⌘S)** im Menü „Bearbeiten“ zeigt alle Blöcke auf einmal; nach **Einstellungen › Geheimnisse › Erneut maskieren nach** (10 / 30 / 60 s, Standard 30 s, oder Nie) werden sie wieder maskiert, und das Panel „Ausgabe“ protokolliert es. Die Statusleiste zeigt währenddessen `REVEALED` und `•••• N`, solange N Blöcke maskiert sind. **Bearbeiten › Geheime Blöcke maskieren** schaltet die Maskierung ganz aus.
+- Geheime Zeilen werden in der Liste „Suchergebnisse“ als `••••••••` angezeigt (Treffer und Zeilennummer funktionieren weiterhin), von Gliederung und Zeitleiste übersprungen und in der Markdown-Vorschau sowie in HTML- / PDF-Exporten unkenntlich gemacht.
+- **Zwischenablage automatisch leeren.** Überschneidet sich ein Kopieren oder Ausschneiden mit einer geheimen Zeile – auch beim Kopieren mit Multi-Cursor und im Spaltenmodus –, wird die Zwischenablage nach **Einstellungen › Geheimnisse › Zwischenablage nach Kopieren eines Geheimnisses leeren** (Aus / 10 / 30 / 60 s, Standard 30 s) geleert, sofern du nicht zwischendurch etwas anderes kopiert hast. **Bearbeiten › Zwischenablage leeren** leert sie sofort.
+- Geheime Blöcke lassen sich wie jeder eingezäunte Block einklappen (⌥⌘←).
+
+> Maskieren ist keine Verschlüsselung. Die Datei, automatische Sicherungen und Schnappschüsse sind reiner Text, und wer die Datei hat, kann die Geheimnisse lesen. Die Funktion hält sie während der Arbeit von deinem Bildschirm, aus Bildschirmfotos, Suchergebnissen, der Vorschau und Exporten fern.
+
+**App-Sperre (Touch ID).** **HyperEdit › HyperEdit sperren (⌃⌘L)** (das Programmmenü, unter Einstellungen…) verdeckt das ganze Fenster – Menüband, Seitenleiste, Editor, Panels und Statusleiste – mit einem undurchsichtigen Sperrbildschirm im aktuellen Theme, schließt ein offenes Einstellungsfenster und blendet das Schnelleingabe-Fenster aus. Solange gesperrt ist, wird nichts vom Dokument angezeigt, nicht einmal der Dateiname. Klicke auf **Entsperren** (oder drücke Return), um dich mit **Touch ID** zu authentifizieren; schlägt Touch ID fehl oder hat der Mac keines, greift macOS auf dein Anmeldepasswort zurück. Abbrechen lässt HyperEdit gesperrt, und die Taste versucht es erneut.
+
+- **Einstellungen › App-Sperre.** *Touch ID oder Passwort zum Öffnen von HyperEdit verlangen* (standardmäßig aus) startet die App gesperrt: Das Dokument wird geladen und das automatische Sichern läuft weiter, aber nichts ist sichtbar, bis du dich authentifizierst. *Bei Inaktivität sperren* (Nie / 1 / 5 / 15 / 30 Minuten, Standard Nie) sperrt nach so langer Zeit ohne Tastendruck oder Klick in HyperEdit, unabhängig von der Startoption. *Sperren, wenn der Mac in den Ruhezustand wechselt oder der Bildschirm gesperrt wird* (standardmäßig ein) gilt, solange die Startoption eingeschaltet ist. Ein Hinweistext sagt dir, ob Touch ID auf diesem Mac verfügbar ist.
+- Im gesperrten Zustand wird die Tastatureingabe verschluckt, und die Menüleiste lässt sich nicht öffnen; nur ⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F und das Dock-Menü funktionieren noch. Der systemweite Kurzbefehl der Schnelleingabe zeigt statt des Fensters die Entsperrabfrage und öffnet das Fenster, sobald du dich authentifiziert hast.
+- Dies ist eine Sichtschutzsperre für den Bildschirm, keine Verschlüsselung: Die Dateien auf der Festplatte bleiben unverändert und für jede andere App lesbar. Die Option *Touch ID oder Passwort … verlangen* lässt sich nicht einschalten, solange der Mac weder Touch ID noch ein Anmeldepasswort hat, sodass du dich nicht aussperren kannst.
+
+## 24. Hilfe erhalten
 
 - Fehlerberichte und Ideen: [GitHub Issues](https://github.com/Hyeongcheol-An/HyperEdit/issues) und [Discussions](https://github.com/Hyeongcheol-An/HyperEdit/discussions).
 - Sicherheitsprobleme: siehe [SECURITY.md](../../SECURITY.md) für vertrauliche Meldungen.

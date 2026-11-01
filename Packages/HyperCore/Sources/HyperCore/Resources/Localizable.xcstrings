@@ -3,60 +3,384 @@
   "strings": {
     "'blockComment' must be [open, close]": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون 'blockComment' بالشكل [فتح، إغلاق]"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' muss [öffnend, schließend] sein"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' debe ser [apertura, cierre]"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' doit être [ouverture, fermeture]"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' [खोलने का, बंद करने का] होना चाहिए"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' は [開始, 終了] である必要があります"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "'blockComment' 는 [여는 기호, 닫는 기호] 여야 합니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' deve ser [abertura, fechamento]"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' phải là [mở, đóng]"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'blockComment' 必须为 [起始符, 结束符]"
           }
         }
       }
     },
     "'extensions' or 'filenames' is required": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يلزم 'extensions' أو 'filenames'"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'extensions' oder 'filenames' ist erforderlich"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se requiere 'extensions' o 'filenames'"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'extensions' ou 'filenames' est obligatoire"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'extensions' या 'filenames' आवश्यक है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'extensions' または 'filenames' が必要です"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "'extensions' 또는 'filenames' 가 필요합니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'extensions' ou 'filenames' é obrigatório"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần có 'extensions' hoặc 'filenames'"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "必须提供 'extensions' 或 'filenames'"
           }
         }
       }
     },
     "'mode' must be one of code, markup, css, data, shell (got '%@')": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون 'mode' أحد code, markup, css, data, shell (القيمة '%@')"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' muss code, markup, css, data oder shell sein (erhalten: '%@')"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' debe ser code, markup, css, data o shell (se recibió '%@')"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' doit valoir code, markup, css, data ou shell (reçu « %@ »)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' code, markup, css, data, shell में से एक होना चाहिए (मिला '%@')"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' は code, markup, css, data, shell のいずれかである必要があります ('%@')"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "'mode' 는 code, markup, css, data, shell 중 하나여야 합니다 ('%@')"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' deve ser um destes: code, markup, css, data, shell (recebido '%@')"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' phải là một trong code, markup, css, data, shell (nhận được '%@')"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'mode' 必须是 code, markup, css, data, shell 之一（实际为 '%@'）"
           }
         }
       }
     },
     "'multilineStrings' has too many entries (max 127)": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عناصر 'multilineStrings' كثيرة جدًا (الحد الأقصى 127)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' hat zu viele Einträge (max. 127)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' tiene demasiadas entradas (máx. 127)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' contient trop d'entrées (127 au maximum)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' में बहुत अधिक प्रविष्टियाँ हैं (अधिकतम 127)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' の項目が多すぎます (最大 127)"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "'multilineStrings' 항목이 너무 많습니다 (최대 127)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' tem entradas demais (máx. 127)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' có quá nhiều mục (tối đa 127)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'multilineStrings' 条目过多（最多 127 个）"
           }
         }
       }
     },
     "'name' is required": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يلزم 'name'"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'name' ist erforderlich"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se requiere 'name'"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'name' est obligatoire"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'name' आवश्यक है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'name' は必須です"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "'name' 은 필수입니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'name' é obrigatório"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần có 'name'"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "必须提供 'name'"
           }
         }
       }
     },
     "'strings' entries must be a single character (got '%@')": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون كل عنصر في 'strings' حرفًا واحدًا (القيمة '%@')"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einträge in 'strings' müssen ein einzelnes Zeichen sein (erhalten: '%@')"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las entradas de 'strings' deben ser un solo carácter (se recibió '%@')"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "les entrées de 'strings' doivent être un seul caractère (reçu « %@ »)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'strings' की प्रविष्टियाँ एक ही वर्ण की होनी चाहिए (मिला '%@')"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'strings' の項目は 1 文字である必要があります ('%@')"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "'strings' 항목은 한 글자여야 합니다 ('%@')"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'strings': cada entrada deve ter um único caractere (recebido '%@')"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các mục 'strings' phải là một ký tự (nhận được '%@')"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'strings' 条目必须是单个字符（实际为 '%@'）"
           }
         }
       }
@@ -639,30 +963,192 @@
     },
     "line %lld column %lld: %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السطر %lld العمود %lld: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeile %lld, Spalte %lld: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "línea %lld, columna %lld: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ligne %lld colonne %lld : %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पंक्ति %lld कॉलम %lld: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 行 %lld 列: %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld줄 %lld열: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "linha %lld coluna %lld: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dòng %lld cột %lld: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 行第 %lld 列：%@"
           }
         }
       }
     },
     "not UTF-8 text": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليس نصًا بترميز UTF-8"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein UTF-8-Text"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no es texto UTF-8"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pas du texte UTF-8"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UTF-8 टेक्स्ट नहीं है"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UTF-8 テキストではありません"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "UTF-8 텍스트가 아닙니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "não é texto UTF-8"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "không phải văn bản UTF-8"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不是 UTF-8 文本"
           }
         }
       }
     },
     "not a grammar object: %@": {
       "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليس كائن قواعد صياغة: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein Grammatikobjekt: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no es un objeto de gramática: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pas un objet de grammaire : %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "व्याकरण ऑब्जेक्ट नहीं है: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文法オブジェクトではありません: %@"
+          }
+        },
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "문법 객체가 아닙니다: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "não é um objeto de gramática: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "không phải đối tượng ngữ pháp: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不是语法对象：%@"
           }
         }
       }
