@@ -117,6 +117,7 @@ struct EditorCommands: Commands {
             Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
         MacroCommands(model: model)   // macro
+        ExportCommands(model: model)   // export: 파일 › Export as HTML… / PDF…
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")

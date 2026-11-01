@@ -833,6 +833,16 @@
         }
       }
     },
+    "Add a line-number column to the exported code or notes": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "내보낸 코드·메모에 줄 번호 열을 붙입니다"
+          }
+        }
+      }
+    },
     "Advanced": {
       "localizations": {
         "ar": {
@@ -2689,6 +2699,16 @@
         }
       }
     },
+    "Colors of the exported file — the theme you are using now, or a fixed light / dark palette": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "내보낸 파일의 색 — 지금 쓰는 테마 또는 고정된 라이트 / 다크 팔레트"
+          }
+        }
+      }
+    },
     "Column & Multi-Caret": {
       "localizations": {
         "ar": {
@@ -3325,6 +3345,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "新建并打开一个空文本文件 (⌘N)"
+          }
+        }
+      }
+    },
+    "Current": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "현재"
           }
         }
       }
@@ -4797,6 +4827,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "计算所选内容或当前行，并在末尾追加 ⇒ 结果 (⌃⌘=)"
+          }
+        }
+      }
+    },
+    "Export as HTML": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML로 내보내기"
+          }
+        }
+      }
+    },
+    "Export as HTML…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML로 내보내기…"
+          }
+        }
+      }
+    },
+    "Export as PDF": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF로 내보내기"
+          }
+        }
+      }
+    },
+    "Export as PDF…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF로 내보내기…"
+          }
+        }
+      }
+    },
+    "Export failed · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "내보내기 실패 · %@"
+          }
+        }
+      }
+    },
+    "Exported HTML · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTML 내보내기 완료 · %@"
+          }
+        }
+      }
+    },
+    "Exported PDF · %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF 내보내기 완료 · %@"
           }
         }
       }
@@ -11201,6 +11301,26 @@
         }
       }
     },
+    "Line numbers": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "줄 번호"
+          }
+        }
+      }
+    },
+    "Line numbers apply to notes and code files, not to rendered Markdown": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "줄 번호는 메모·코드 파일에만 붙습니다 (렌더링된 마크다운에는 없음)"
+          }
+        }
+      }
+    },
     "Lines": {
       "localizations": {
         "ar": {
@@ -15677,6 +15797,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "输出"
+          }
+        }
+      }
+    },
+    "PDF export is available for files up to 2 MB": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF 내보내기는 2 MB 이하 파일에서 쓸 수 있습니다"
           }
         }
       }
