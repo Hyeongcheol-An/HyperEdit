@@ -111,6 +111,11 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - **비밀 드러내기(⌥⌘S)** 는 모든 블록을 드러냈다가 설정 › 비밀 › *다시 가리기까지*(10 / 30 / 60초 또는 수동) 뒤 다시 가립니다. 그동안 상태바에 `REVEALED`, 가린 동안에는 `•••• N` 이 표시됩니다. 찾기 결과·아웃라인·타임라인·마크다운 미리보기·HTML/PDF 내보내기는 비밀 줄을 `••••••••` 로 보여 줍니다.
 - **클립보드 자동 비우기:** 비밀 줄과 겹치는 복사·잘라내기 뒤 10 / 30 / 60초(기본 30초)가 지나면 그 사이 다른 것을 복사하지 않았을 때 클립보드를 비웁니다. **편집 › 클립보드 비우기** 는 즉시 비웁니다.
 
+### 앱 잠금 (Touch ID)
+- **HyperEdit › HyperEdit 잠금(⌃⌘L)** 은 리본·사이드바·편집기·패널·상태바까지 창 전체를 현재 테마 색의 불투명한 잠금 화면으로 가리고, 열려 있던 설정 창을 닫고 빠른 추가 패널을 숨깁니다. 잠긴 동안에는 파일 이름을 포함해 문서에 관한 어떤 것도 보이지 않습니다. **잠금 해제**(또는 Return)는 **Touch ID** 로 인증하고, Touch ID 가 실패하거나 없는 Mac 에서는 로그인 암호로 대신합니다. 취소하면 잠긴 채 유지됩니다.
+- **설정 › 앱 잠금:** *HyperEdit 를 열 때 Touch ID 또는 암호 요구*(기본 꺼짐)를 켜면 앱이 잠긴 상태로 시작합니다 — 문서는 읽히고 자동 저장도 계속되지만 인증 전에는 아무것도 보이지 않습니다. *입력이 없으면 잠금*(안 함 / 1 / 5 / 15 / 30분)은 HyperEdit 안에서 키 입력이나 클릭이 그 시간 동안 없으면 잠그고, *Mac 이 잠자기에 들어가거나 화면이 잠기면 잠금*(기본 켜짐)은 시작 옵션이 켜져 있을 때 적용됩니다.
+- 잠긴 동안 키 입력은 버려지고 메뉴 막대는 열리지 않습니다(⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F 와 Dock 메뉴만 동작). 빠른 추가 전역 단축키는 패널 대신 잠금 해제 프롬프트를 띄웁니다. 화면을 가리는 프라이버시 잠금이지 암호화가 아니며 디스크의 파일은 그대로입니다. Touch ID 도 로그인 암호도 없는 Mac 에서는 *요구…* 옵션이 켜지지 않으므로 스스로 잠겨 버리는 일은 없습니다.
+
 ## 단축키
 
 | 단축키 | 동작 | 단축키 | 동작 |
@@ -138,6 +143,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 | ⌃⌥N | 다른 앱에서 빠른 추가(전역, 설정 가능) | ⇧⌘M | 매크로 기록 / 중지 |
 | ⌥⌘M | 매크로 재생 | ⌥⌘← / ⌥⌘→ | 접기 / 펼치기 |
 | ⌥⇧⌘← / ⌥⇧⌘→ | 모두 접기 / 모두 펼치기 | ⌥⌘S | 비밀 블록 드러내기 / 가리기 |
+| ⌃⌘L | HyperEdit 잠금(Touch ID) | | |
 
 ## 테마
 
@@ -189,6 +195,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--fold <line>` · `--fold-all` · `--no-fold` | 해당 줄이 머리인 영역 접기 / 영역 스캔 뒤 모두 접기 / 접기 기능 끄기 |
 | `--cursor <bar\|block\|underline>` · `--no-cursor-blink` · `--opacity <0.5~1.0>` · `--blur` | 그 캐럿 스타일 / 깜빡임 끄고 / 그 창 투명도 / 반투명 창 뒤 블러로 시작 |
 | `--reveal-secrets` | 모든 비밀 블록을 드러낸 상태로 시작(자동 재마스킹 없음) |
+| `--locked` | 잠긴 상태로 시작(스크린샷용). 실제 인증기를 쓰므로 잠금 해제 버튼을 누르기 전에는 프롬프트가 뜨지 않으며, 자동화 실행은 이 인자 없이는 잠긴 채 시작하지 않음 |
 | `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
@@ -198,7 +205,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 ## 저장소 구성
 
 ```
-Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift), Bench.swift, SelfTest*.swift
+Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), Export/, AppLock/, Bench.swift, SelfTest*.swift
   Editor/            AppKit 편집기: HyperTextView(TextKit 2), GutterView, EditorSession(분할), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
@@ -224,7 +231,7 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 - 로컬 파일만 다룹니다. 클라우드 동기화 없음. 엔진은 iOS를 염두에 두고 만들었지만 iOS 앱은 아직 없습니다.
 - 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.
 - 스니펫·매크로·사용자 문법은 JSON 파일(Application Support의 `snippets.json`, `macros/macros.json`, `grammars/*.json`)로 편집합니다. GUI 편집기는 없습니다.
-- 내보내기는 문서 전체만(선택 영역·여러 파일·용지·글꼴 옵션·PDF 목차 없음). 비밀 블록은 화면에서만 가리며 파일·자동 저장·스냅샷·다른 파일의 파일에서 찾기 결과는 평문이고, 가림막 길이로 줄 길이는 보입니다.
+- 내보내기는 문서 전체만(선택 영역·여러 파일·용지·글꼴 옵션·PDF 목차 없음). 비밀 블록은 화면에서만 가리며 파일·자동 저장·스냅샷·다른 파일의 파일에서 찾기 결과는 평문이고, 가림막 길이로 줄 길이는 보입니다. 앱 잠금은 창을 가리고 입력을 막을 뿐 파일을 암호화하지 않으며, 잠글 때 떠 있던 시트는 잠금 화면 위에 남습니다(문서는 보이지 않음).
 - 접기는 세션 동안만 유지되고(파일별로 저장하지 않음), 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
 - 빠른 추가의 전역 단축키는 시스템 핫키 API를 쓰므로, 시스템 설정 › 키보드에서 입력 소스 전환이 켜져 있으면 ⌃Space / ⌃⌥Space 변형은 아무 알림 없이 시스템에 밀립니다. 대신 ⌃⌥N 이나 ⌃⌥⌘N 을 고르세요.
 

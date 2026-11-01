@@ -111,6 +111,11 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 - **Reveal Secrets (⌥⌘S)** shows every block and masks them again after Settings › Secrets › *Re-mask after* (10 / 30 / 60 s or never); the status bar shows `REVEALED` meanwhile, and `•••• N` while N blocks are masked. Find results, the Outline, the Timeline, the Markdown preview and HTML / PDF exports show secret lines as `••••••••`.
 - **Clipboard auto-clear:** copying or cutting text that overlaps a secret line clears the clipboard after 10 / 30 / 60 s (default 30 s) unless you copied something else in the meantime; **Edit › Clear Clipboard** clears it at once.
 
+### App lock (Touch ID)
+- **HyperEdit › Lock HyperEdit (⌃⌘L)** covers the whole window — ribbon, sidebar, editor, panels and status bar — with an opaque lock screen in the current theme, closes an open Settings window and hides the Quick Append panel; nothing about the document, not even its name, is shown. **Unlock** (or Return) authenticates with **Touch ID**, falling back to your login password when Touch ID fails or the Mac has none. Cancelling keeps HyperEdit locked.
+- **Settings › App Lock:** *Require Touch ID or password to open HyperEdit* (off by default) starts the app locked — the document is loaded and autosave keeps working, but nothing is visible until you authenticate; *Lock after inactivity* (Never / 1 / 5 / 15 / 30 minutes) locks after that long without a key press or click in HyperEdit; *Lock when the Mac sleeps or the screen locks* (on by default) applies while the launch option is on.
+- While locked, keyboard input is swallowed and the menu bar cannot be opened (only ⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F and the Dock menu work), and the Quick Append global shortcut shows the unlock prompt instead of the panel. This is a privacy lock for the screen, not encryption: the files on disk are unchanged. The *Require…* option cannot be turned on while the Mac has neither Touch ID nor a login password, so you cannot lock yourself out.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action | Shortcut | Action |
@@ -138,6 +143,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌃⌥N | Quick Append from any app (global, configurable) | ⇧⌘M | Record / stop macro |
 | ⌥⌘M | Play macro | ⌥⌘← / ⌥⌘→ | Fold / unfold |
 | ⌥⇧⌘← / ⌥⇧⌘→ | Fold all / unfold all | ⌥⌘S | Reveal / mask secret blocks |
+| ⌃⌘L | Lock HyperEdit (Touch ID) | | |
 
 ## Themes
 
@@ -189,6 +195,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |
 | `--cursor <bar\|block\|underline>` · `--no-cursor-blink` · `--opacity <0.5–1.0>` · `--blur` | Start with that caret style / blinking off / the window at that opacity / blur behind the translucent window |
 | `--reveal-secrets` | Start with every secret block revealed (no re-mask timer) |
+| `--locked` | Start locked (for screenshots). The real authenticator is used, so nothing prompts until you click Unlock; automation runs never start locked without this flag |
 | `--ephemeral` | Use throwaway preferences (theme, panels, remembered file, snippets, macros, grammars) for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | Diagnostics: log window creation during launch to stderr (and a file) / log Markdown preview renders and navigation / skip theme and font attribute application |
@@ -198,7 +205,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 ## Project layout
 
 ```
-Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), Export/, Bench.swift, SelfTest*.swift
+Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), Export/, AppLock/, Bench.swift, SelfTest*.swift
   Editor/            AppKit editor: HyperTextView (TextKit 2, caret styles), GutterView, EditorSession (split), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       Non-activating NSPanel, controller and the Carbon global hot key
   Panels/ Markdown/  Sidebar and bottom panels, SnippetPickerView · WKWebView Markdown preview
@@ -224,7 +231,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org); subj
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
 - Snippets, macros and user grammars are edited as JSON files (`snippets.json`, `macros/macros.json`, `grammars/*.json` under Application Support); there is no GUI editor for them.
-- Export writes the whole document only (no selection or multi-file export, no page-size or font options, no PDF table of contents). Secret blocks are masked on screen only — the file, autosaves, snapshots and Find in Files results of other files are plain text, and the mask bar reveals line lengths.
+- Export writes the whole document only (no selection or multi-file export, no page-size or font options, no PDF table of contents). Secret blocks are masked on screen only — the file, autosaves, snapshots and Find in Files results of other files are plain text, and the mask bar reveals line lengths. App lock hides the window and blocks input; it does not encrypt files, and a sheet that was open when you locked stays above the lock screen (without showing the document).
 - Code folding lasts for the session only (folds are not saved per file), and a mouse drag across a folded header still selects the hidden text.
 - The Quick Append global shortcut uses the system hot-key API, so the ⌃Space / ⌃⌥Space variants lose silently to input-source switching when that is enabled in System Settings › Keyboard; pick ⌃⌥N or ⌃⌥⌘N instead.
 

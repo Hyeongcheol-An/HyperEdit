@@ -233,6 +233,7 @@ Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the sp
 | ⇧⌘P | Markdown preview | ⌃⌘H | Syntax colors |
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
 | ⌥⌘S | Reveal / mask secret blocks | ⌘, | Settings |
+| ⌃⌘L | Lock HyperEdit (Touch ID) | | |
 | ⌘Q | Quit (saves first) | | |
 
 ## 20. Files HyperEdit writes
@@ -266,7 +267,7 @@ Nothing is written next to your documents, and nothing leaves your Mac.
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). Calculate and Align Columns handle plain arithmetic and tab / pipe tables only.
 - Snippets, macros and user grammars are edited as JSON files; there is no graphical editor for them.
 - Export writes the whole document only, without selection or multi-file export, page or font options, or a PDF table of contents.
-- Secret blocks are masked on screen only: the file, autosaves, snapshots and Find in Files results from other files are plain text, and the mask bar shows how long each line is. App lock hides the window; it does not encrypt anything.
+- Secret blocks are masked on screen only: the file, autosaves, snapshots and Find in Files results from other files are plain text, and the mask bar shows how long each line is. App lock hides the window; it does not encrypt anything, and a sheet that was open when you locked (Go to Line, Insert Number, the snippet picker) stays above the lock screen without showing the document.
 - Folds last for the session and are not saved per file; a mouse drag across a folded line still selects the hidden text.
 - Documents that are a single line of a megabyte or more are slow to open and move around in; Minify JSON warns before producing one.
 - Local files only; no cloud sync and no iOS app yet.
@@ -292,7 +293,11 @@ Every line between the fences is drawn as a blank bar with `••••••�
 
 > Masking is not encryption. The file, autosaves and snapshots are plain text, and anyone who has the file can read the secrets. The feature keeps them off your screen, screenshots, find results, preview and exports while you work.
 
-**App lock.** See Settings › App Lock — described in the next release of this guide.
+**App lock (Touch ID).** **HyperEdit › Lock HyperEdit (⌃⌘L)** (the application menu, below Settings…) covers the whole window — ribbon, sidebar, editor, panels and status bar — with an opaque lock screen in the current theme, closes an open Settings window and hides the Quick Append panel. Nothing about the document, not even the file name, is shown while locked. Click **Unlock** (or press Return) to authenticate with **Touch ID**; if Touch ID fails or the Mac has none, macOS falls back to your login password. Cancelling keeps HyperEdit locked and the button retries.
+
+- **Settings › App Lock.** *Require Touch ID or password to open HyperEdit* (off by default) starts the app locked: the document is loaded and autosave keeps working, but nothing is visible until you authenticate. *Lock after inactivity* (Never / 1 / 5 / 15 / 30 minutes, default Never) locks after that long without a key press or click in HyperEdit, independently of the launch option. *Lock when the Mac sleeps or the screen locks* (on by default) applies while the launch option is on. A caption tells you whether Touch ID is available on this Mac.
+- While locked, keyboard input is swallowed and the menu bar cannot be opened; only ⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F and the Dock menu still work. The Quick Append global shortcut shows the unlock prompt instead of the panel and opens the panel once you have authenticated.
+- This is a privacy lock for the screen, not encryption: the files on disk are unchanged and readable by any other app. The *Require…* option cannot be turned on while the Mac has neither Touch ID nor a login password, so you cannot lock yourself out.
 
 ## 24. Getting help
 
