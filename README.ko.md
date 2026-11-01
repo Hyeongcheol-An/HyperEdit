@@ -183,7 +183,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(393개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(616개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
@@ -209,7 +209,7 @@ Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.sw
   Editor/            AppKit 편집기: HyperTextView(TextKit 2), GutterView, EditorSession(분할), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
-Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 테마, 폰트, 마크다운 → HTML) + 단위 테스트 137개
+Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 251개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
 l10n/                ui.<언어>.json — 언어별 평면 사전(scripts/l10n-export.py 로 내보내고 scripts/l10n-add.py 로 카탈로그에 병합) · context.json
