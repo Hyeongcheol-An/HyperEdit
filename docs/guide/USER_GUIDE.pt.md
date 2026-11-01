@@ -28,7 +28,8 @@ O HyperEdit é um editor de texto simples e rápido para macOS, construído em t
 20. [Arquivos que o HyperEdit grava](#20-arquivos-que-o-hyperedit-grava)
 21. [Solução de problemas](#21-solução-de-problemas)
 22. [Limitações conhecidas](#22-limitações-conhecidas)
-23. [Como obter ajuda](#23-como-obter-ajuda)
+23. [Blocos secretos e bloqueio do app](#23-blocos-secretos-e-bloqueio-do-app)
+24. [Como obter ajuda](#24-como-obter-ajuda)
 
 ## 1. Instalação e atualização
 
@@ -167,11 +168,14 @@ Como o painel não ativa o HyperEdit, ele também funciona a partir de qualquer 
 ## 15. Pré-visualização Markdown e cores de sintaxe
 
 - **Pré-visualização Markdown (⇧⌘P)** divide a janela com uma visualização renderizada do arquivo atual à direita: títulos, listas e listas de tarefas, tabelas, código cercado, citações, links e imagens, no estilo do tema atual. Ela acompanha a posição de rolagem do editor e é renderizada de novo pouco depois que você para de digitar. Os links abrem no seu navegador; HTML bruto no arquivo é mostrado como texto, nunca executado. Arquivos com mais de 2 MB mostram um aviso em vez da pré-visualização. A barra de status mostra **MD** enquanto ela está ativa.
-- As **cores de sintaxe (⌃⌘H)** são escolhidas pela extensão do arquivo e mostradas na barra de status. Notas e Markdown recebem um conjunto leve de regras — URLs, datas e horas, títulos, linhas `[Título]`, marcadores de lista e caixas de tarefa `[ ]` / `[x]`, `#tags`, rótulos `chave:`, `**negrito**`, `` `código` `` e setas `⇒ → ->` — e cerca de 20 linguagens de programação recebem comentários, strings, números, palavras-chave, nomes de funções e de tipos. As cores são desenhadas só nas linhas visíveis, então nunca alteram o arquivo nem deixam a digitação lenta. A coloração é por linha: um comentário ou string que ocupa várias linhas é colorido só na linha em que começa.
+- As **cores de sintaxe (⌃⌘H)** são escolhidas pela extensão do arquivo e mostradas na barra de status. Notas e Markdown recebem um conjunto leve de regras — URLs, datas e horas, títulos, linhas `[Título]`, marcadores de lista e caixas de tarefa `[ ]` / `[x]`, `#tags`, rótulos `chave:`, `**negrito**`, `` `código` `` e setas `⇒ → ->` — e cerca de 20 linguagens de programação recebem comentários, strings, números, palavras-chave, nomes de funções e de tipos. As cores são desenhadas só nas linhas visíveis, então nunca alteram o arquivo nem deixam a digitação lenta. Construções que ocupam várias linhas mantêm a cor até serem fechadas: comentários de bloco (`/* */`, `<!-- -->`), strings de várias linhas (`"""` em Swift e Python, template literals em JavaScript, raw strings em Go, `r#"…"#` em Rust) e blocos de código cercados em Markdown, que são coloridos com a linguagem indicada na string de informação (```` ```python ````). Digitar um delimitador de abertura ou de fechamento recolore imediatamente as linhas abaixo.
+- **Gramáticas definidas pelo usuário.** Para colorir uma linguagem que o HyperEdit não conhece, ou para alterar uma integrada, coloque um arquivo `*.json` em `~/Library/Application Support/HyperEdit/grammars/`. **Arquivo › Abrir Pasta de Gramáticas…** cria a pasta com um `example.json` que você pode copiar e um README que explica cada chave — `name`, `extensions` ou `filenames`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **Arquivo › Recarregar Gramáticas** aplica suas alterações sem reiniciar; a barra de status mostra o nome da gramática, Comentar (⌘/) usa os marcadores de comentário dela, e um arquivo que não pode ser analisado é ignorado com uma mensagem no painel Saída.
 
 ## 16. Temas, fontes e texto CJK
 
 **Temas.** 22 paletas — 5 claras, 17 escuras — vêm com o app. Por padrão ele segue a aparência do sistema: **Hyper Light** no modo claro, **Hyper Dark** no modo escuro. Escolha um tema na aba Layout, no menu de temas da barra de status, em **Visualizar › Tema** ou com ⌥⌘] / ⌥⌘[ para fixá-lo; **Seguir Aparência do Sistema** está nos mesmos menus e nos Ajustes. As mesmas paletas estão disponíveis para o editor Zed (`hyperedit-themes.json` em cada versão lançada).
+
+**Cursor e opacidade da janela.** Ajustes › **Aparência** escolhe a forma do cursor — **Barra** (o padrão), **Bloco** (a célula do caractere é tingida com a cor do cursor para que o glifo continue legível) ou **Sublinhado** — e se ele pisca; os cursores extras do multicursor e do modo coluna usam a mesma forma. A **Opacidade da janela** (50–100 %) deixa a janela inteira translúcida — editor, faixa, painéis e barra de status igualmente — enquanto texto, ícones e bordas continuam sólidos, e **Desfoque atrás da janela** adiciona o desfoque do sistema. Visualizar › Opacidade da Janela tem os passos 100 / 90 / 80 / 70 %.
 
 **Fontes.** O HyperEdit usa **Fira Code** quando ela está instalada e a fonte monoespaçada do sistema caso contrário. O texto coreano é desenhado com uma fonte separada — **D2Coding** por padrão, quando instalada — escalada de modo que uma sílaba Hangul tenha exatamente a largura de duas células latinas, o que mantém retas as tabelas alinhadas por tab. Ligaduras, altura da linha, as duas famílias de fonte e a escala do Hangul estão nos Ajustes. Texto chinês e japonês usa as fontes alternativas do sistema e também conta como duas células em Alinhar Colunas.
 
@@ -183,6 +187,7 @@ Como o painel não ativa o HyperEdit, ele também funciona a partir de qualquer 
 - **Segurança.** Um buffer vazio nunca é gravado por cima de um arquivo que tinha conteúdo. Se salvar falhar ao encerrar, uma cópia de emergência é gravada na pasta de snapshots e você é perguntado se quer encerrar mesmo assim.
 - **Codificações.** Os arquivos são lidos primeiro como UTF-8, depois EUC-KR (CP949), CP1252 e Latin-1, e salvos na mesma codificação (um BOM UTF-8 é preservado). Se você digitar um caractere que a codificação original não consegue guardar, o arquivo é salvo como UTF-8 e a barra de status avisa. Um arquivo que não pode ser decodificado em nenhuma dessas codificações não é aberto, em vez de ser danificado.
 - **Fins de linha** (UNIX / DOS / MAC) são detectados e preservados; a Adição Rápida e as ferramentas de texto usam o do próprio arquivo.
+- **Exportação.** **Arquivo › Exportar como HTML…** salva o documento como um único arquivo HTML autossuficiente — Markdown renderizado como na pré-visualização, notas e código como um bloco com cores de sintaxe — e **Arquivo › Exportar como PDF…** imprime a mesma página em um PDF paginado (Letter nos EUA, no Canadá e no México, A4 nos demais lugares; margens de 36 pt; sem cabeçalho nem rodapé). O painel de salvamento permite escolher o tema (atual, Hyper Light, Hyper Dark) e, para notas e código, os números de linha. A página exportada não contém scripts e não carrega nada da rede; os caminhos relativos de imagens são mantidos, então salve o HTML ao lado do arquivo Markdown. A exportação em PDF funciona para arquivos de até 2 MB. Os blocos secretos (seção 23) são exportados como `••••••••`.
 
 ## 18. Referência de ajustes
 
@@ -196,6 +201,8 @@ Abra os Ajustes com **⌘,** ou pela aba Avançado.
 | Tema | Seguir aparência do sistema, seletor de tema |
 | Arquivos | O arquivo atual, o documento padrão e a pasta de snapshots, com botões para abri-los |
 | Adição Rápida | Atalho global (Desativado / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), cabeçalho de data/hora ativado/desativado |
+| Aparência | Estilo do cursor (Barra / Bloco / Sublinhado), piscar, opacidade da janela 50–100 %, desfoque atrás da janela |
+| Segredos | Ocultar blocos secretos, ocultar de novo após (10 / 30 / 60 s / Nunca), limpar a área de transferência após copiar um segredo (Desativado / 10 / 30 / 60 s) |
 
 A visibilidade dos painéis, a quebra de linha, os números de linha, as cores de sintaxe, as marcas na barra de rolagem, a divisão e a aba da faixa são lembradas automaticamente.
 
@@ -225,7 +232,9 @@ A visibilidade dos painéis, a quebra de linha, os números de linha, as cores d
 | ⌥⌘L | Números de linha | ⌥Z | Quebra de linha |
 | ⇧⌘P | Pré-visualização Markdown | ⌃⌘H | Cores de sintaxe |
 | ⌥⌘] / ⌥⌘[ | Tema seguinte / anterior | ⌘= / ⌘- / ⌘0 | Aumentar / diminuir / redefinir zoom |
-| ⌘, | Ajustes | ⌘Q | Encerrar (salva antes) |
+| ⌥⌘S | Revelar / ocultar blocos secretos | ⌘, | Ajustes |
+| ⌃⌘L | Bloquear HyperEdit (Touch ID) | | |
+| ⌘Q | Encerrar (salva antes) | | |
 
 ## 20. Arquivos que o HyperEdit grava
 
@@ -237,6 +246,7 @@ O HyperEdit só toca nos arquivos que você abre e nos próprios dados:
 | `~/Library/Application Support/HyperEdit/snapshots/` | Snapshots feitos antes de salvar e cópias de emergência |
 | `~/Library/Application Support/HyperEdit/bookmarks/` | Um arquivo JSON por documento com marcadores |
 | `~/Library/Application Support/HyperEdit/snippets.json` | Seus snippets |
+| `~/Library/Application Support/HyperEdit/grammars/` | Gramáticas definidas pelo usuário (`*.json`), com `example.json` e um README |
 | `~/Library/Application Support/HyperEdit/macros/macros.json` | Macros salvas |
 | `~/Library/Preferences/io.github.hyeongcheol-an.hyperedit.plist` | Preferências, inclusive o idioma da interface |
 
@@ -253,15 +263,43 @@ Nada é gravado ao lado dos seus documentos, e nada sai do seu Mac.
 
 ## 22. Limitações conhecidas
 
-- As cores de sintaxe são por linha e não há gramática definida pelo usuário. A pré-visualização Markdown é uma visualização, não um editor.
+- As cores de sintaxe acompanham comentários de bloco, strings de várias linhas e cercas Markdown ao longo das linhas, mas só são suportados delimitadores de string iguais na abertura e no fechamento e um par de comentário de bloco por linguagem, e as gramáticas do usuário são listas de palavras sem regras de expressão regular. A pré-visualização Markdown é uma visualização, não um editor.
 - As macros gravam só a edição pelo teclado (sem passos de mouse, seleção ou multicursor). Calcular e Alinhar Colunas lidam só com aritmética simples e tabelas com tab / `|`.
-- Snippets e macros são editados como arquivos JSON; não há editor gráfico para eles.
+- Snippets, macros e gramáticas do usuário são editados como arquivos JSON; não há editor gráfico para eles.
+- A exportação grava só o documento inteiro, sem exportação de seleção ou de vários arquivos, opções de página ou de fonte, nem sumário no PDF.
+- Os blocos secretos são ocultados só na tela: o arquivo, os salvamentos automáticos, os snapshots e os resultados de Buscar em Arquivos vindos de outros arquivos são texto simples, e a barra de ocultação mostra o comprimento de cada linha. O bloqueio do app esconde a janela; não criptografa nada, e um diálogo que estava aberto quando você bloqueou (Ir para a Linha, Inserir Número, o seletor de snippets) fica acima da tela de bloqueio sem mostrar o documento.
 - As regiões recolhidas duram até o fim da sessão e não são salvas por arquivo; arrastar o mouse por uma linha recolhida ainda seleciona o texto oculto.
 - Documentos formados por uma única linha de um megabyte ou mais são lentos para abrir e navegar; Minificar JSON avisa antes de produzir um.
 - Só arquivos locais; sem sincronização na nuvem e ainda sem app para iOS.
 - Idiomas diferentes dos onze listados recorrem ao inglês.
 
-## 23. Como obter ajuda
+## 23. Blocos secretos e bloqueio do app
+
+**Blocos secretos.** Um bloco de código cercado cuja string de informação começa com `secret` é ocultado no editor:
+
+````markdown
+```secret banco
+login: me@example.com
+senha: hunter2
+```
+````
+
+Cada linha entre as cercas é desenhada como uma barra vazia com `••••••••`; as linhas da cerca continuam visíveis, para que você veja onde o bloco está e para que serve. A regra é a mesma em arquivos Markdown e de texto simples. Mova o cursor para dentro do bloco — clique nele, use ↑ / ↓, Ir para a Linha, um resultado da busca ou um marcador — e o bloco inteiro é revelado e editável; mova o cursor para fora e ele é ocultado de novo. Só a exibição muda: o texto continua no arquivo, então Buscar, Substituir, desfazer e salvar funcionam exatamente como antes.
+
+- **Revelar Segredos (⌥⌘S)**, no menu Editar, mostra todos os blocos de uma vez; depois de **Ajustes › Segredos › Ocultar de novo após** (10 / 30 / 60 s, padrão 30 s, ou Nunca) eles são ocultados de novo e o painel Saída registra isso. A barra de status mostra `REVEALED` enquanto isso e `•••• N` enquanto N blocos estão ocultos. **Editar › Ocultar Blocos Secretos** desativa a ocultação por completo.
+- As linhas secretas aparecem como `••••••••` na lista de Resultados da Busca (a ocorrência e o número da linha continuam funcionando), são puladas pela Estrutura e pela Linha do Tempo, e ficam ocultadas na pré-visualização Markdown e nas exportações em HTML / PDF.
+- **Limpeza automática da área de transferência.** Quando um copiar ou recortar inclui uma linha secreta — inclusive cópias com multicursor e em modo coluna — a área de transferência é limpa depois de **Ajustes › Segredos › Limpar a área de transferência após copiar um segredo** (Desativado / 10 / 30 / 60 s, padrão 30 s), a menos que você tenha copiado outra coisa nesse meio-tempo. **Editar › Limpar Área de Transferência** a limpa imediatamente.
+- Os blocos secretos se recolhem como qualquer bloco cercado (⌥⌘←).
+
+> Ocultar não é criptografar. O arquivo, os salvamentos automáticos e os snapshots são texto simples, e qualquer pessoa que tenha o arquivo pode ler os segredos. O recurso os mantém fora da sua tela, das capturas de tela, dos resultados da busca, da pré-visualização e das exportações enquanto você trabalha.
+
+**Bloqueio do app (Touch ID).** **HyperEdit › Bloquear HyperEdit (⌃⌘L)** (o menu do aplicativo, abaixo de Ajustes…) cobre a janela inteira — faixa, barra lateral, editor, painéis e barra de status — com uma tela de bloqueio opaca no tema atual, fecha uma janela de Ajustes aberta e oculta o painel da Adição Rápida. Nada sobre o documento, nem mesmo o nome do arquivo, é mostrado enquanto bloqueado. Clique em **Desbloquear** (ou pressione Return) para se autenticar com o **Touch ID**; se o Touch ID falhar ou o Mac não tiver um, o macOS recorre à sua senha de login. Cancelar mantém o HyperEdit bloqueado e o botão tenta de novo.
+
+- **Ajustes › Bloqueio do App.** *Exigir Touch ID ou senha para abrir o HyperEdit* (desativado por padrão) inicia o app bloqueado: o documento é carregado e o salvamento automático continua funcionando, mas nada fica visível até você se autenticar. *Bloquear após inatividade* (Nunca / 1 / 5 / 15 / 30 minutos, padrão Nunca) bloqueia depois desse tempo sem uma tecla pressionada ou um clique no HyperEdit, independentemente da opção de abertura. *Bloquear quando o Mac entrar em repouso ou a tela for bloqueada* (ativado por padrão) vale enquanto a opção de abertura está ativada. Uma legenda informa se o Touch ID está disponível neste Mac.
+- Enquanto bloqueado, a entrada do teclado é descartada e a barra de menus não pode ser aberta; só ⌘Q, ⌘H / ⌥⌘H, ⌘M, ⌘W, ⌃⌘F e o menu do Dock continuam funcionando. O atalho global da Adição Rápida mostra o pedido de desbloqueio em vez do painel e abre o painel depois que você se autentica.
+- Este é um bloqueio de privacidade para a tela, não criptografia: os arquivos no disco permanecem inalterados e legíveis por qualquer outro app. A opção *Exigir…* não pode ser ativada enquanto o Mac não tiver nem Touch ID nem senha de login, para que você não fique trancado do lado de fora.
+
+## 24. Como obter ajuda
 
 - Relatos de bugs e ideias: [GitHub Issues](https://github.com/Hyeongcheol-An/HyperEdit/issues) e [Discussions](https://github.com/Hyeongcheol-An/HyperEdit/discussions).
 - Problemas de segurança: veja [SECURITY.md](../../SECURITY.md) para saber como relatar de forma privada.

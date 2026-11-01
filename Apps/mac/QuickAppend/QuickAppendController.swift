@@ -64,6 +64,7 @@ final class QuickAppendController: ObservableObject {
     var isHotKeyRegistered: Bool { hotkey != nil }
 
     func show() {
+        if model.appLock.isLocked { model.appLock.whenUnlocked { [weak self] in self?.show() }; return }   // applock: 잠긴 동안은 패널 대신 잠금 해제 프롬프트 (해제되면 연다)
         let p = panel ?? makePanel()
         p.contentView?.layoutSubtreeIfNeeded()   // 처음 열 때 SwiftUI 가 텍스트 뷰를 만들도록 (makeNSView → textView 등록)
         // nonactivating 패널: 앱이 비활성이어도 윈도 서버가 키 입력을 이 창에 보낸다 (이때 isKeyWindow/NSApp.keyWindow 는 문서대로 false/nil — 활성화하지 않는다)

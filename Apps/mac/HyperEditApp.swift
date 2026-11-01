@@ -120,6 +120,7 @@ struct EditorCommands: Commands {
         ExportCommands(model: model)   // export: 파일 › Export as HTML… / PDF…
         SecretsCommands(model: model)   // secrets: 편집 메뉴 끝 — Reveal Secrets ⌥⌘S · Mask Secret Blocks · Clear Clipboard
         GrammarCommands(model: model)   // grammar: 파일 메뉴 — 문법 폴더 열기 · 문법 다시 읽기
+        AppLockCommands(model: model)   // applock: 앱 메뉴 Settings… 아래 "Lock HyperEdit" ⌃⌘L
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")
