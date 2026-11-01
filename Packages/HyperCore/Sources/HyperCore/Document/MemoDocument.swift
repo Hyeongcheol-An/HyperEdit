@@ -32,6 +32,20 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     @Published public private(set) var hasBOM = false
     public var encodingName: String { Self.name(of: encoding) + (hasBOM ? " BOM" : "") }
 
+    // grammar: 구문 문법과 줄별 진입 상태 (여러 줄 블록 주석·문자열·펜스 추적)
+    /// 현재 파일의 구문 문법 — URL 로 결정(`GrammarRegistry`, 사용자 문법 우선). 파일 전환과 `refreshGrammar()` 에서 바뀐다.
+    public private(set) var grammar: any LanguageGrammar
+    /// 문법이 바뀔 때마다(사용자 문법 리로드) 증가 — 편집기는 보이는 줄의 색을 전부 다시 계산한다
+    @Published public private(set) var grammarGeneration = 0
+    /// 편집 직후에도 정확한 줄 인덱스. 발행하지 않고(`lineIndex` 는 250 ms 뒤 전체 재계산) 문법이 상태를 추적할 때만 키 입력마다 증분 갱신한다.
+    public private(set) var liveLineIndex = LineIndex()
+    /// 줄별 진입 상태. 문법이 상태를 추적하지 않으면(메모) 비어 있고 모든 줄이 `.normal`
+    public private(set) var lineStates = LineStateIndex()
+    /// 편집된 줄 밖에서 진입 상태가 바뀐 줄 범위(1-based 반열림) — 편집기가 그 줄들의 레이아웃을 다시 만들게 한다. 저장소 편집 알림 안에서 보내진다.
+    public let lineStatesChanged = PassthroughSubject<Range<Int>, Never>()
+    /// 상태 추적이 꺼진 동안 편집이 있었으면 `liveLineIndex` 가 낡았다 — 추적을 켤 때 다시 센다
+    private var liveIndexStale = false
+
     public var autosaveDelay: TimeInterval = 2.0
     /// 한글 런에 입힐 폰트(2:1 폭 보정). 에디터가 테마/폰트 적용 시 설정.
     public var hangulFont: PlatformFont?
@@ -51,7 +65,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private var editedSinceLoad = false
 
     public init(url: URL) {
-        self.url = url.resolvingSymlinksInPath()
+        let resolved = url.resolvingSymlinksInPath()
+        self.url = resolved
+        self.grammar = GrammarRegistry.grammar(for: resolved)   // grammar
         super.init()
         textStorage.delegate = self
     }
@@ -73,6 +89,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         snapshotTaken = false; ourLastWrite = nil
         externalChange = nil; lastSaved = nil
         url = resolved
+        grammar = GrammarRegistry.grammar(for: resolved)   // grammar: 내용 교체 전에 바꿔 둔다 — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
         // 새 문서를 처음 올릴 때와 같이 한글 보정은 에디터의 전체 속성 적용(apply)에 맡긴다 (delegate 경로와 중복 방지)
         let keepHangul = hangulFont
         hangulFont = nil
@@ -164,7 +181,46 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         editedSinceLoad = false
         loadedLength = textStorage.length
         lineIndex = LineIndex(text: text)
+        liveLineIndex = lineIndex   // grammar
+        liveIndexStale = false
+        rebuildLineStates()         // grammar: 전체 상태 계산 (상태를 추적하는 문법만, 1.3 MB 코드 파일 수 ms)
         reloadGeneration += 1
+    }
+
+    // MARK: - 구문 문법 / 줄 상태 (grammar)
+
+    /// 문법을 URL 로 다시 결정한다 (사용자 문법 리로드 뒤). 줄 상태를 전부 다시 계산하고 `grammarGeneration` 을 올려 편집기가 보이는 줄을 다시 칠하게 한다.
+    public func refreshGrammar() {
+        grammar = GrammarRegistry.grammar(for: url)
+        rebuildLineStates()
+        grammarGeneration += 1
+    }
+
+    private func rebuildLineStates() {
+        guard grammar.tracksLineState else { lineStates = LineStateIndex(); return }
+        let ns = textStorage.string as NSString
+        if liveIndexStale || liveLineIndex.utf16Count != ns.length { liveLineIndex = LineIndex(nsString: ns); liveIndexStale = false }
+        lineStates = LineStateIndex(text: ns, lineIndex: liveLineIndex, grammar: grammar)
+    }
+
+    /// 문서 오프셋이 속한 줄의 진입 상태 (편집 직후에도 정확한 `liveLineIndex` 기준). 상태를 추적하지 않는 문법이면 `.normal`
+    public func lineState(atUTF16Offset offset: Int) -> LineState {
+        guard lineStates.isTracking else { return .normal }
+        return lineStates.state(ofLine: liveLineIndex.lineNumber(forUTF16Offset: offset))
+    }
+
+    /// 저장소 문자 편집 뒤 (didProcessEditing): 줄 인덱스와 줄 상태를 편집된 줄부터 증분 갱신한다. 편집 줄 밖에서 상태가 바뀐 줄은 `lineStatesChanged` 로 알린다.
+    private func updateLineStates(editedRange: NSRange, changeInLength delta: Int) {
+        let ns = textStorage.string as NSString
+        let old = liveLineIndex
+        let oldRange = NSRange(location: editedRange.location, length: max(0, editedRange.length - delta))
+        let safe = NSIntersectionRange(editedRange, NSRange(location: 0, length: ns.length))
+        let new = old.updated(replacing: oldRange, with: (safe.length > 0 ? ns.substring(with: safe) : "") as NSString)
+        liveLineIndex = new
+        let firstLine = old.lineNumber(forUTF16Offset: editedRange.location)
+        let lastLine = max(firstLine, new.lineNumber(forUTF16Offset: NSMaxRange(safe)))
+        let changed = lineStates.update(text: ns, lineIndex: new, editedLines: firstLine..<(lastLine + 1), lineDelta: new.lineCount - old.lineCount, grammar: grammar)
+        if !changed.isEmpty { lineStatesChanged.send(changed) }
     }
 
     /// 줄바꿈 종류 판별. String.contains 는 grapheme 단위라 1MB 에 수십 ms 가 드므로 UTF-8 바이트를 직접 스캔한다.
@@ -409,6 +465,10 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             // 문자 변경은 모두 '편집' 이다 — 텍스트 뷰를 거치지 않는 undo/redo(macOS 27 TextKit 2 는 shouldChangeText/didChangeText 를 부르지 않는다)도
             // 여기서 잡아 dirty·자동 저장·줄 인덱스 재계산을 건다. 뷰 경로의 textDidChange() 와 겹쳐도 예약 취소·재예약뿐이라 비용은 없다.
             if programmaticReplaceDepth == 0, isLoaded { editedSinceLoad = true; textDidChange() }
+            // grammar: 줄 상태 증분 갱신 — 전체 교체(load/reload)는 replaceAll 이 끝나고 통째로 계산한다
+            if programmaticReplaceDepth == 0 {
+                if lineStates.isTracking { updateLineStates(editedRange: editedRange, changeInLength: delta) } else { liveIndexStale = true }
+            }
             guard let font = hangulFont else { return }
             let para = (textStorage.string as NSString).paragraphRange(for: editedRange)
             HangulFontFixer.apply(font: font, to: textStorage, in: para)

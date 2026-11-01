@@ -8289,6 +8289,26 @@
         }
       }
     },
+    "Grammar file skipped · %@: %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문법 파일 건너뜀 · %@: %@"
+          }
+        }
+      }
+    },
+    "Grammars reloaded · %lld": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문법 다시 읽음 · %lld개"
+          }
+        }
+      }
+    },
     "Hangul": {
       "localizations": {
         "ar": {
@@ -15271,6 +15291,16 @@
         }
       }
     },
+    "Open Grammars Folder…": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문법 폴더 열기…"
+          }
+        }
+      }
+    },
     "Open Snapshot Folder": {
       "localizations": {
         "ar": {
@@ -18295,6 +18325,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "立即重新启动"
+          }
+        }
+      }
+    },
+    "Reload Grammars": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "문법 다시 읽기"
           }
         }
       }
@@ -26725,6 +26765,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "用户指南"
+          }
+        }
+      }
+    },
+    "User grammars loaded · %lld": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사용자 문법 읽음 · %lld개"
           }
         }
       }

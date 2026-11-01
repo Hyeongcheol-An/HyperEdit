@@ -81,10 +81,10 @@ struct EditorView: NSViewRepresentable {
         private var lastReloadGeneration = 0
         private var saveStateTask: Task<Void, Never>?
 
-        // 구문 하이라이트 상태 (렌더링은 아래 MARK 참조)
-        private var grammar: any LanguageGrammar
+        // 구문 하이라이트 상태 (렌더링은 아래 MARK 참조). 문법과 줄별 진입 상태는 문서(`document.grammar` / `document.lineStates`)가 든다 — grammar
         private var syntaxColors: [TokenKind: NSColor] = [:]
         private(set) var highlightEnabled: Bool
+        private var pendingStateLines: Range<Int>?      // grammar: 다음 런루프 턴에 다시 칠할 줄 범위 (1-based)
         private var foldController: FoldController?    // fold
         private var secretController: SecretController?   // secrets
         private var markerView: ScrollMarkerView?      // markers
@@ -93,7 +93,6 @@ struct EditorView: NSViewRepresentable {
             self.model = model
             self.role = role
             self.document = model.document
-            self.grammar = GrammarRegistry.grammar(for: model.document.url)
             self.highlightEnabled = model.syntaxHighlighting
             super.init()
             model.session.register(self)
@@ -180,7 +179,9 @@ struct EditorView: NSViewRepresentable {
                 let length = cs.offset(from: tr.location, to: tr.endLocation)
                 guard length > 0 else { return }
                 let ns = ts.string as NSString
-                for token in grammar.tokens(in: ns, range: NSRange(location: start, length: length)) {
+                // grammar: 이 문단(= 줄)의 진입 상태(블록 주석·여러 줄 문자열·펜스 안인가)를 문서의 줄 상태 표에서 받아 이어서 칠한다
+                let entering = document.lineState(atUTF16Offset: start)
+                for token in document.grammar.scanLine(in: ns, range: NSRange(location: start, length: length), entering: entering) {
                     guard let color = syntaxColors[token.kind],
                           let a = cs.location(cs.documentRange.location, offsetBy: token.range.location),
                           let b = cs.location(a, offsetBy: token.range.length),
@@ -218,6 +219,32 @@ struct EditorView: NSViewRepresentable {
             guard on != highlightEnabled else { return }
             highlightEnabled = on
             invalidateHighlight()
+        }
+
+        // grammar: 편집으로 아래 줄들의 진입 상태가 바뀜(`/*` 열기·닫기, 펜스) — 그 줄들은 TextKit 2 가 스스로 다시 배치하지 않으므로 프래그먼트를 다시 만들게 한다.
+        // 문서가 저장소 편집 알림 안에서 보내므로 편집 처리가 끝난 다음 턴에 한 번에 처리한다 (여러 통지는 합친다). 스토리지 속성 편집은 모든 레이아웃 매니저에
+        // 전달되므로 주 편집기 한 곳만 한다. 바뀐 줄이 수만 개여도(`/*` 를 문서 첫 줄에 열기) 보이는 프래그먼트만 재생성되므로 수 ms.
+        private func scheduleLineStateInvalidation(_ lines: Range<Int>) {
+            guard role == .primary, !lines.isEmpty else { return }
+            if let p = pendingStateLines { pendingStateLines = min(p.lowerBound, lines.lowerBound)..<max(p.upperBound, lines.upperBound) } else { pendingStateLines = lines }
+            DispatchQueue.main.async { [weak self] in self?.flushLineStateInvalidation() }
+        }
+
+        private func flushLineStateInvalidation() {
+            guard let lines = pendingStateLines else { return }
+            pendingStateLines = nil
+            guard highlightEnabled, let tv = textView, let ts = tv.textStorage else { return }
+            let idx = document.liveLineIndex
+            let len = ts.length
+            let a = min(idx.range(ofLine: lines.lowerBound).location, len)
+            let b = min(NSMaxRange(idx.range(ofLine: lines.upperBound - 1)) + 1, len)   // 마지막 줄의 개행까지
+            guard b > a else { return }
+            Perf.measure("grammar.invalidate lines=\(lines.count) len=\(b - a)", threshold: 1) {
+                ts.beginEditing()
+                ts.edited(.editedAttributes, range: NSRange(location: a, length: b - a), changeInLength: 0)
+                ts.endEditing()
+            }
+            tv.needsDisplay = true
         }
 
         func attach(container: EditorContainerView, scrollView: NSScrollView, textView: HyperTextView, gutter: GutterView) {
@@ -289,15 +316,25 @@ struct EditorView: NSViewRepresentable {
             document.$url
                 .removeDuplicates()
                 .dropFirst()
-                .sink { [weak self] newURL in
+                .sink { [weak self] _ in
                     guard let self else { return }
                     self.saveStateTask?.cancel()
                     self.session.clearUndo()
                     self.textView?.endSnippetSession()
                     self.restored = false
                     self.lastCaretRect = nil
-                    // 문법은 내용 교체(switchTo → load) 전에 바꿔 둔다 — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
-                    self.grammar = GrammarRegistry.grammar(for: newURL)
+                    // grammar: 문법은 문서가 내용 교체(switchTo → load) 전에 바꿔 둔다 (MemoDocument.grammar) — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
+                }
+                .store(in: &docCancellables)
+            // grammar: 편집 줄 밖에서 줄 상태가 바뀐 범위 → 다시 칠하기 · 문법 교체(사용자 문법 리로드) → 보이는 줄 전부 다시 칠하기
+            document.lineStatesChanged
+                .sink { [weak self] lines in self?.scheduleLineStateInvalidation(lines) }
+                .store(in: &docCancellables)
+            document.$grammarGeneration
+                .dropFirst()
+                .sink { [weak self] _ in
+                    guard let self, self.role == .primary else { return }   // 스토리지 속성 편집은 모든 레이아웃 매니저에 전달된다
+                    DispatchQueue.main.async { [weak self] in self?.invalidateHighlight() }   // @Published 는 willSet 발행 — 문법·상태 표가 갖춰진 뒤
                 }
                 .store(in: &docCancellables)
         }
@@ -314,7 +351,6 @@ struct EditorView: NSViewRepresentable {
             foldController?.bind(document: newDoc)   // fold
             secretController?.bind(document: newDoc)   // secrets
             markerView?.bind(document: newDoc)       // markers
-            grammar = GrammarRegistry.grammar(for: newDoc.url)
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) } else { invalidateHighlight() }
         }
 

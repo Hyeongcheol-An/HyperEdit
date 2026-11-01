@@ -171,8 +171,8 @@ final class AppModel: ObservableObject {
             log(syntaxHighlighting ? String(localized: "Syntax colors on · \(languageName)") : String(localized: "Syntax colors off"))
         }
     }
-    /// 현재 문서의 구문 언어 이름 (상태바) — 확장자로 결정
-    var languageName: String { GrammarRegistry.languageName(for: document.url) }
+    /// 현재 문서의 구문 언어 이름 (상태바) — 문서의 문법(확장자·사용자 문법으로 결정, grammar)
+    var languageName: String { document.grammar.name }
     @Published private(set) var output: [OutputLine] = []
 
     // 검색
@@ -241,6 +241,7 @@ final class AppModel: ObservableObject {
         syntaxHighlighting = LaunchOptions.has("--no-highlight") ? false : (d.object(forKey: "ui.syntaxHighlighting") as? Bool ?? true)
         showScrollMarkers = d.object(forKey: "ui.scrollMarkers") as? Bool ?? true   // markers
         let url = MemoLocation.resolveDefault()
+        Self.loadUserGrammarsAtLaunch()   // grammar: 첫 문서의 문법 결정 전에 사용자 문법을 읽는다 (GrammarUI.swift)
         let doc = MemoDocument(url: url)
         document = doc
         bookmarks = BookmarkStore(fileURL: doc.url)
@@ -249,6 +250,7 @@ final class AppModel: ObservableObject {
         bind()
         Self.current = self
         log(String(localized: "HyperEdit started · \(doc.url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))"))
+        reportGrammarLoad()   // grammar: 건너뛴 문법 파일을 출력 패널에
         applyLaunchOptions()
     }
 

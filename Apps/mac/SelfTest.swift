@@ -330,6 +330,7 @@ enum SelfTest {
         await runExport(model: model, check: check, log: log)   // export: HTML/PDF 내보내기 (SelfTest+Export.swift)
         runLanguage(model: model, check: check, log: log)   // l10n: 언어 설정·번들 언어·환영문
         await runSecrets(model: model, check: check, log: log)   // secrets: 비밀 블록 마스킹·드러내기·클립보드 소거·찾기 결과 redaction
+        await runGrammar(model: model, check: check, log: log)   // grammar: 여러 줄 상태 추적·사용자 문법 (SelfTest+Grammar.swift)
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
