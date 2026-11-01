@@ -627,6 +627,8 @@ final class AppModel: ObservableObject {
     let session = EditorSession()
     // quick append: 떠 있는 입력 창 + 전역 단축키 — QuickAppend/QuickAppendController.swift
     lazy var quickAppend = QuickAppendController(model: self)
+    // applock: 앱 잠금(Touch ID) 상태 머신 — AppLock/AppLockController.swift. 시작 잠금은 여기서 만들어지며 결정된다 (ContentView 오버레이가 첫 렌더에서 접근)
+    lazy var appLock = AppLockController(model: self)
 }
 
 /// 스레드 안전 취소 플래그 — 부모 Task 의 취소를 detached 작업에 전달할 때 사용

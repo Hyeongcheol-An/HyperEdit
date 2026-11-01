@@ -117,6 +117,7 @@ struct EditorCommands: Commands {
             Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
         MacroCommands(model: model)   // macro
+        AppLockCommands(model: model)   // applock: 앱 메뉴 Settings… 아래 "Lock HyperEdit" ⌃⌘L
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")

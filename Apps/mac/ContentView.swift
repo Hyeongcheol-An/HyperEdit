@@ -40,6 +40,7 @@ struct ContentView: View {
             StatusBar(doc: model.document, caret: model.caret, theme: theme)
         }
         .background(theme.background.color)
+        .overlay { AppLockOverlayHost(controller: model.appLock, theme: theme) }   // applock: 잠기면 리본·사이드바·편집기·패널·상태바 전부를 불투명 오버레이로 가린다
         .preferredColorScheme(theme.isDark ? .dark : .light)
         // 주의: .ignoresSafeArea(.top) 로 리본 탭 줄을 제목 표시줄 영역에 올리면 hiddenTitleBar 의 제목 표시줄이 탭을 가린다(실측) — 탭 줄은 그 아래에 둔다
         .frame(minWidth: model.session.splitMode == .vertical ? 1180 : 900, minHeight: 560)   // split: 좌우 분할은 편집기 둘(각 280+)과 사이드바가 들어갈 폭

@@ -65,6 +65,7 @@ struct SettingsView: View {
                 }
             }
             QuickAppendSettingsSection(controller: model.quickAppend)   // quick append: 전역 단축키
+            AppLockSettingsSection(controller: model.appLock)   // applock: Touch ID 잠금
         }
         .formStyle(.grouped)
         .frame(width: 560, height: 800)

@@ -328,6 +328,7 @@ enum SelfTest {
         await runQAFold(model: model, check: check, log: log)   // QA: 접기·마커·undo 추적 경계 사례
         await runQAEditTools(model: model, check: check, log: log)   // qa: 편집 도구 경계 상황
         runLanguage(model: model, check: check, log: log)   // l10n: 언어 설정·번들 언어·환영문
+        await runAppLock(model: model, check: check, log: log)   // applock: 잠금·오버레이·입력 차단·가짜 인증기·유휴 타이머
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
