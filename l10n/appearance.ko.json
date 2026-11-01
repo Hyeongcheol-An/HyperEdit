@@ -1,0 +1,14 @@
+{
+  "Appearance": "외형",
+  "Cursor style": "커서 스타일",
+  "Bar": "막대",
+  "Block": "블록",
+  "Underline": "밑줄",
+  "Blink": "깜빡임",
+  "Block and Underline carets are drawn under the glyph in the theme's cursor color; extra carets (multi-caret, column mode) use the same style and do not blink.": "블록·밑줄 캐럿은 테마의 커서색으로 글자 아래에 그려집니다. 보조 캐럿(멀티 커서·열 모드)도 같은 스타일이며 깜빡이지 않습니다.",
+  "Window opacity": "창 투명도",
+  "Blur behind window": "창 뒤 블러",
+  "Below 100% the window, editor and panels show what is behind them; text, icons and borders stay opaque. Blur applies only while the window is translucent.": "100% 미만이면 창·편집기·패널 뒤가 비칩니다. 글자·아이콘·구분선은 불투명하게 유지되며, 블러는 창이 반투명일 때만 적용됩니다.",
+  "Window Opacity": "창 투명도",
+  "Blur Behind Window": "창 뒤 블러"
+}

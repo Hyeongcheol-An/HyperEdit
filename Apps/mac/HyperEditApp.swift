@@ -169,6 +169,7 @@ struct EditorCommands: Commands {
             Button("Larger Text") { model.adjustFontSize(1) }.keyboardShortcut("=", modifiers: [.command])
             Button("Smaller Text") { model.adjustFontSize(-1) }.keyboardShortcut("-", modifiers: [.command])
             Button("Default Text Size") { model.resetFontSize() }.keyboardShortcut("0", modifiers: [.command])
+            AppearanceMenuItems(model: model)   // appearance: 창 투명도 하위 메뉴 (100/90/80/70%) · 창 뒤 블러
         }
     }
 }

@@ -21,7 +21,7 @@ struct BottomPanel: View {
                         }
                         .padding(.horizontal, 10).frame(height: 24)
                         .foregroundStyle(model.bottomTab == tab ? theme.foreground.color : theme.foregroundMuted.color)
-                        .background(model.bottomTab == tab ? theme.background.color : Color.clear)
+                        .background(model.bottomTab == tab ? model.surfaceColor(theme.background) : Color.clear)   // appearance
                         .overlay(alignment: .bottom) { if model.bottomTab == tab { theme.accent.color.frame(height: 2) } }
                     }
                     .buttonStyle(.plain)
@@ -31,16 +31,20 @@ struct BottomPanel: View {
                     .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 8).help("Close (⌘2)")
             }
             .frame(height: 24)
-            .background(theme.backgroundAlt.color)
+            .background(model.surfaceColor(theme.backgroundAlt))   // appearance
             .overlay(alignment: .top) { theme.border.color.frame(height: 1) }
 
-            switch model.bottomTab {
-            case .findResults: SearchPanel(theme: theme)
-            case .bookmarks: BookmarksPanel(theme: theme)
-            case .output: OutputPanel(theme: theme)
+            Group {   // appearance: 내용 영역만 테마 배경 (탭 줄과 겹치지 않게 — 반투명이면 겹친 곳이 더 불투명해진다)
+                switch model.bottomTab {
+                case .findResults: SearchPanel(theme: theme)
+                case .bookmarks: BookmarksPanel(theme: theme)
+                case .output: OutputPanel(theme: theme)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(model.surfaceColor(theme.background))
         }
-        .background(theme.background.color)
+        .background(model.surfaceColorIfOpaque(theme.background))   // appearance
     }
 }
 

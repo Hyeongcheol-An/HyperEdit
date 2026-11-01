@@ -11,7 +11,7 @@ struct RibbonView: View {
             HStack(spacing: 0) {
                 Color.clear.frame(width: 6)    // 탭 줄은 제목 표시줄(신호등) 아래에 놓이므로 큰 여백이 필요 없다
                 ForEach(RibbonTab.allCases) { tab in
-                    RibbonTabButton(title: tab.label, selected: model.ribbonTab == tab, theme: theme) { model.ribbonTab = tab }
+                    RibbonTabButton(title: tab.label, selected: model.ribbonTab == tab, theme: theme, alpha: model.backgroundOpacity) { model.ribbonTab = tab }   // appearance
                 }
                 Spacer()
                 HStack(spacing: 2) {
@@ -28,7 +28,7 @@ struct RibbonView: View {
                     .padding(.trailing, 12)
             }
             .frame(height: 30)
-            .background(theme.backgroundAlt.color)
+            .background(model.surfaceColor(theme.backgroundAlt))   // appearance
 
             // 창이 좁아 탭 내용이 다 들어가지 않으면 작은 버튼을 아이콘만 남기는 '접힘(compact)' 모드로 전환한다
             GeometryReader { geo in
@@ -50,7 +50,7 @@ struct RibbonView: View {
                 }
             }
             .frame(height: 96)
-            .background(theme.background.color)
+            .background(model.surfaceColor(theme.background))   // appearance
             .overlay(alignment: .bottom) { theme.border.color.frame(height: 1) }
         }
     }
@@ -299,6 +299,7 @@ struct RibbonTabButton: View {
     let title: LocalizedStringKey
     let selected: Bool
     let theme: Theme
+    var alpha: Double = 1   // appearance: 선택된 탭 배경의 α (창 투명도)
     let action: () -> Void
     var body: some View {
         Button(action: action) {
@@ -307,7 +308,7 @@ struct RibbonTabButton: View {
                 .foregroundStyle(selected ? theme.foreground.color : theme.foregroundMuted.color)
                 .padding(.horizontal, 12)
                 .frame(height: 30)
-                .background(selected ? theme.background.color : Color.clear, ignoresSafeAreaEdges: [])
+                .background(selected ? theme.background.color.opacity(alpha) : Color.clear, ignoresSafeAreaEdges: [])
                 .overlay(alignment: .top) { if selected { theme.accent.color.frame(height: 2) } }
         }
         .buttonStyle(.plain)

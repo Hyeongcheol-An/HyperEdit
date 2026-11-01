@@ -65,6 +65,7 @@ struct SettingsView: View {
                 }
             }
             QuickAppendSettingsSection(controller: model.quickAppend)   // quick append: 전역 단축키
+            AppearanceSettingsSection(model: model)   // appearance: 커서 스타일·배경 투명도
         }
         .formStyle(.grouped)
         .frame(width: 560, height: 800)

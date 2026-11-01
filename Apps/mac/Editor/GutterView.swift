@@ -15,6 +15,8 @@ final class GutterView: NSView {
     private var bgColor = NSColor.windowBackgroundColor
     private var borderColor = NSColor.separatorColor
     private var lineHighlightColor = NSColor.clear
+    /// appearance: 배경 투명도. 1 미만이면 배경을 칠하지 않고(컨테이너 레이어의 α 배경이 비친다) 현재 줄 강조에 같은 α 를 준다
+    var surfaceAlpha: CGFloat = 1 { didSet { if surfaceAlpha != oldValue { needsDisplay = true } } }
     private var lastDigits = 0
     /// 한 번의 그리기에서 열거할 프래그먼트 상한 (보이는 줄 수백 + 접힌 높이 0 문단 수천)
     private static let maxFragmentsPerDraw = 5_000
@@ -87,8 +89,10 @@ final class GutterView: NSView {
     }
 
     private func drawImpl(_ dirtyRect: NSRect) {
-        bgColor.setFill()
-        bounds.fill()
+        if surfaceAlpha >= 1 {   // appearance: 반투명이면 컨테이너 레이어가 배경을 맡는다
+            bgColor.setFill()
+            bounds.fill()
+        }
         defer {
             borderColor.setFill()
             NSRect(x: bounds.maxX - 1, y: 0, width: 1, height: bounds.height).fill()
@@ -129,8 +133,8 @@ final class GutterView: NSView {
             let y = yInTextView - visible.minY
             if line == caretLine, tv.selectedRange().length == 0 {
                 // 편집기의 현재 줄 강조가 거터까지 이어지도록 같은 색으로 행을 칠한다
-                self.lineHighlightColor.setFill()
-                NSRect(x: 0, y: y, width: self.bounds.width - 1, height: frame.height).fill()
+                (self.surfaceAlpha < 1 ? self.lineHighlightColor.withAlphaComponent(self.surfaceAlpha) : self.lineHighlightColor).setFill()   // appearance
+                NSRect(x: 0, y: y, width: self.bounds.width - 1, height: frame.height).fill(using: .sourceOver)
             }
             let label = String(line) as NSString
             let size = label.size(withAttributes: attrs)

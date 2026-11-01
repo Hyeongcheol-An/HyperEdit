@@ -45,6 +45,8 @@ struct EditorView: NSViewRepresentable {
             if c.document !== document { Perf.measure("  rebind") { c.rebind(document: document) } }
             c.apply(theme: theme, font: font, force: false)
             c.handleReload(generation: document.reloadGeneration)
+            c.applySurfaceOpacity(force: false)   // appearance: 배경 투명도 (값 비교만)
+            c.applyCursor()                        // appearance: 커서 스타일·깜빡임 (값 비교만)
             Perf.measure("  restoreViewState") { c.restoreViewStateIfNeeded() }
             c.textView?.isEditable = document.isLoaded          // 읽지 못한 파일은 편집해도 저장되지 않으므로 편집 자체를 막는다
             if c.role == .primary {   // split: 스토리지 속성(검색 강조)과 창 제목은 주 편집기만
@@ -370,8 +372,35 @@ struct EditorView: NSViewRepresentable {
             foldController?.apply(theme: theme)   // fold
             markerView?.apply(theme: theme)       // markers
             container?.layer?.backgroundColor = theme.background.nsColor.cgColor
+            applySurfaceOpacity(force: true)   // appearance: 투명도 < 1 이면 위 불투명 배경을 α 배경으로 바꾼다
             tv.needsDisplay = true
             // 구문 색: 위 전체 setAttributes 가 프래그먼트를 다시 만들며 validator 가 새 색 표(rebuildSyntaxColors)로 칠한다 — 추가 무효화 불필요
+        }
+
+        // MARK: 외형 (appearance)
+
+        /// 커서 스타일·깜빡임 → 텍스트 뷰 (분할 편집기도 각자 받는다)
+        func applyCursor() {
+            guard let tv = textView else { return }
+            if tv.cursorStyle != model.cursorStyle { tv.cursorStyle = model.cursorStyle }
+            if tv.cursorBlinks != model.cursorBlink { tv.cursorBlinks = model.cursorBlink }
+        }
+
+        private var appliedOpacity = -1.0
+        /// 배경 투명도. 반투명이면 컨테이너 레이어 하나만 테마 배경을 α 로 칠하고 그 위의 스크롤뷰·텍스트뷰·거터 배경은 비운다 —
+        /// 겹쳐 칠하면 (1-α)² 만 비쳐 패널보다 불투명해 보인다. 현재 줄 강조도 같은 α. 글자·캐럿·선택·접기 표식은 그대로.
+        func applySurfaceOpacity(force: Bool) {
+            let alpha = model.backgroundOpacity
+            guard force || alpha != appliedOpacity, let tv = textView, let theme = lastTheme else { return }
+            appliedOpacity = alpha
+            let translucent = BackgroundOpacity.isTranslucent(alpha)
+            let bg = theme.background.nsColor
+            container?.layer?.backgroundColor = (translucent ? bg.withAlphaComponent(alpha) : bg).cgColor
+            scrollView?.drawsBackground = !translucent
+            tv.backgroundColor = translucent ? .clear : bg
+            tv.currentLineColor = translucent ? theme.lineHighlight.nsColor.withAlphaComponent(alpha) : theme.lineHighlight.nsColor
+            gutter?.surfaceAlpha = translucent ? alpha : 1
+            tv.needsDisplay = true
         }
 
         func handleReload(generation: Int) {

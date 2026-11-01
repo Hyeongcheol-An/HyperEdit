@@ -17,7 +17,7 @@ struct LeftDock: View {
                         }
                         .padding(.horizontal, 8).frame(height: 24)
                         .foregroundStyle(model.leftTab == tab ? theme.foreground.color : theme.foregroundMuted.color)
-                        .background(model.leftTab == tab ? theme.background.color : Color.clear)
+                        .background(model.leftTab == tab ? model.surfaceColor(theme.background) : Color.clear)   // appearance
                         .overlay(alignment: .top) { if model.leftTab == tab { theme.accent.color.frame(height: 2) } }
                     }
                     .buttonStyle(.plain)
@@ -27,7 +27,7 @@ struct LeftDock: View {
                     .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 8).help("Close sidebar (⌘1)")
             }
             .frame(height: 24)
-            .background(theme.backgroundAlt.color)
+            .background(model.surfaceColorIfOpaque(theme.backgroundAlt))   // appearance: 아래 전체 배경과 같은 색이라 반투명이면 비운다
             .overlay(alignment: .bottom) { theme.border.color.frame(height: 1) }
 
             switch model.leftTab {
@@ -36,7 +36,7 @@ struct LeftDock: View {
             case .timeline: TimelinePanel(theme: theme)
             }
         }
-        .background(theme.backgroundAlt.color)
+        .background(model.surfaceColor(theme.backgroundAlt))   // appearance
         .overlay(alignment: .trailing) { theme.border.color.frame(width: 1) }
     }
 }
