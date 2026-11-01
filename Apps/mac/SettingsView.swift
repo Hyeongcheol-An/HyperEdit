@@ -66,6 +66,7 @@ struct SettingsView: View {
             }
             QuickAppendSettingsSection(controller: model.quickAppend)   // quick append: 전역 단축키
             SecretsSettingsSection(store: model.secrets)   // secrets: 비밀 블록 가리기·재마스킹·클립보드 소거
+            AppearanceSettingsSection(model: model)   // appearance: 커서 스타일·배경 투명도
         }
         .formStyle(.grouped)
         .frame(width: 560, height: 800)

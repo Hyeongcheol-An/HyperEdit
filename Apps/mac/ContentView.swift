@@ -23,7 +23,7 @@ struct ContentView: View {
                             SplitEditorArea(session: model.session, theme: theme, font: model.font)   // split: 주 편집기 + (분할 시) 보조 편집기
                                 .frame(minWidth: 320)
                             if model.showMarkdownPreview {
-                                MarkdownPreviewView(document: model.document, caret: model.caret, theme: theme)
+                                MarkdownPreviewView(document: model.document, caret: model.caret, theme: theme, opacity: model.backgroundOpacity)   // appearance
                                     .frame(minWidth: 280, idealWidth: max(280, geo.size.width * 0.45))
                             }
                         }
@@ -39,7 +39,9 @@ struct ContentView: View {
             }
             StatusBar(doc: model.document, caret: model.caret, theme: theme)
         }
-        .background(theme.background.color)
+        // appearance: 투명도 < 1 이면 바탕은 비우고(겹치면 더 불투명해진다) 표면마다 테마 배경을 α 로 칠한다. 창 isOpaque·블러는 맨 뒤의 WindowChromeView
+        .background(model.surfaceColorIfOpaque(theme.background))
+        .background { WindowChromeView(opacity: model.backgroundOpacity, blur: model.backgroundBlur).ignoresSafeArea() }
         .preferredColorScheme(theme.isDark ? .dark : .light)
         // 주의: .ignoresSafeArea(.top) 로 리본 탭 줄을 제목 표시줄 영역에 올리면 hiddenTitleBar 의 제목 표시줄이 탭을 가린다(실측) — 탭 줄은 그 아래에 둔다
         .frame(minWidth: model.session.splitMode == .vertical ? 1180 : 900, minHeight: 560)   // split: 좌우 분할은 편집기 둘(각 280+)과 사이드바가 들어갈 폭
@@ -83,7 +85,7 @@ struct DocumentTabBar: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 26)
-            .background(theme.background.color)
+            .background(model.surfaceColor(theme.background))   // appearance
             .overlay(alignment: .top) { theme.accent.color.frame(height: 2) }
             .overlay(alignment: .trailing) { theme.border.color.frame(width: 1) }
             .foregroundStyle(theme.foreground.color)
@@ -95,7 +97,7 @@ struct DocumentTabBar: View {
             Spacer()
         }
         .frame(height: 26)
-        .background(theme.backgroundAlt.color)
+        .background(model.surfaceColor(theme.backgroundAlt))   // appearance
         .overlay(alignment: .bottom) { theme.border.color.frame(height: 1) }
     }
 }
@@ -163,7 +165,7 @@ struct StatusBar: View {
         .font(.system(size: 11, design: .monospaced))
         .foregroundStyle(theme.foregroundMuted.color)
         .frame(height: 22)
-        .background(theme.backgroundAlt.color)
+        .background(model.surfaceColor(theme.backgroundAlt))   // appearance
         .overlay(alignment: .top) { theme.border.color.frame(height: 1) }
     }
 

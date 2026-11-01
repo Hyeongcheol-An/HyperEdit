@@ -15,6 +15,7 @@ struct MarkdownPreviewView: NSViewRepresentable {
     let document: MemoDocument
     let caret: EditorCaret
     let theme: Theme
+    var opacity: Double = 1   // appearance: 창 투명도 (1 미만이면 페이지 배경을 투명하게 두고 컨테이너 레이어가 테마 배경 α 를 맡는다)
 
     func makeCoordinator() -> Coordinator { Coordinator(document: document, caret: caret) }
 
@@ -23,12 +24,14 @@ struct MarkdownPreviewView: NSViewRepresentable {
         let container = MarkdownPreviewContainer(webView: c.makeWebView(), placeholder: c.placeholder)
         c.container = container
         c.apply(theme: theme)
+        c.apply(opacity: opacity)   // appearance
         c.render(reason: .initial)
         return container
     }
 
     func updateNSView(_ container: MarkdownPreviewContainer, context: Context) {
         context.coordinator.apply(theme: theme)
+        context.coordinator.apply(opacity: opacity)   // appearance
     }
 
     static func dismantleNSView(_ container: MarkdownPreviewContainer, coordinator: Coordinator) {
@@ -135,6 +138,34 @@ struct MarkdownPreviewView: NSViewRepresentable {
             if !first { render(reason: .theme) }
         }
 
+        // MARK: 배경 투명도 (appearance)
+
+        private var opacity = 1.0
+        private var opacityApplied = false
+        /// 투명도 < 1: 웹뷰가 자기 배경을 그리지 않게 하고(KVC `drawsBackground` — WebKit SPI, 없으면 불투명 유지) 페이지 배경을 투명으로 바꿔
+        /// 컨테이너 레이어(테마 배경 α)가 비치게 한다. 1 이면 원래대로.
+        func apply(opacity newValue: Double) {
+            guard !opacityApplied || newValue != opacity else { return }
+            opacityApplied = true
+            opacity = newValue
+            container?.apply(opacity: newValue)
+            let translucent = BackgroundOpacity.isTranslucent(newValue)
+            if let wv = webView, wv.responds(to: NSSelectorFromString("_setDrawsBackground:")) {
+                wv.setValue(!translucent, forKey: "drawsBackground")
+            } else if translucent {
+                dlog("drawsBackground SPI unavailable — preview stays opaque")
+            }
+            syncPageBackground()
+        }
+
+        private func syncPageBackground() {
+            guard pageReady, let wv = webView else { return }
+            let js = BackgroundOpacity.isTranslucent(opacity)
+                ? "document.documentElement.style.background='transparent';document.body.style.background='transparent';"
+                : "document.documentElement.style.background='';document.body.style.background='';"
+            wv.evaluateJavaScript(js, completionHandler: nil)
+        }
+
         // MARK: 렌더
 
         func render(reason: RenderReason) {
@@ -208,6 +239,7 @@ struct MarkdownPreviewView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             pageReady = true
+            syncPageBackground()   // appearance: 다시 렌더된 페이지도 투명 배경 유지
             if Self.debugLogPath != nil {
                 dlog("didFinish frame=\(webView.frame) hidden=\(webView.isHidden) window=\(webView.window != nil) container=\(container?.frame ?? .zero)")
                 webView.evaluateJavaScript("JSON.stringify([document.body.innerText.length, document.documentElement.scrollHeight, window.innerWidth, window.innerHeight, getComputedStyle(document.body).backgroundColor])") { [weak self] r, e in
@@ -257,6 +289,8 @@ final class MarkdownPreviewContainer: NSView {
     let webView: WKWebView
     let placeholder: NSTextField
     private var borderColor = NSColor.separatorColor
+    private var background = NSColor.windowBackgroundColor
+    private var surfaceAlpha: CGFloat = 1   // appearance
 
     init(webView: WKWebView, placeholder: NSTextField) {
         self.webView = webView
@@ -272,10 +306,22 @@ final class MarkdownPreviewContainer: NSView {
     override var isFlipped: Bool { true }
 
     func apply(theme: Theme) {
-        layer?.backgroundColor = theme.background.nsColor.cgColor
-        webView.underPageBackgroundColor = theme.background.nsColor
+        background = theme.background.nsColor
         borderColor = theme.border.nsColor
+        updateBackground()
         needsDisplay = true
+    }
+
+    /// appearance: 컨테이너 레이어가 테마 배경을 α 로 칠한다 (웹뷰는 투명)
+    func apply(opacity: Double) {
+        surfaceAlpha = CGFloat(opacity)
+        updateBackground()
+    }
+
+    private func updateBackground() {
+        let translucent = BackgroundOpacity.isTranslucent(Double(surfaceAlpha))
+        layer?.backgroundColor = (translucent ? background.withAlphaComponent(surfaceAlpha) : background).cgColor
+        webView.underPageBackgroundColor = translucent ? .clear : background
     }
 
     func showPlaceholder(_ on: Bool) {

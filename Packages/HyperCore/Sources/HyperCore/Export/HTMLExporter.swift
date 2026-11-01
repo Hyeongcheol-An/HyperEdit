@@ -66,9 +66,10 @@ public enum HTMLExporter {
         out += "<pre class=\"code\(lineNumbers ? " with-ln" : "")\" data-language=\"\(MarkdownHTML.escape(grammar.name))\""
         out += lineNumbers ? " style=\"--ln-w: \(digits)ch\">" : ">\n"   // HTML 파서는 <pre> 바로 뒤의 개행 하나를 버린다 → 첫 줄이 빈 줄이어도 보존
         units.withUnsafeBufferPointer { buf in
+            var state = LineState.normal   // grammar: 줄 시작 상태 (블록 주석·여러 줄 문자열·펜스)
             for (i, r) in bounds.enumerated() {
                 if lineNumbers { out += "<span class=\"line\"><span class=\"ln\">\(i + 1)</span>" }
-                appendLine(buf, r, grammar: grammar, to: &out)
+                appendLine(buf, r, grammar: grammar, state: &state, to: &out)   // grammar: 블록 주석·여러 줄 문자열 상태를 줄 사이로 넘긴다
                 if lineNumbers { out += "</span>" } else if i + 1 < bounds.count { out += "\n" }
             }
         }
@@ -77,10 +78,12 @@ public enum HTMLExporter {
     }
 
     /// 한 줄을 토큰 span 으로. 토큰은 문법이 스캔 순서대로 돌려주므로 정렬·비중첩이라고 보되, 어긋나는 것은 건너뛴다.
-    private static func appendLine(_ buf: UnsafeBufferPointer<unichar>, _ r: Range<Int>, grammar: any LanguageGrammar, to out: inout String) {
-        guard !r.isEmpty else { return }
+    private static func appendLine(_ buf: UnsafeBufferPointer<unichar>, _ r: Range<Int>, grammar: any LanguageGrammar, state: inout LineState, to out: inout String) {
+        guard !r.isEmpty else { return }   // 빈 줄은 상태를 바꾸지 않는다
         let line = UnsafeBufferPointer(rebasing: buf[r])
-        let tokens = grammar.tokens(line: line, base: r.lowerBound)
+        let scanned = grammar.scanLine(line, base: r.lowerBound, entering: state)
+        state = scanned.exiting
+        let tokens = scanned.tokens
         var pos = r.lowerBound
         for t in tokens {
             let s = t.range.location, e = NSMaxRange(t.range)

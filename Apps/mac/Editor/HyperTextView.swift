@@ -70,17 +70,26 @@ final class HyperTextView: NSTextView {
     override var acceptsFirstResponder: Bool { true }
 
     deinit {
+        blinkTimer?.invalidate()   // appearance
+        windowKeyObservers.forEach { NotificationCenter.default.removeObserver($0) }   // appearance
         removeEditObservers()   // fold: 저장소·undo 알림 구독 해제 (이 뷰가 건 것만)
         Perf.log("HyperTextView deinit")                   // split: 닫힌 보조 뷰 해제 추적 (--debug-perf)
     }
 
     override func becomeFirstResponder() -> Bool {   // split
         let ok = super.becomeFirstResponder()
-        if ok { onBecomeActive?() }
+        if ok { onBecomeActive?(); caretVisibilityChanged() }   // appearance
+        return ok
+    }
+    override func resignFirstResponder() -> Bool {
+        let ok = super.resignFirstResponder()
+        if ok { caretVisibilityChanged() }   // appearance
         return ok
     }
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        observeWindowKeyState()   // appearance: 키 창 전환에 맞춰 직접 그리는 캐럿을 보이고 숨긴다
+        caretVisibilityChanged()  // appearance: 창에서 떨어지면 깜빡임 타이머 정지
         if window != nil { installEditObservers() }
         if window != nil { DispatchQueue.main.async { [weak self] in self?.onDidMoveToWindow?() } }
     }
@@ -91,6 +100,7 @@ final class HyperTextView: NSTextView {
         Perf.measure("HyperTextView.drawBackground", threshold: 2) {
             super.drawBackground(in: rect)
             drawCurrentLineHighlight()
+            drawCarets()      // appearance: Block·Underline 머리 캐럿 + 보조 캐럿 (글자 아래 레이어)
             drawFoldPills()   // fold
         }
     }
@@ -105,23 +115,237 @@ final class HyperTextView: NSTextView {
         line.fill()
     }
 
-    /// 머리 캐럿은 네이티브가, 나머지 캐럿은 직접 그린다 (가상 공백 위치 포함)
-    override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
-        super.drawInsertionPoint(in: rect, color: color, turnedOn: flag)
-        guard flag, let m = multi else { return }
-        let ns = string as NSString
-        let headIndex = m.block.map { $0.headIsBottom ? m.ranges.count - 1 : 0 } ?? (m.ranges.count - 1)
-        let paddings = m.block?.lines(in: ns).map(\.padding) ?? []
-        color.setFill()
-        for (i, r) in m.ranges.enumerated() where r.length == 0 && i != headIndex {
-            guard var cr = caretRect(at: r.location) else { continue }
-            if i < paddings.count { cr.origin.x += CGFloat(paddings[i]) * charWidth }
-            cr.size.width = max(1, rect.width)
-            cr.fill()
+    // MARK: - 커서 스타일 (appearance)
+    // macOS 14+ 의 NSTextView 는 머리 캐럿을 NSTextInsertionIndicator 하위 뷰로 그리고 drawInsertionPoint(in:color:turnedOn:) 는 부르지 않는다
+    // (macOS 27 실측: 키 창·첫 응답자 상태에서도 0회 — 예전의 멀티 캐럿 오버라이드는 그려지지 않았다). AppKit 은 표시기를 보일 때
+    // displayMode=.automatic·isHidden=false, 숨길 때(선택 있음·포커스 없음·비활성) displayMode=.hidden·isHidden=true 로 둔다.
+    // Bar: 네이티브 표시기를 그대로 쓰고 깜빡임 끄기는 displayMode=.visible. Block·Underline: 표시기를 .hidden 으로 두고(KVO 로 AppKit 이
+    // 되돌릴 때마다 다시) drawBackground 에서 직접 그린다 — 글자 아래 레이어라 글자가 가려지지 않는다. 표시 여부는 AppKit 과 같은 규칙
+    // (키 창 + 첫 응답자 + 선택 없음)으로 직접 판단하고(headCaretVisible), 깜빡임은 0.5 s 타이머(입력 직후 0.5 s 는 켜 둠).
+    // 보조 캐럿(멀티 커서·열 모드 가상 공백)은 세 스타일 모두 직접 그리며 깜빡이지 않는다. 캐럿색은 insertionPointColor(테마 cursor).
+    var cursorStyle: CursorStyle = .bar { didSet { guard cursorStyle != oldValue else { return }; cursorConfigChanged() } }
+    var cursorBlinks = true { didSet { guard cursorBlinks != oldValue else { return }; cursorConfigChanged() } }
+    private var blinkTimer: Timer?
+    private var blinkOn = true
+    private var blinkRestartedAt: CFAbsoluteTime = 0
+    private var indicatorObservations: [NSKeyValueObservation] = []
+    private var windowKeyObservers: [NSObjectProtocol] = []
+    /// 마지막으로 그린 머리 캐럿 칸 — 캐럿이 옮겨 가면 이전 자리를 지우기 위해 함께 무효화한다
+    private var lastDrawnHeadCell: NSRect?
+    var isBlinkTimerRunning: Bool { blinkTimer != nil }
+
+    /// 네이티브 삽입점 표시기 (창이 한 번이라도 키가 된 뒤에 생긴다)
+    var insertionIndicator: NSTextInsertionIndicator? { subviews.lazy.compactMap { $0 as? NSTextInsertionIndicator }.first }
+
+    private func cursorConfigChanged() {
+        applyInsertionIndicatorMode()
+        updateBlinkTimer()
+        needsDisplay = true
+    }
+
+    override func didAddSubview(_ subview: NSView) {
+        super.didAddSubview(subview)
+        guard let ind = subview as? NSTextInsertionIndicator else { return }
+        indicatorObservations = [
+            ind.observe(\.displayMode) { [weak self] _, _ in self?.scheduleIndicatorUpdate() },
+            ind.observe(\.isHidden) { [weak self] _, _ in self?.scheduleIndicatorUpdate() },
+        ]
+        scheduleIndicatorUpdate()
+    }
+
+    private var indicatorUpdateScheduled = false
+    private var applyingIndicatorMode = false
+    /// KVO 알림 안에서 표시기를 다시 설정하면 AppKit 의 setter 와 재진입해 무한 재귀가 된다
+    /// (실측: setDisplayMode: 가 값을 저장하기 전에 setHidden: 을 불러 isHidden 관찰자가 먼저 깨어난다) → 다음 런루프 턴에 한 번만 처리
+    private func scheduleIndicatorUpdate() {
+        guard !applyingIndicatorMode, !indicatorUpdateScheduled else { return }
+        indicatorUpdateScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.indicatorUpdateScheduled = false
+            self.indicatorStateChanged()
         }
     }
 
-    private var charWidth: CGFloat {
+    override func willRemoveSubview(_ subview: NSView) {
+        if subview is NSTextInsertionIndicator { indicatorObservations.removeAll() }
+        super.willRemoveSubview(subview)
+    }
+
+    private func indicatorStateChanged() {
+        applyInsertionIndicatorMode()
+    }
+
+    /// 키 창 전환 알림 — 이 뷰가 건 토큰만 보관·해제한다 (removeObserver(self) 로 통째로 지우면 AppKit 내부 구독까지 사라진다)
+    private func observeWindowKeyState() {
+        let nc = NotificationCenter.default
+        windowKeyObservers.forEach { nc.removeObserver($0) }
+        windowKeyObservers.removeAll()
+        guard let w = window else { return }
+        for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification] {
+            windowKeyObservers.append(nc.addObserver(forName: name, object: w, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.caretVisibilityChanged() }
+            })
+        }
+    }
+
+    /// 첫 응답자·키 창·선택이 바뀌었다 — 깜빡임 타이머를 맞추고 직접 그리는 캐럿 자리를 다시 그린다 (멀티 캐럿은 보조 캐럿까지 모두)
+    private func caretVisibilityChanged() {
+        updateBlinkTimer()
+        if cursorStyle != .bar || multi != nil { invalidateHeadCaret() }
+    }
+
+    /// 보조 캐럿(멀티 커서)도 네이티브 머리 캐럿처럼 키 창 + 첫 응답자일 때만 보인다
+    private var caretsActive: Bool {
+        guard let w = window else { return false }
+        return w.isKeyWindow && w.firstResponder === self
+    }
+
+    /// 표시기 모드 강제: Bar → .automatic(깜빡임) / .visible(깜빡임 끔) — AppKit 이 숨긴(isHidden) 동안은 건드리지 않는다. Block·Underline → 항상 .hidden
+    func applyInsertionIndicatorMode() {
+        guard let ind = insertionIndicator, !applyingIndicatorMode else { return }
+        applyingIndicatorMode = true
+        defer { applyingIndicatorMode = false }
+        switch cursorStyle {
+        case .bar:
+            let wanted: NSTextInsertionIndicator.DisplayMode = cursorBlinks ? .automatic : .visible
+            if !ind.isHidden, ind.displayMode != wanted { ind.displayMode = wanted }
+        case .block, .underline:
+            if ind.displayMode != .hidden { ind.displayMode = .hidden }
+        }
+    }
+
+    /// 머리 캐럿을 보여야 하는가 — AppKit 과 같은 규칙: 키 창 + 첫 응답자 + (머리) 선택 길이 0.
+    /// (표시기의 isHidden 은 displayMode=.hidden 과 묶여 있어 우리가 숨긴 뒤에는 읽을 수 없다 — 실측)
+    var headCaretVisible: Bool {
+        guard let w = window, w.isKeyWindow, w.firstResponder === self, isSelectable else { return false }
+        if let m = multi {
+            let headIndex = m.block.map { $0.headIsBottom ? m.ranges.count - 1 : 0 } ?? (m.ranges.count - 1)
+            return m.ranges.indices.contains(headIndex) && m.ranges[headIndex].length == 0
+        }
+        return selectedRange().length == 0
+    }
+
+    private func updateBlinkTimer() {
+        let wants = cursorStyle != .bar && cursorBlinks && headCaretVisible
+        if wants {
+            guard blinkTimer == nil else { return }
+            blinkOn = true
+            blinkRestartedAt = CFAbsoluteTimeGetCurrent()
+            let t = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.blinkTick() }
+            RunLoop.main.add(t, forMode: .common)
+            blinkTimer = t
+        } else if let t = blinkTimer {
+            t.invalidate()
+            blinkTimer = nil
+            if !blinkOn { blinkOn = true; invalidateHeadCaret() }
+        }
+    }
+
+    private func blinkTick() {
+        // 입력·이동 직후 0.5 s 동안은 켜 둔다 (네이티브처럼 타이핑 중에는 깜빡이지 않는다)
+        if CFAbsoluteTimeGetCurrent() - blinkRestartedAt < 0.5 {
+            if !blinkOn { blinkOn = true; invalidateHeadCaret() }
+            return
+        }
+        blinkOn.toggle()
+        invalidateHeadCaret()
+    }
+
+    /// 선택 변경·입력: 켜진 상태로 되돌리고 깜빡임 주기를 다시 시작
+    private func restartBlink() {
+        guard cursorStyle != .bar else { return }
+        blinkRestartedAt = CFAbsoluteTimeGetCurrent()
+        if !blinkOn { blinkOn = true; invalidateHeadCaret() }
+    }
+
+    private func invalidateHeadCaret() {
+        if multi != nil { needsDisplay = true; return }   // 보조 캐럿까지 모두 다시 (멀티 상태는 드물다)
+        if let old = lastDrawnHeadCell { setNeedsDisplay(old.insetBy(dx: -2, dy: -2)) }
+        if let r = headCaretCell() { setNeedsDisplay(r.insetBy(dx: -2, dy: -2)) } else if lastDrawnHeadCell == nil { needsDisplay = true }
+    }
+
+    /// 머리 캐럿의 글자 칸 (선택이 있으면 nil). 멀티 상태면 머리 범위(열 블록은 가상 공백 포함), 아니면 selectedRange
+    private func headCaretCell() -> NSRect? {
+        if let m = multi {
+            let headIndex = m.block.map { $0.headIsBottom ? m.ranges.count - 1 : 0 } ?? (m.ranges.count - 1)
+            guard m.ranges.indices.contains(headIndex), m.ranges[headIndex].length == 0 else { return nil }
+            var padding = 0
+            if let block = m.block {
+                let lines = block.lines(in: string as NSString)
+                if headIndex < lines.count { padding = lines[headIndex].padding }
+            }
+            return caretCell(at: m.ranges[headIndex].location, padding: padding)
+        }
+        let r = selectedRange()
+        guard r.length == 0 else { return nil }
+        return caretCell(at: r.location)
+    }
+
+    /// 오프셋의 글자 칸: x 는 캐럿 위치(열 모드 가상 공백은 padding 칸만큼 오른쪽), 폭은 그 글자의 실제 폭(한글·탭 포함; 줄 끝·빈 줄·가상 공백은 공백 한 칸), 높이는 줄 높이
+    func caretCell(at offset: Int, padding: Int = 0) -> NSRect? {
+        guard var cell = caretRect(at: offset) else { return nil }
+        let cw = charWidth
+        cell.origin.x += CGFloat(padding) * cw
+        var width = cw
+        let ns = string as NSString
+        if padding == 0, offset < ns.length {
+            let ch = ns.character(at: offset)
+            if ch != 0x0A && ch != 0x0D {
+                let next = NSMaxRange(ns.rangeOfComposedCharacterSequence(at: offset))
+                if let nr = caretRect(at: next), abs(nr.minY - cell.minY) < 0.5, nr.minX - cell.minX > 0.5 { width = nr.minX - cell.minX }
+            }
+        }
+        cell.size.width = width
+        return cell
+    }
+
+    /// Block·Underline 머리 캐럿(표시기가 보일 때, 깜빡임 켜짐 상태)과 세 스타일 모두의 보조 캐럿을 글자 아래 레이어에 그린다
+    private func drawCarets() {
+        let style = cursorStyle
+        if style != .bar { applyInsertionIndicatorMode() }   // KVO 처리는 다음 턴이므로 그리기 직전에도 표시기를 숨겨 둔다
+        let color = insertionPointColor ?? NSColor.textColor
+        if let m = multi {
+            guard caretsActive else { return }
+            let ns = string as NSString
+            let headIndex = m.block.map { $0.headIsBottom ? m.ranges.count - 1 : 0 } ?? (m.ranges.count - 1)
+            let paddings = m.block?.lines(in: ns).map(\.padding) ?? []
+            let showHead = style != .bar && headCaretVisible && blinkOn
+            for (i, r) in m.ranges.enumerated() where r.length == 0 {
+                if i == headIndex, !showHead { continue }   // Bar 의 머리는 네이티브 표시기가 그린다
+                guard let cell = caretCell(at: r.location, padding: i < paddings.count ? paddings[i] : 0) else { continue }
+                drawCaret(cell, style: style, color: color)
+                if i == headIndex { lastDrawnHeadCell = cell }
+            }
+        } else if style != .bar, headCaretVisible, blinkOn, let cell = headCaretCell() {
+            drawCaret(cell, style: style, color: color)
+            lastDrawnHeadCell = cell
+        }
+    }
+
+    private func drawCaret(_ cell: NSRect, style: CursorStyle, color: NSColor) {
+        switch style {
+        case .bar:
+            color.setFill()
+            NSRect(x: cell.minX, y: cell.minY, width: 2, height: cell.height).fill(using: .sourceOver)
+        case .block:
+            color.withAlphaComponent(color.alphaComponent * 0.55).setFill()
+            cell.fill(using: .sourceOver)
+        case .underline:
+            color.setFill()
+            NSRect(x: cell.minX, y: cell.maxY - 2, width: cell.width, height: 2).fill(using: .sourceOver)
+        }
+    }
+
+    /// appearance: 배경이 투명(clear)하면 불투명 뷰로 취급되지 않게 — 반투명 창에서 검게 깔리는 것을 막는다
+    override var isOpaque: Bool { drawsBackground && backgroundColor.alphaComponent >= 1 }
+
+    override func didChangeText() {
+        super.didChangeText()
+        restartBlink()   // appearance
+    }
+
+    var charWidth: CGFloat {
         let f = (typingAttributes[.font] as? NSFont) ?? font ?? NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
         return FontCascade.advance(of: f)
     }
@@ -158,6 +382,7 @@ final class HyperTextView: NSTextView {
     override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
         super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
         if !settingSelectionProgrammatically, multi != nil { multi = nil }
+        restartBlink(); caretVisibilityChanged()   // appearance: 선택 유무에 따라 보이고 숨기며, 이전 자리를 지운다
     }
 
     // MARK: - 멀티 상태 설정
@@ -266,6 +491,8 @@ final class HyperTextView: NSTextView {
     /// 분할을 닫은 뒤 undo 항목 때문에 보관만 되는 뷰: 저장소·undo 알림 구독과 모든 훅을 끊어 편집마다 일하지 않게 한다
     /// (보관 뷰 20개가 각각 개행 수를 세면 타이핑이 5배 느려지는 것이 실측됐다). undo 재생은 AppKit 이 뷰의 textStorage 로 직접 수행하므로 영향 없다.
     func retireFromEditing() {
+        blinkTimer?.invalidate(); blinkTimer = nil; indicatorObservations.removeAll()   // appearance
+        windowKeyObservers.forEach { NotificationCenter.default.removeObserver($0) }; windowKeyObservers.removeAll()   // appearance
         removeEditObservers()
         editObserversInstalled = true   // 다시 설치되지 않게
         onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }

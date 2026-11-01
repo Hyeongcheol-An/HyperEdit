@@ -623,6 +623,7 @@ final class AppModel: ObservableObject {
         }
         applySplitLaunchOptions()         // split: `--split [vertical|horizontal]`
         applyQuickAppendLaunchOptions()   // quick append: `--quick-append` + 전역 단축키 등록
+        applyAppearanceLaunchOptions()    // appearance: `--cursor <bar|block|underline>` `--no-cursor-blink` `--opacity <0.5~1.0>` `--blur`
         if let f = LaunchOptions.value("--fold"), let n = Int(f) {   // fold: 스크린샷용 — 영역 스캔 뒤 해당 줄 접기 토글
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.send(.toggleFold(line: n)) }
         }
@@ -637,6 +638,22 @@ final class AppModel: ObservableObject {
     lazy var quickAppend = QuickAppendController(model: self)
     // secrets: 비밀 블록 설정·Reveal Secrets(⌥⌘S)·클립보드 소거 — SecretsUI.swift (편집기별 가림은 Editor/SecretController.swift)
     lazy var secrets = SecretsStore(model: self)
+
+    // MARK: appearance — 커서 스타일·배경 투명도 (Appearance.swift · AppearanceSettings.swift). 값은 여기, 적용은 EditorView(캐럿·편집기 배경)·ContentView(창·패널)
+    @Published var cursorStyle: CursorStyle = CursorStyle.stored {
+        didSet { guard cursorStyle != oldValue else { return }; AppDefaults.store.set(cursorStyle.rawValue, forKey: CursorStyle.defaultsKey) }
+    }
+    @Published var cursorBlink: Bool = AppDefaults.store.object(forKey: "ui.cursorBlink") as? Bool ?? true {
+        didSet { guard cursorBlink != oldValue else { return }; AppDefaults.store.set(cursorBlink, forKey: "ui.cursorBlink") }
+    }
+    /// 창·편집기·패널 배경의 불투명도 0.5…1.0 (1 = 불투명)
+    @Published var backgroundOpacity: Double = BackgroundOpacity.stored {
+        didSet { guard backgroundOpacity != oldValue else { return }; AppDefaults.store.set(backgroundOpacity, forKey: BackgroundOpacity.defaultsKey) }
+    }
+    /// 투명도 < 1 일 때 창 뒤를 흐리게 (NSVisualEffectView .behindWindow)
+    @Published var backgroundBlur: Bool = AppDefaults.store.object(forKey: "ui.backgroundBlur") as? Bool ?? false {
+        didSet { guard backgroundBlur != oldValue else { return }; AppDefaults.store.set(backgroundBlur, forKey: "ui.backgroundBlur") }
+    }
 }
 
 /// 스레드 안전 취소 플래그 — 부모 Task 의 취소를 detached 작업에 전달할 때 사용

@@ -1119,6 +1119,16 @@
         }
       }
     },
+    "Appearance": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "외형"
+          }
+        }
+      }
+    },
     "Applied after HyperEdit relaunches — the document is saved first.": {
       "localizations": {
         "ar": {
@@ -1307,6 +1317,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "停止输入 2 秒后自动存储（⌘S 立即存储）"
+          }
+        }
+      }
+    },
+    "Bar": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "막대"
+          }
+        }
+      }
+    },
+    "Below 100% the window, editor and panels show what is behind them; text, icons and borders stay opaque. Blur applies only while the window is translucent.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "100% 미만이면 창·편집기·패널 뒤가 비칩니다. 글자·아이콘·구분선은 불투명하게 유지되며, 블러는 창이 반투명일 때만 적용됩니다."
+          }
+        }
+      }
+    },
+    "Blink": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "깜빡임"
+          }
+        }
+      }
+    },
+    "Block": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "블록"
+          }
+        }
+      }
+    },
+    "Block and Underline carets are drawn under the glyph in the theme's cursor color; extra carets (multi-caret, column mode) use the same style and do not blink.": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "블록·밑줄 캐럿은 테마의 커서색으로 글자 아래에 그려집니다. 보조 캐럿(멀티 커서·열 모드)도 같은 스타일이며 깜빡이지 않습니다."
+          }
+        }
+      }
+    },
+    "Blur Behind Window": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "창 뒤 블러"
+          }
+        }
+      }
+    },
+    "Blur behind window": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "창 뒤 블러"
           }
         }
       }
@@ -3543,6 +3623,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "当前文件"
+          }
+        }
+      }
+    },
+    "Cursor style": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "커서 스타일"
           }
         }
       }
@@ -26193,6 +26283,16 @@
         }
       }
     },
+    "Underline": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "밑줄"
+          }
+        }
+      }
+    },
     "Undo (⌘Z)": {
       "localizations": {
         "ar": {
@@ -27159,6 +27259,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "窗口"
+          }
+        }
+      }
+    },
+    "Window Opacity": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "창 투명도"
+          }
+        }
+      }
+    },
+    "Window opacity": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "창 투명도"
           }
         }
       }
