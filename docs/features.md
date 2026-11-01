@@ -83,8 +83,9 @@
 | ✅ | **코드 구문 색 20여 종** — Swift, Python, JS/TS, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI. 주석·문자열·숫자·키워드·함수·타입·속성(데코레이터)·구두점·연산자 | `CodeGrammar(language:)` + `GrammarRegistry`(확장자 → 문법). 줄 단위 토큰화라 여러 줄 블록 주석·문자열은 시작한 줄만. 색은 테마 `syntax` 팔레트 |
 | ✅ | **마크다운 분할 미리보기** ⇧⌘P — 좌 편집 / 우 렌더(GFM: 헤딩·목록·체크리스트·표·코드 블록·인용·링크·이미지), 현재 테마 색으로 스타일, 편집기 → 미리보기 스크롤 동기화(보이는 첫 줄 기준, `data-line`), 입력 멈춤 300 ms 뒤 다시 렌더(스크롤 위치 유지), 2 MB 초과 파일은 안내만. 링크는 기본 브라우저로, 원문 HTML은 이스케이프해 글자로(실행 안 함), 상대 경로 이미지는 문서 폴더 기준. 레이아웃 탭 "마크다운" 그룹 · 보기 메뉴 · 상태바 **MD** 표시 | swift-markdown 0.9.0(Apache-2.0) · `MarkdownHTML`(HyperCore) · `MarkdownPreviewView`(WKWebView). 미리보기 → 편집기 역방향 동기화는 없음 |
 | ✅ | **편집기 분할(분할 보기)** ⌘\ — 같은 문서를 두 편집기로(좌우 또는 상하, 보기 메뉴 "분할" 하위 메뉴·레이아웃 탭 패널 그룹). 두 뷰는 같은 텍스트·undo 스택을 공유하고(A 에서 입력, B 에서 ⌘Z) 따로 스크롤한다. 명령·상태바·미리보기 동기화는 마지막으로 클릭/포커스한 편집기 기준, ⌥⌘\ 로 다른 분할로 포커스. 상태바 **SPLIT** 표시, 마크다운 미리보기와 함께 켤 수 있음 | TextKit 2: `NSTextContentStorage` 하나에 뷰마다 `NSTextLayoutManager`(`EditorSession`). `Editor/EditorSession.swift` · `EditorView.swift`(role). 보조 편집기는 위치 저장·창 제목·검색 강조(스토리지 속성)를 맡지 않는다. `--split [vertical\|horizontal]` |
-| 🔜 | HTML/PDF 내보내기 | |
-| 🔜 | 여러 줄 블록 주석·문자열 상태 추적, 사용자 정의 문법·키워드 | |
+| ✅ | **HTML/PDF 내보내기** — 파일 › HTML로 내보내기… / PDF로 내보내기…. 저장 패널 액세서리로 테마(현재·Hyper Light·Hyper Dark)·줄 번호 선택. 마크다운은 미리보기와 같은 본문의 독립 HTML(미리보기 스크립트 없음·인쇄 CSS), 메모·코드는 문법 토큰을 `tok-*` span 으로 입힌 `<pre>`(여러 줄 상태 포함) + 테마 syntax CSS. PDF 는 화면 밖 WKWebView 에 같은 HTML 을 올려 `printOperation`(.save, Letter/A4, 여백 36 pt, 머리글·바닥글 없음)으로 쪽 나뉜 파일, 실패 시 `createPDF` 폴백. 2 MB 초과는 PDF 만 거절. 비밀 블록은 `••••••••` 로 | `HTMLExporter`(HyperCore `Export/`) · `Apps/mac/Export/Exporter.swift`·`ExportUI.swift`. 선택 영역·여러 파일·용지 옵션·PDF 목차 없음 |
+| ✅ | **여러 줄 구문 상태 추적** — 블록 주석(`/* */`, `<!-- -->`), 여러 줄 문자열(Swift·Python `"""`/`'''`, JS/TS·Go 백틱, Rust `r#"…"#`), 마크다운 펜스(정보 문자열 언어로 중첩 토큰화, 모르는 언어면 메모 규칙 off), 마크다운 HTML 주석이 닫힐 때까지 모든 줄에 색. 여는/닫는 기호 입력 시 아래 줄 즉시 재도색 | `LineState`·`LineStateIndex`(HyperCore `Highlight/`): 줄별 진입 상태 표, 전체 계산 34k 줄 ≈10 ms, 편집 뒤 수렴까지만 증분(보통 1~2줄). `MemoDocument` 가 소유, `EditorView` validator 가 `scanLine(entering:)` 사용. 상태 없는 문법(메모·YAML·INI·셸)은 표를 만들지 않음. 제한: 여는/닫는 구분자가 같은 문자열만, 언어당 블록 주석 1쌍, 중첩 주석 없음 |
+| ✅ | **사용자 정의 문법** — `~/Library/Application Support/HyperEdit/grammars/*.json`(name·extensions·filenames·mode·lineComments·blockComment·strings·multilineStrings·keywords·types·constants·builtins·caseInsensitive, 주석·뒤 쉼표 허용). 내장 확장자 덮어쓰기. 파일 › 문법 폴더 열기…(첫 생성 시 `example.json`+`README.md`) · 문법 다시 읽기(출력 "Grammars reloaded · N", 잘못된 파일은 건너뛰고 알림). 상태바 언어 이름, ⌘/ 주석 토글 연동 | `UserGrammarStore`·`GrammarRegistry`(사용자 문법 우선). 단어 목록 기반(정규식 없음), 폴더 변경 자동 감지 없음 |
 
 ## F. 저장·백업
 
@@ -111,7 +112,7 @@
 
 | 상태 | 기능 | 메모 |
 |---|---|---|
-| ✅ | 개발용 실행 인자 — `--file`, `--ephemeral`, `--snapshot` `--snapshot-delay` `--snapshot-activate` `--snapshot-panel` `--window-width` `--quit`, `--selftest` `--selftest-out` `--selftest-split-big` `--show-snippet-picker` `--show-macro-recording` `--snapshot-sheet` `--selftest-open`, `--theme` `--follow-system-theme`, `--ribbon`, `--left` `--bottom` `--hide-left` `--hide-bottom`, `--search` `--replace` `--replace-with` `--find-in-files`, `--column`, `--goto`, `--preview`, `--show-settings` `--snapshot-settings`, `--split`, `--quick-append`, `--no-highlight`, `--fold` `--fold-all` `--no-fold`, `--debug-perf` `--debug-perf-log`, `--debug-startup` `--debug-startup-log` `--debug-preview-log` `--debug-no-apply`, `--bench` `--bench-out` `--bench-strict` `--bench-only` `--bench-commit`, `--quit-after-launch` `--bench-launch-log` | README "개발용 실행 인자" 표 참고. `--snapshot`·`--selftest`·`--bench`·`--ephemeral` 은 휘발성 설정과 임시 폴더만 쓴다 |
+| ✅ | 개발용 실행 인자 — `--file`, `--ephemeral`, `--snapshot` `--snapshot-delay` `--snapshot-activate` `--snapshot-panel` `--window-width` `--quit`, `--selftest` `--selftest-out` `--selftest-split-big` `--show-snippet-picker` `--show-macro-recording` `--snapshot-sheet` `--selftest-open`, `--theme` `--follow-system-theme`, `--ribbon`, `--left` `--bottom` `--hide-left` `--hide-bottom`, `--search` `--replace` `--replace-with` `--find-in-files`, `--column`, `--goto`, `--preview`, `--show-settings` `--snapshot-settings`, `--cursor` `--no-cursor-blink` `--opacity` `--blur`, `--reveal-secrets`, `--split`, `--quick-append`, `--no-highlight`, `--fold` `--fold-all` `--no-fold`, `--debug-perf` `--debug-perf-log`, `--debug-startup` `--debug-startup-log` `--debug-preview-log` `--debug-no-apply`, `--bench` `--bench-out` `--bench-strict` `--bench-only` `--bench-commit`, `--quit-after-launch` `--bench-launch-log` | README "개발용 실행 인자" 표 참고. `--snapshot`·`--selftest`·`--bench`·`--ephemeral` 은 휘발성 설정과 임시 폴더만 쓴다 |
 | ✅ | 성능 벤치마크 하네스 — `--bench` / `scripts/bench.sh`: 열기·타이핑·검색·바꾸기·스크롤·테마·메모리·유휴 CPU·실행 시간을 예산과 비교(PASS/FAIL), `--compare` 로 JSON 기준선과 비교. CI 에는 넣지 않는다(러너가 시끄러움) | `Apps/mac/Bench.swift` · `docs/bench/baseline-0.6.0.json` · [performance.md](performance.md) |
 | 🔜 | URL 스킴, App Intents(Shortcuts), macOS 서비스 메뉴 | |
 | 🔜 | CLI(`add`, `grep`, `tail`) | |
@@ -123,7 +124,8 @@
 |---|---|---|
 | ✅ | 네트워크 코드 없음, 텔레메트리 없음 | SECURITY.md |
 | ✅ | 사용자가 연 파일과 자체 파일(기본 문서, ⌘N으로 만든 파일, Application Support의 북마크 JSON·스냅샷·`snippets.json`·`macros/macros.json`, 환경설정)만 읽고 씀. 빠른 추가는 현재 문서 끝에 덧붙여 바로 저장 | 샌드박스는 아님. 전역 단축키는 Carbon `RegisterEventHotKey` 라 손쉬운 사용 권한이 필요 없고 다른 키 입력을 보지 않는다 |
-| 🔜 | 비밀 블록 마스킹, 클립보드 자동 소거 | |
+| ✅ | **비밀 블록 마스킹** — 정보 문자열이 `secret` 로 시작하는 펜스 블록(```` ```secret 은행 ````)의 안쪽 줄을 편집기에서 가림막 + `••••••••` 로 그린다(펜스 줄은 보임, .txt 도 같은 규칙, 중첩은 CommonMark). 캐럿이 들어가면 그 블록만 드러나고 나가면 다시 가림. **비밀 드러내기 ⌥⌘S**(편집 메뉴)는 전부 드러냈다가 설정 시간(10/30/60초/수동, 기본 30초) 뒤 자동으로 다시 가림, 상태바 `•••• N` / `REVEALED`. 찾기 결과 줄 텍스트·아웃라인·타임라인·마크다운 미리보기·HTML/PDF 내보내기도 가린 텍스트. 설정 › 비밀 에서 끌 수 있음. 표시만 가리며 파일·스냅샷은 평문 | `SecretScanner`(HyperCore `Text/`) · `Editor/SecretController.swift`(`MaskedLayoutFragment`, FoldController 의 layout delegate 공용) · `SecretsUI.swift`. 가림막 폭 = 줄 폭(길이는 보임), 파일에서 찾기의 다른 파일은 평문, `--no-fold` 면 가림도 꺼짐 |
+| ✅ | **클립보드 자동 소거** — 복사·잘라내기(멀티 커서·열 모드 포함) 범위가 비밀 줄과 겹치면 설정 지연(끔/10/30/60초, 기본 30초) 뒤 changeCount 가 그대로일 때만 비운다. 편집 › 클립보드 비우기 로 즉시. 출력 로그 "Clipboard cleared (secret)" | `HyperTextView.onDidCopy` → `SecretsStore.scheduleClipboardClear`. 드래그 페이스트보드는 대상 아님 |
 | 🔜 | 앱 잠금(Touch ID) | |
 
 ## J. 테마·외관
@@ -136,11 +138,13 @@
 | ✅ | **상태바** — Ln / Col(+ 선택 길이, 문자 오프셋은 툴팁), 줄바꿈, 인코딩, COL, MD(미리보기 켜짐), 구문 언어(색이 꺼져 있으면 흐리게), 커서 수, 줄 수·크기, 상태, 테마(시스템 따르기 중이면 "· 시스템"), 확대 % | |
 | ✅ | **폰트** — Fira Code(없으면 시스템 고정폭), 한글 폴백 D2Coding ×1.2로 2:1 폭, 리거처 토글, 줄 높이 | 설정 ⌘, · [fonts.md](fonts.md) |
 | ✅ | **UI 언어** — 11개 언어(영어·한국어·중국어 간체·일본어·베트남어·힌디어·독일어·프랑스어·스페인어·포르투갈어·아랍어 — RTL 글; 실측상 창 구조(리본 그룹·사이드바·편집기·패널)는 좌→우 그대로이고 라벨·설정 행만 아랍어 읽기 방향을 따름), 기본은 시스템 언어. 설정(⌘,) › 언어 에서 선택 → "지금 재실행"(문서 저장 후 종료·재실행). 선택은 앱 도메인의 `AppleLanguages` 에 저장돼 시스템 설정 › 언어 및 지역 › 응용 프로그램 과 같은 값을 본다. 도움말 › 사용자 가이드 = 현재 언어의 `docs/guide/USER_GUIDE.<code>.md`. 첫 실행 환영문도 언어별(`Resources/Welcome/welcome.<code>.md`) | `AppLanguage`(Apps/mac) · 영어가 소스(카탈로그 키), 번역은 `l10n/ui.<code>.json` → `scripts/l10n-add.py` → 두 `Localizable.xcstrings`. `scripts/check-l10n.py`(CI)가 키 누락·자리표시자·리본 라벨 길이·언어 목록/가이드/환영문 일치를 검사. 미지원 언어(중국어 번체 등)는 영어로 폴백 |
-| 🔜 | 커서 스타일(블록·바·밑줄), 배경 투명도, 공백 표시 | |
+| ✅ | **커서 스타일** — 설정 › 외형: 막대(기본)·블록(글자 칸을 커서색 α 0.55 로, 글자는 보임)·밑줄(칸 아래 2 pt), 깜빡임 끄기. 멀티 커서·열 모드(가상 공백) 보조 캐럿도 같은 스타일(깜빡임 없음). 줄 끝·빈 줄은 공백 한 칸, 한글·탭은 실제 폭. `--cursor` `--no-cursor-blink` | `HyperTextView` — macOS 14+ 는 머리 캐럿을 `NSTextInsertionIndicator` 가 그리고 `drawInsertionPoint` 를 부르지 않는다(실측) → 막대는 표시기(깜빡임 끄기 = `displayMode = .visible`), 블록·밑줄은 표시기를 `.hidden` 으로 두고 `drawBackground` 에서 그림(KVO 재적용은 다음 런루프 턴 — KVO 안에서 즉시 설정하면 재귀 크래시). 2만 자 초과 문단에서는 생략 |
+| ✅ | **창 투명도·블러** — 설정 › 외형 슬라이더 50–100 %(기본 100), 보기 › 창 투명도 100/90/80/70 %. 창·편집기·거터·리본·탭 줄·사이드바·하단 패널·상태바·미리보기가 같은 α, 글자·아이콘·구분선은 불투명. "창 뒤 블러"(기본 꺼짐)는 투명도 < 1 일 때만. `--opacity` `--blur` | `WindowChromeView`(창 `isOpaque=false`, 블러 `NSVisualEffectView` .behindWindow). 표면당 한 겹만 α(겹치면 더 불투명). 미리보기는 WebKit `drawsBackground` SPI 가 있을 때만 투명 |
+| 🔜 | 공백 문자 표시 | |
 
 ## K. 제외·보류
 
 - 노트 분할·위키링크·그래프 뷰(Obsidian류): "한 파일에 append" 습관과 충돌 → 보류.
 - 실시간 협업: 1인 사용 전제 → 제외.
-- 구문 강조는 줄 단위의 가벼운 규칙으로 구현(E 참조). 트리시터 같은 완전한 파서·여러 줄 상태 추적은 메모 파일 성능을 위해 하지 않는다.
+- 구문 강조는 가벼운 토큰 규칙 + 줄별 진입 상태(블록 주석·여러 줄 문자열·펜스)로 구현(E 참조). 트리시터 같은 완전한 파서는 메모 파일 성능을 위해 하지 않는다.
 - 클라우드 동기화·자체 서버: 로컬 전용으로 결정 → 보류.

@@ -28,7 +28,8 @@ HyperEdit is a fast plain-text editor for macOS built around one big notes file 
 20. [Files HyperEdit writes](#20-files-hyperedit-writes)
 21. [Troubleshooting](#21-troubleshooting)
 22. [Known limitations](#22-known-limitations)
-23. [Getting help](#23-getting-help)
+23. [Secret blocks and app lock](#23-secret-blocks-and-app-lock)
+24. [Getting help](#24-getting-help)
 
 ## 1. Install and update
 
@@ -167,11 +168,14 @@ Because the panel does not activate HyperEdit, it also works from any other app 
 ## 15. Markdown preview and syntax colors
 
 - **Markdown Preview (⇧⌘P)** splits the window with a rendered view of the current file on the right: headings, lists and task lists, tables, fenced code, quotes, links and images, styled with the current theme. It follows the editor's scroll position and re-renders shortly after you stop typing. Links open in your browser; raw HTML in the file is shown as text, never executed. Files over 2 MB show a notice instead of a preview. The status bar shows **MD** while it is on.
-- **Syntax Colors (⌃⌘H)** are chosen by file extension and shown in the status bar. Notes and Markdown get a light rule set — URLs, dates and times, headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 programming languages get comments, strings, numbers, keywords, function and type names. Colors are drawn on the visible lines only, so they never change the file or slow down typing. Coloring is line-based: a comment or string that spans several lines is colored only on the line where it opens.
+- **Syntax Colors (⌃⌘H)** are chosen by file extension and shown in the status bar. Notes and Markdown get a light rule set — URLs, dates and times, headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 programming languages get comments, strings, numbers, keywords, function and type names. Colors are drawn on the visible lines only, so they never change the file or slow down typing. Constructs that span lines keep their color until they close: block comments (`/* */`, `<!-- -->`), multi-line strings (Swift and Python `"""`, JavaScript template literals, Go raw strings, Rust `r#"…"#`) and Markdown fenced code blocks, which are colored with the language named in the info string (```` ```python ````). Typing an opening or closing delimiter recolors the lines below immediately.
+- **User-defined grammars.** To color a language HyperEdit does not know, or to change a built-in one, put a `*.json` file in `~/Library/Application Support/HyperEdit/grammars/`. **File › Open Grammars Folder…** creates the folder with an `example.json` you can copy and a README that explains every key — `name`, `extensions` or `filenames`, `lineComments`, `blockComment`, `strings`, `multilineStrings`, `keywords`, `types`, `constants`, `builtins`, `caseInsensitive`. **File › Reload Grammars** applies your changes without restarting; the status bar shows the grammar's name, Toggle Comment (⌘/) uses its comment markers, and a file that fails to parse is skipped with a message in the Output panel.
 
 ## 16. Themes, fonts and CJK text
 
 **Themes.** 22 palettes — 5 light, 17 dark — ship with the app. By default it follows the system appearance: **Hyper Light** in light mode, **Hyper Dark** in dark mode. Pick a theme from the Layout tab, the status-bar theme menu, **View › Theme** or ⌥⌘] / ⌥⌘[ to fix it; **Follow System Appearance** is in the same menus and in Settings. The same palettes are available for the Zed editor (`hyperedit-themes.json` on every release).
+
+**Cursor and window opacity.** Settings › **Appearance** chooses the caret shape — **Bar** (the default), **Block** (the character cell is tinted with the cursor color so the glyph stays readable) or **Underline** — and whether it blinks; the extra carets of multi-caret and column mode use the same shape. **Window opacity** (50–100 %) makes the whole window translucent — editor, ribbon, panels and status bar alike — while text, icons and borders stay solid, and **Blur behind window** adds the system blur. View › Window Opacity has 100 / 90 / 80 / 70 % steps.
 
 **Fonts.** HyperEdit uses **Fira Code** when it is installed and the system monospaced font otherwise. Korean text is drawn with a separate font — **D2Coding** by default, when installed — scaled so that one Hangul syllable is exactly two Latin cells wide, which keeps tab-aligned tables straight. Ligatures, line height, both font families and the Hangul scale are in Settings. Chinese and Japanese text uses the system fallback fonts and also counts as two cells in Align Columns.
 
@@ -183,6 +187,7 @@ Because the panel does not activate HyperEdit, it also works from any other app 
 - **Safety.** An empty buffer is never written over a file that had content. If saving fails when you quit, an emergency copy is written to the snapshot folder and you are asked whether to quit anyway.
 - **Encodings.** Files are read as UTF-8 first, then EUC-KR (CP949), CP1252 and Latin-1, and saved in the same encoding (a UTF-8 BOM is preserved). If you type a character the original encoding cannot store, the file is saved as UTF-8 and the status bar says so. A file that cannot be decoded in any of these encodings is not opened at all rather than being damaged.
 - **Line endings** (UNIX / DOS / MAC) are detected and preserved; Quick Append and the text tools use the file's own.
+- **Export.** **File › Export as HTML…** saves the document as one self-contained HTML file — Markdown rendered like the preview, notes and code as a syntax-colored block — and **File › Export as PDF…** prints the same page to a paginated PDF (Letter in the US, Canada and Mexico, A4 elsewhere; 36 pt margins; no header or footer). The save panel lets you choose the theme (current, Hyper Light, Hyper Dark) and, for notes and code, line numbers. The exported page contains no scripts and loads nothing from the network; relative image paths are kept, so save the HTML next to the Markdown file. PDF export works for files up to 2 MB. Secret blocks (section 23) are exported as `••••••••`.
 
 ## 18. Settings reference
 
@@ -196,6 +201,8 @@ Open Settings with **⌘,** or the Advanced tab.
 | Theme | Follow system appearance, theme picker |
 | Files | The current file, the default document and the snapshot folder, with buttons to open them |
 | Quick Append | Global shortcut (Off / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N), timestamp heading on/off |
+| Appearance | Cursor style (Bar / Block / Underline), blink, window opacity 50–100 %, blur behind window |
+| Secrets | Mask secret blocks, re-mask after (10 / 30 / 60 s / Never), clear clipboard after copying a secret (Off / 10 / 30 / 60 s) |
 
 Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the split and the ribbon tab are remembered automatically.
 
@@ -225,7 +232,8 @@ Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the sp
 | ⌥⌘L | Line numbers | ⌥Z | Word wrap |
 | ⇧⌘P | Markdown preview | ⌃⌘H | Syntax colors |
 | ⌥⌘] / ⌥⌘[ | Next / previous theme | ⌘= / ⌘- / ⌘0 | Zoom in / out / reset |
-| ⌘, | Settings | ⌘Q | Quit (saves first) |
+| ⌥⌘S | Reveal / mask secret blocks | ⌘, | Settings |
+| ⌘Q | Quit (saves first) | | |
 
 ## 20. Files HyperEdit writes
 
@@ -237,6 +245,7 @@ HyperEdit touches only the files you open and its own data:
 | `~/Library/Application Support/HyperEdit/snapshots/` | Pre-save snapshots and emergency copies |
 | `~/Library/Application Support/HyperEdit/bookmarks/` | One JSON file per bookmarked document |
 | `~/Library/Application Support/HyperEdit/snippets.json` | Your snippets |
+| `~/Library/Application Support/HyperEdit/grammars/` | User-defined grammars (`*.json`), with `example.json` and a README |
 | `~/Library/Application Support/HyperEdit/macros/macros.json` | Saved macros |
 | `~/Library/Preferences/io.github.hyeongcheol-an.hyperedit.plist` | Preferences, including the interface language |
 
@@ -253,15 +262,39 @@ Nothing is written next to your documents, and nothing leaves your Mac.
 
 ## 22. Known limitations
 
-- Syntax colors are line-based and there is no user-defined grammar. The Markdown preview is a view, not an editor.
+- Syntax colors follow block comments, multi-line strings and Markdown fences across lines, but only same-open-and-close string delimiters and one block-comment pair per language are supported, and user grammars are word lists without regular-expression rules. The Markdown preview is a view, not an editor.
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). Calculate and Align Columns handle plain arithmetic and tab / pipe tables only.
-- Snippets and macros are edited as JSON files; there is no graphical editor for them.
+- Snippets, macros and user grammars are edited as JSON files; there is no graphical editor for them.
+- Export writes the whole document only, without selection or multi-file export, page or font options, or a PDF table of contents.
+- Secret blocks are masked on screen only: the file, autosaves, snapshots and Find in Files results from other files are plain text, and the mask bar shows how long each line is. App lock hides the window; it does not encrypt anything.
 - Folds last for the session and are not saved per file; a mouse drag across a folded line still selects the hidden text.
 - Documents that are a single line of a megabyte or more are slow to open and move around in; Minify JSON warns before producing one.
 - Local files only; no cloud sync and no iOS app yet.
 - Languages other than the eleven listed fall back to English.
 
-## 23. Getting help
+## 23. Secret blocks and app lock
+
+**Secret blocks.** A fenced code block whose info string starts with `secret` is masked in the editor:
+
+````markdown
+```secret bank
+login: me@example.com
+password: hunter2
+```
+````
+
+Every line between the fences is drawn as a blank bar with `••••••••`; the fence lines stay visible so you can see where the block is and what it is for. The rule is the same in Markdown and plain text files. Move the caret into the block — click it, use ↑ / ↓, Go to Line, a find result or a bookmark — and the whole block is revealed and editable; move the caret out and it is masked again. Only the display changes: the text is still in the file, so Find, Replace, undo and saving work exactly as before.
+
+- **Reveal Secrets (⌥⌘S)** in the Edit menu shows every block at once; after **Settings › Secrets › Re-mask after** (10 / 30 / 60 s, default 30 s, or Never) they are masked again and the Output panel logs it. The status bar shows `REVEALED` meanwhile and `•••• N` while N blocks are masked. **Edit › Mask Secret Blocks** turns masking off entirely.
+- Secret lines are shown as `••••••••` in the Find Results list (the match and the line number still work), skipped by the Outline and Timeline, and redacted in the Markdown preview and in HTML / PDF exports.
+- **Clipboard auto-clear.** When a copy or cut overlaps a secret line — including multi-caret and column-mode copies — the clipboard is cleared after **Settings › Secrets › Clear clipboard after copying a secret** (Off / 10 / 30 / 60 s, default 30 s), unless you copied something else in the meantime. **Edit › Clear Clipboard** clears it immediately.
+- Secret blocks fold like any fenced block (⌥⌘←).
+
+> Masking is not encryption. The file, autosaves and snapshots are plain text, and anyone who has the file can read the secrets. The feature keeps them off your screen, screenshots, find results, preview and exports while you work.
+
+**App lock.** See Settings › App Lock — described in the next release of this guide.
+
+## 24. Getting help
 
 - Bug reports and ideas: [GitHub Issues](https://github.com/Hyeongcheol-An/HyperEdit/issues) and [Discussions](https://github.com/Hyeongcheol-An/HyperEdit/discussions).
 - Security problems: see [SECURITY.md](../../SECURITY.md) for private reporting.

@@ -59,7 +59,9 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - F7 inserts a timestamp heading such as `## 2026-10-30 (Fri) 14:05`. The weekday follows the system locale, e.g. `(금)` on Korean systems.
 - **Split editor (⌘\\)** shows the same document in two editors, side by side or stacked (View › Split, or the Layout tab). Both views edit the same text and share one undo stack — type in one, ⌘Z in the other — but scroll independently; commands, the status bar and the Markdown preview follow the view you clicked last, and ⌥⌘\\ moves the focus to the other split. The status bar shows **SPLIT** while it is on.
 - **Quick Append (⇧⌘N, or ⌃⌥N from any app):** a small floating panel that does not activate HyperEdit. Type a note, press ⌘↩ and it is appended to the end of the document — with a timestamp heading by default — saved at once, and undoable in one step; the panel then hides and focus returns to the app you were in. Esc closes the panel and keeps the draft for next time. The global shortcut (off / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N) is chosen in Settings and needs no Accessibility permission.
-- **Syntax colors (⌃⌘H)**, chosen by file extension and shown in the status bar. Notes and Markdown get a deliberately light rule set — URLs, ISO dates and times, `#` headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 code languages (Swift, Python, JavaScript/TypeScript, JSON, shell, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI) get comments, strings, numbers, keywords, function and type names. Colors come from the theme's `syntax` palette and are applied as TextKit 2 rendering attributes to visible lines only, so they never touch the file, undo history or typing speed. Tokenization is line-based: a block comment or string that spans lines is colored only where it opens.
+- **Syntax colors (⌃⌘H)**, chosen by file extension and shown in the status bar. Notes and Markdown get a deliberately light rule set — URLs, ISO dates and times, `#` headings, `[Title]` lines, list markers and `[ ]` / `[x]` task boxes, `#tags`, `key:` labels, `**bold**`, `` `code` `` and `⇒ → ->` arrows — and about 20 code languages (Swift, Python, JavaScript/TypeScript, JSON, shell, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI) get comments, strings, numbers, keywords, function and type names. Colors come from the theme's `syntax` palette and are applied as TextKit 2 rendering attributes to visible lines only, so they never touch the file, undo history or typing speed. Block comments (`/* */`, `<!-- -->`), multi-line strings (Swift and Python `"""`, JavaScript template literals, Go raw strings, Rust `r#"…"#`) and Markdown fenced code blocks keep their color across lines until they close — a fence is colored with the language named in its info string — and typing a delimiter recolors the lines below at once. A per-line state table makes this cost about 10 ms for a 34k-line file and nothing noticeable per keystroke.
+- **User-defined grammars:** drop a `*.json` file into `~/Library/Application Support/HyperEdit/grammars/` to add a language or override a built-in one — name, extensions or file names, comment markers, string delimiters and keyword lists. **File › Open Grammars Folder…** creates the folder with an `example.json` and a README that documents the schema; **File › Reload Grammars** applies changes without restarting, the status bar shows the grammar's name and Toggle Comment (⌘/) uses its markers.
+- **Cursor style and window opacity (Settings › Appearance):** a Bar, Block or Underline caret with blinking on or off — extra carets from multi-caret and column mode use the same style — and a window opacity of 50–100 % that makes the editor, ribbon, panels and status bar translucent while text stays opaque, with an optional system blur behind the window. View › Window Opacity offers 100 / 90 / 80 / 70 % steps.
 
 ### Markdown preview
 - **⇧⌘P** splits the editor: the rendered GFM view of the current file appears on the right (headings, lists and task lists, tables, fenced code, block quotes, links, images) styled from the active theme, with the system font for prose and the editor's monospace stack for code.
@@ -99,6 +101,16 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 - Encoding is detected losslessly — UTF-8 first, then EUC-KR (CP949), CP1252 and Latin-1 — shown in the status bar and used again when saving (a UTF-8 BOM is preserved). If you type a character the original encoding cannot represent, the file is saved as UTF-8 and the status bar says so. A file that cannot be decoded in any of these encodings is not opened at all, rather than being corrupted by a lossy round-trip.
 - The status bar shows Ln / Col (plus selection length; the character offset is a tooltip), line ending (UNIX / DOS / MAC), file encoding, a COL indicator, caret count, line count · size, the status message, the syntax language (dimmed while syntax colors are off), a theme picker (marked "· 시스템" while following the system appearance) and zoom %.
 
+### Export (HTML / PDF)
+- **File › Export as HTML…** writes the document as one self-contained HTML file; **File › Export as PDF…** prints the same page to a paginated PDF. The save panel opens in the document's folder and offers a **Theme** (current, Hyper Light or Hyper Dark) and, for notes and code, **Line numbers**.
+- Markdown files are rendered exactly like the preview (headings, lists and task lists, tables, fenced code, quotes, links, images) with the theme inlined as CSS; raw HTML stays escaped and the page contains no scripts and loads nothing external. Notes and code become a `<pre>` block colored with the file's syntax rules, including multi-line comments and strings.
+- PDFs use Letter paper in the US, Canada and Mexico and A4 elsewhere, 36 pt margins and no header or footer; headings stay with the text below them and tables and code blocks are kept on one page when they fit. PDF export is available up to 2 MB, like the preview. The Output panel and status bar report `Exported HTML · ~/path` or an error.
+
+### Secret blocks
+- A fenced code block whose info string starts with `secret` (```` ```secret ````, ```` ```secret bank ````) is a **secret block**: in the editor its lines are drawn as a blank bar with `••••••••` while the fence lines stay visible, so you can keep passwords, keys and tokens in your notes without showing them on screen. Move the caret into the block (click, ↑ / ↓, Go to Line, a find result, a bookmark) and it is revealed and editable; move out and it is masked again. The text itself is untouched — Find, Replace, undo and saving work as before — and this is masking, not encryption: the file and its snapshots are plain text.
+- **Reveal Secrets (⌥⌘S)** shows every block and masks them again after Settings › Secrets › *Re-mask after* (10 / 30 / 60 s or never); the status bar shows `REVEALED` meanwhile, and `•••• N` while N blocks are masked. Find results, the Outline, the Timeline, the Markdown preview and HTML / PDF exports show secret lines as `••••••••`.
+- **Clipboard auto-clear:** copying or cutting text that overlaps a secret line clears the clipboard after 10 / 30 / 60 s (default 30 s) unless you copied something else in the meantime; **Edit › Clear Clipboard** clears it at once.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action | Shortcut | Action |
@@ -125,7 +137,7 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | ⌥⌘\\ | Focus other split | ⇧⌘N | Quick Append |
 | ⌃⌥N | Quick Append from any app (global, configurable) | ⇧⌘M | Record / stop macro |
 | ⌥⌘M | Play macro | ⌥⌘← / ⌥⌘→ | Fold / unfold |
-| ⌥⇧⌘← / ⌥⇧⌘→ | Fold all / unfold all | | |
+| ⌥⇧⌘← / ⌥⇧⌘→ | Fold all / unfold all | ⌥⌘S | Reveal / mask secret blocks |
 
 ## Themes
 
@@ -175,7 +187,9 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--split [vertical\|horizontal]` · `--quick-append` | Start with the editor split (side by side by default) / open the Quick Append panel |
 | `--no-highlight` | Start with syntax colors off (for screenshot comparisons) |
 | `--fold <line>` · `--fold-all` · `--no-fold` | Fold the region headed by a line / fold everything once regions are scanned / disable folding entirely |
-| `--ephemeral` | Use throwaway preferences (theme, panels, remembered file) for this run — for manual testing |
+| `--cursor <bar\|block\|underline>` · `--no-cursor-blink` · `--opacity <0.5–1.0>` · `--blur` | Start with that caret style / blinking off / the window at that opacity / blur behind the translucent window |
+| `--reveal-secrets` | Start with every secret block revealed (no re-mask timer) |
+| `--ephemeral` | Use throwaway preferences (theme, panels, remembered file, snippets, macros, grammars) for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | Diagnostics: log window creation during launch to stderr (and a file) / log Markdown preview renders and navigation / skip theme and font attribute application |
 | `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | Performance benchmark on a generated corpus (2 KB–8 MB); writes JSON + Markdown with PASS/FAIL budgets — see [docs/performance.md](docs/performance.md). Phases: `idle open memory scroll search outline theme typing replace save`. `scripts/bench.sh` wraps it |
@@ -184,11 +198,11 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 ## Project layout
 
 ```
-Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditApp.swift, MacroUI.swift), Bench.swift, SelfTest*.swift
-  Editor/            AppKit editor: HyperTextView (TextKit 2), GutterView, EditorSession (split), FoldController, ScrollMarkerView, SnippetSession, MacroRecorder
+Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), Export/, Bench.swift, SelfTest*.swift
+  Editor/            AppKit editor: HyperTextView (TextKit 2, caret styles), GutterView, EditorSession (split), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       Non-activating NSPanel, controller and the Carbon global hot key
   Panels/ Markdown/  Sidebar and bottom panels, SnippetPickerView · WKWebView Markdown preview
-Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, themes, fonts, Markdown → HTML, per-language welcome text) + 200 unit tests
+Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, secret-block scanner, syntax grammars with line-state tracking and user grammars, HTML export, themes, fonts, Markdown → HTML, per-language welcome text) + 200 unit tests
 themes/              palettes.json (single source), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                guide/ (USER_GUIDE.md + 10 translations) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/ · release-notes/ · screenshots/ · sample/
 l10n/                ui.<language>.json — one flat dictionary per language (exported by scripts/l10n-export.py, merged by scripts/l10n-add.py) · context.json
@@ -206,10 +220,11 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org); subj
 ## Roadmap and limitations
 
 - The interface is translated into eleven languages; any other system language falls back to English (Traditional Chinese, for example). Changing the language needs a relaunch, which the Settings button does for you.
-- Syntax colors are line-based (multi-line comments and strings are colored only on the line where they open) and there is no user-defined grammar. The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
+- Syntax colors track block comments, multi-line strings and Markdown fences across lines, but only same-open-and-close string delimiters and one block-comment pair per language are supported, and user grammars are word lists (no regular-expression rules). The Markdown preview (⇧⌘P) renders the current file but is a view, not an editor.
 - Local files only; no cloud sync. No iOS app yet, although the engine is built to allow one.
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
-- Snippets and macros are edited as JSON files (`snippets.json`, `macros/macros.json` under Application Support); there is no GUI editor for them.
+- Snippets, macros and user grammars are edited as JSON files (`snippets.json`, `macros/macros.json`, `grammars/*.json` under Application Support); there is no GUI editor for them.
+- Export writes the whole document only (no selection or multi-file export, no page-size or font options, no PDF table of contents). Secret blocks are masked on screen only — the file, autosaves, snapshots and Find in Files results of other files are plain text, and the mask bar reveals line lengths.
 - Code folding lasts for the session only (folds are not saved per file), and a mouse drag across a folded header still selects the hidden text.
 - The Quick Append global shortcut uses the system hot-key API, so the ⌃Space / ⌃⌥Space variants lose silently to input-source switching when that is enabled in System Settings › Keyboard; pick ⌃⌥N or ⌃⌥⌘N instead.
 
