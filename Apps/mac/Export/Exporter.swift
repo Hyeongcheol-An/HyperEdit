@@ -52,9 +52,11 @@ struct ExportOutcome: Sendable {
 }
 
 extension AppModel {
-    /// 내보내기 입력 텍스트 — 한 곳에서 뽑는다.
-    /// // secrets: 통합 시 SecretScanner.redacted 적용
-    func exportSourceText() -> String { document.textStorage.string }
+    /// 내보내기 입력 텍스트 — 한 곳에서 뽑는다. 비밀 블록 가림이 켜져 있으면 비밀 줄을 가린 텍스트(미리보기와 같은 규칙)를 내보낸다 (secrets)
+    func exportSourceText() -> String {
+        let text = document.textStorage.string
+        return secrets.maskEnabled ? SecretScanner.redacted(text) : text
+    }
 
     /// 액세서리의 테마 선택 → 실제 테마
     func exportTheme(_ choice: ExportTheme) -> Theme {
