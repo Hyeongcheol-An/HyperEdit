@@ -116,11 +116,7 @@ struct EditorCommands: Commands {
             Button("Format JSON") { model.textTool(.formatJSON) }.keyboardShortcut("j", modifiers: [.control, .command])
             Button("Minify JSON") { model.textTool(.minifyJSON) }
         }
-        MacroCommands(model: model)   // macro
-        ExportCommands(model: model)   // export: 파일 › Export as HTML… / PDF…
-        SecretsCommands(model: model)   // secrets: 편집 메뉴 끝 — Reveal Secrets ⌥⌘S · Mask Secret Blocks · Clear Clipboard
-        GrammarCommands(model: model)   // grammar: 파일 메뉴 — 문법 폴더 열기 · 문법 다시 읽기
-        AppLockCommands(model: model)   // applock: 앱 메뉴 Settings… 아래 "Lock HyperEdit" ⌃⌘L
+        FeatureCommands(model: model)   // macro · export · secrets · grammar · applock (CommandsBuilder 는 자식 10개 제한 — CI 의 Xcode 에서 "extra argument in call")
         CommandMenu("View") {
             Button(model.showFileView ? "Hide Sidebar" : "Show Sidebar") { model.showFileView.toggle() }.keyboardShortcut("1")
             Button(model.showBottomPanel ? "Hide Bottom Panel" : "Show Bottom Panel") { model.showBottomPanel.toggle() }.keyboardShortcut("2")
@@ -175,5 +171,17 @@ struct EditorCommands: Commands {
             Button("Default Text Size") { model.resetFontSize() }.keyboardShortcut("0", modifiers: [.command])
             AppearanceMenuItems(model: model)   // appearance: 창 투명도 하위 메뉴 (100/90/80/70%) · 창 뒤 블러
         }
+    }
+}
+
+/// v0.6–v0.8 기능 메뉴 묶음 — `EditorCommands.body` 의 자식 수를 CommandsBuilder 한도(10) 아래로 유지한다
+struct FeatureCommands: Commands {
+    @ObservedObject var model: AppModel
+    var body: some Commands {
+        MacroCommands(model: model)   // macro
+        ExportCommands(model: model)   // export: 파일 › Export as HTML… / PDF…
+        SecretsCommands(model: model)   // secrets: 편집 메뉴 끝 — Reveal Secrets ⌥⌘S · Mask Secret Blocks · Clear Clipboard
+        GrammarCommands(model: model)   // grammar: 파일 메뉴 — 문법 폴더 열기 · 문법 다시 읽기
+        AppLockCommands(model: model)   // applock: 앱 메뉴 Settings… 아래 "Lock HyperEdit" ⌃⌘L
     }
 }
