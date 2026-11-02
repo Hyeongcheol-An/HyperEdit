@@ -8,7 +8,7 @@ enum SplitMode: String, CaseIterable {
     case none, vertical, horizontal
 }
 
-/// 편집기 역할. 주 편집기는 창 제목·보기 위치 저장·검색 강조(스토리지 속성)·테마 전체 적용을 맡고, 보조 편집기는 분할이 켜질 때만 존재한다.
+/// 편집기 역할. 주 편집기는 창 제목·보기 위치 저장·테마 전체 적용을 맡고(검색 강조는 뷰마다 그린다), 보조 편집기는 분할이 켜질 때만 존재한다.
 enum EditorRole { case primary, secondary }
 
 /// 같은 문서를 여러 텍스트 뷰로 보여 주기 위한 공유 상태 (TextKit 2: NSTextContentStorage 하나 ← NSTextLayoutManager 여럿).
@@ -83,12 +83,9 @@ final class EditorSession: ObservableObject {
         contentStorage.textStorage = textStorage
     }
 
-    /// 어느 뷰에서든 편집이 일어나면: 주 편집기의 검색 강조(스토리지 속성)는 낡았으니 걷어내고, 다른 뷰의 거터를 다시 그린다
+    /// 어느 뷰에서든 편집이 일어나면 다른 뷰의 거터를 다시 그린다 (검색 강조는 뷰마다 저장소 알림으로 스스로 옮긴다 — HyperTextView.matchHighlights)
     func didEdit(from c: EditorView.Coordinator) {
-        for other in coordinators where other !== c {
-            other.gutter?.needsDisplay = true
-            if other.role == .primary { other.clearMatchHighlights() }
-        }
+        for other in coordinators where other !== c { other.gutter?.needsDisplay = true }
     }
 
     /// 보조 편집기가 사라질 때. 그 뷰에서 한 편집의 undo 항목이 공유 스택에 남아 있을 수 있으므로 텍스트 뷰·레이아웃 매니저를 바로 버리지 않고

@@ -178,7 +178,9 @@ final class AppModel: ObservableObject {
     // 검색
     @Published var searchQuery = ""
     @Published var searchOptions = SearchOptions()
-    @Published var searchHits: [SearchHit] = []
+    @Published var searchHits: [SearchHit] = [] { didSet { searchGeneration &+= 1 } }
+    /// 검색 결과가 바뀔 때마다 증가 — 편집기가 매치 강조 범위를 다시 받는 기준 (같은 결과라도 편집 뒤 재검색이면 범위가 달라졌을 수 있다)
+    var searchGeneration = 0
     @Published var searchError: String?
     @Published var isSearching = false
     @Published var searchFocusToken = 0
@@ -323,6 +325,7 @@ final class AppModel: ObservableObject {
             Perf.measure("MemoDocument.switchTo") { document.switchTo(url: url) }
             bookmarks.switchTo(fileURL: document.url)
             MemoLocation.remember(document.url)
+            searchTask?.cancel()   // 이전 문서의 검색이 뒤늦게 끝나 새 문서에 결과·강조를 얹지 않도록
             if !searchHits.isEmpty { searchHits = [] }
             if searchError != nil { searchError = nil }
             rescanStructure()
