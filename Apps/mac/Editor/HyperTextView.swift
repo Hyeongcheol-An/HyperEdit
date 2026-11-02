@@ -12,6 +12,14 @@ struct MultiSelection: Equatable {
 /// 멀티 편집은 shouldChangeText(inRanges:) → replaceCharacters → didChangeText 경로라 ⌘Z 한 번으로 되돌려진다.
 final class HyperTextView: NSTextView {
     var currentLineColor: NSColor?
+    // MARK: 검색 매치 강조 (search) — 스토리지 속성이 아니라 뷰가 그린다
+    // NSTextStorage 에 .backgroundColor 를 쓰면 TextKit 2 가 그 범위의 레이아웃을 무효화한다: 1.3 MB 문서에서 편집마다(문서 전체 걷어내기)·
+    // 지연 재검색마다(첫 매치~끝 매치) 뷰포트 위쪽의 추정 높이가 바뀌어 스크롤이 문서 맨 위로 튀었다(2026-11-02 보고). 보이는 매치만 drawBackground 에서 칠한다.
+    /// 문서 기준 매치 범위(문서 순서로 정렬 — 그리기의 이진 탐색 전제). 편집이 일어나면 범위를 옮기고(입력은 shouldChangeText 의 편집 전 좌표로 정확히,
+    /// undo/redo 등 추적되지 않은 편집은 저장소 알림의 범위로) 편집에 걸친 범위는 지운다 — 지연 재검색이 다시 채운다.
+    /// 바꿔도 스스로 다시 그리지 않는다: 이동은 보이는 자리를 바꾸지 않고(편집된 문단은 AppKit 이 어차피 다시 그린다) 새 결과는 Coordinator 가 needsDisplay 를 건다
+    var matchHighlights: [NSRange] = []
+    var matchHighlightColor = NSColor.selectedTextBackgroundColor.withAlphaComponent(0.45) { didSet { if !matchHighlights.isEmpty { needsDisplay = true } } }
     var onDidMoveToWindow: (() -> Void)?
     var onMultiChange: ((MultiSelection?) -> Void)?
     /// 북마크 줄 추적: 편집으로 줄 수가 바뀌기 직전에 (기준 줄, 증감) 을 알린다 — 기준 줄보다 뒤의 줄이 delta 만큼 이동한다.
@@ -106,6 +114,7 @@ final class HyperTextView: NSTextView {
         Perf.measure("HyperTextView.drawBackground", threshold: 2) {
             super.drawBackground(in: rect)
             drawCurrentLineHighlight()
+            drawMatchHighlights(in: rect)   // search: 현재 줄 띠 위, 글자 아래
             drawCarets()      // appearance: Block·Underline 머리 캐럿 + 보조 캐럿 (글자 아래 레이어)
             drawFoldPills()   // fold
         }
@@ -119,6 +128,73 @@ final class HyperTextView: NSTextView {
         line.size.width = bounds.width
         color.setFill()
         line.fill()
+    }
+
+    /// 보이는 매치만 칠한다. 범위는 뷰포트 레이아웃 컨트롤러가 실제로 배치한 `viewportRange` 로 한정한다 — 점 질의 폴백으로 문서 전체를 훑으면
+    /// 안 보이는 문단의 세그먼트 계산이 레이아웃을 강제해(추정 높이 → 실측) 뷰포트가 다시 튄다. 정렬된 범위를 이진 탐색해 뷰포트 안의 매치만 돈다.
+    /// 건너뛰는 것: 선택과 겹치는 매치(선택 색이 보이도록), 비밀 가림막 줄(위치가 드러나지 않도록), 접힌 줄(접힌 프래그먼트의 세그먼트는 접힌 자리에
+    /// 유령 띠를 그린다), 거대 문단(세그먼트 계산이 문단 전체 배치 — 그 문단의 매치를 한꺼번에 건너뛴다)
+    private func drawMatchHighlights(in rect: NSRect) {
+        guard !matchHighlights.isEmpty, let lm = textLayoutManager, let cs = textContentStorage, let ts = textStorage,
+              let viewport = lm.textViewportLayoutController.viewportRange else { return }
+        let start = cs.offset(from: cs.documentRange.location, to: viewport.location)
+        let end = cs.offset(from: cs.documentRange.location, to: viewport.endLocation)
+        guard end > start else { return }
+        var lo = 0, hi = matchHighlights.count   // 끝이 start 뒤인 첫 매치
+        while lo < hi { let m = (lo + hi) / 2; if NSMaxRange(matchHighlights[m]) <= start { lo = m + 1 } else { hi = m } }
+        guard lo < matchHighlights.count else { return }
+        let origin = textContainerOrigin
+        let length = ts.length
+        let ns = ts.string as NSString
+        let selected = selectedRanges.map(\.rangeValue).filter { $0.length > 0 }
+        let folds = hasFolds?() == true   // fold
+        var para = NSRange(location: NSNotFound, length: 0)   // 직전 매치의 문단 — 같은 문단의 매치는 다시 재지 않는다
+        matchHighlightColor.setFill()
+        var i = lo
+        while i < matchHighlights.count, matchHighlights[i].location < end {
+            let r = matchHighlights[i]; i += 1
+            guard r.length > 0, NSMaxRange(r) <= length else { continue }
+            if !NSLocationInRange(r.location, para) { para = ns.paragraphRange(for: NSRange(location: r.location, length: 0)) }
+            if para.length > Self.hugeParagraphLength {
+                while i < matchHighlights.count, matchHighlights[i].location < NSMaxRange(para) { i += 1 }
+                continue
+            }
+            if isOffsetMasked?(para.location) == true { continue }           // secrets
+            if folds, isOffsetHidden?(para.location) == true { continue }    // fold
+            if selected.contains(where: { NSIntersectionRange($0, r).length > 0 }) { continue }
+            guard let a = cs.location(cs.documentRange.location, offsetBy: r.location), let b = cs.location(a, offsetBy: r.length),
+                  let tr = NSTextRange(location: a, end: b) else { continue }
+            lm.enumerateTextSegments(in: tr, type: .highlight, options: [.rangeNotRequired]) { _, f, _, _ in
+                var cell = f; cell.origin.x += origin.x; cell.origin.y += origin.y
+                if cell.intersects(rect) { cell.fill() }
+                return true
+            }
+        }
+    }
+
+    /// 편집 뒤 매치 범위를 옮긴다 (editedRange 는 편집 후 범위, delta 로 편집 전 구간을 되짚는다): 편집 앞은 그대로, 편집 전 구간 뒤는 delta 만큼,
+    /// 걸친 것은 지운다 — 지연 재검색이 다시 채운다. 파일 열기·다시 읽기의 전체 교체는 모든 범위를 지운다
+    private func shiftMatchHighlights(edited: NSRange, delta: Int) {
+        let preEnd = edited.location + max(0, edited.length - delta)
+        var out: [NSRange] = []
+        out.reserveCapacity(matchHighlights.count)
+        var changed = false
+        for r in matchHighlights {
+            if NSMaxRange(r) <= edited.location { out.append(r) }
+            else if r.location >= preEnd { out.append(NSRange(location: r.location + delta, length: r.length)); if delta != 0 { changed = true } }
+            else { changed = true }
+        }
+        if changed { matchHighlights = out }
+    }
+
+    /// shouldChangeText 가 준 편집 전 좌표의 편집들(멀티 캐럿이면 여러 개)을 뒤에서부터 적용한다 — 앞 편집의 좌표가 그대로 유효하다.
+    /// 저장소 알림의 editedRange 는 didProcessEditing 안에서 한글 폭 보정이 문단 전체에 폰트 속성을 얹으면 문단으로 넓어져 같은 줄의 매치를 지워 버리므로,
+    /// 입력은 이 정확한 경로로 옮기고 저장소 알림은 추적되지 않은 편집(undo/redo·프로그램 교체)에만 쓴다
+    private func shiftMatchHighlights(preEdits edits: [(NSRange, String)]) {
+        for (r, s) in edits.sorted(by: { $0.0.location > $1.0.location }) where r.location != NSNotFound {
+            let newLength = (s as NSString).length
+            shiftMatchHighlights(edited: NSRange(location: r.location, length: newLength), delta: newLength - r.length)
+        }
     }
 
     // MARK: - 커서 스타일 (appearance)
@@ -510,6 +586,7 @@ final class HyperTextView: NSTextView {
         onTextWillChange?(edits, false)   // fold
         notifyLineChanges(edits)
         snippetTextWillChange(edits)      // snippets: 탭스톱 범위 보정 (편집 전 좌표)
+        if !matchHighlights.isEmpty { shiftMatchHighlights(preEdits: edits) }   // search: 편집 전 좌표로 정확히 (저장소 알림은 이 편집을 건너뛴다)
     }
 
     /// 분할을 닫은 뒤 undo 항목 때문에 보관만 되는 뷰: 저장소·undo 알림 구독과 모든 훅을 끊어 편집마다 일하지 않게 한다
@@ -521,6 +598,7 @@ final class HyperTextView: NSTextView {
         editObserversInstalled = true   // 다시 설치되지 않게
         onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
         tracksUntrackedLineChanges = false
+        matchHighlights = []   // search
         hasFolds = nil; isOffsetHidden = nil; foldedSpan = nil; foldPills = nil; onFoldPillClick = nil
         hasMasks = nil; isOffsetMasked = nil; secretHitTest = nil; onDidCopySecret = nil   // secrets
         snippetProvider = nil; macroSink = nil
@@ -572,6 +650,8 @@ final class HyperTextView: NSTextView {
     @objc private func storageDidProcessEditing(_ n: Notification) {
         guard let ts = n.object as? NSTextStorage, ts === textStorage, ts.editedMask.contains(.editedCharacters) else { return }
         if expectingTrackedEdit { expectingTrackedEdit = false; return }
+        // search: 추적되지 않은 문자 편집(undo/redo·파일 열기의 전체 교체·다른 뷰의 편집)만 저장소 범위로 옮긴다 — 입력은 trackedEdits 가 정확히 옮겼다
+        if !matchHighlights.isEmpty, ts.editedRange.location != NSNotFound { shiftMatchHighlights(edited: ts.editedRange, delta: ts.changeInLength) }
         // 추적되지 않은 편집은 undo/redo 이거나 프로그램적 전체 교체(파일 열기·다시 읽기)다. 접힘이 없고 undo 도 아니면 할 일이 없다 —
         // 여기서 교체 문자열을 복사하면 8 MB 문서를 열 때마다 8 MB 를 복사하게 된다.
         let foldsActive = (hasFolds?() ?? false) || (hasMasks?() ?? false)   // secrets: 비밀 범위도 undo/redo 뒤 옮겨야 한다

@@ -43,6 +43,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     public private(set) var lineStates = LineStateIndex()
     /// 편집된 줄 밖에서 진입 상태가 바뀐 줄 범위(1-based 반열림) — 편집기가 그 줄들의 레이아웃을 다시 만들게 한다. 저장소 편집 알림 안에서 보내진다.
     public let lineStatesChanged = PassthroughSubject<Range<Int>, Never>()
+    /// 사용자·undo 의 문자 편집마다 (편집 후 범위, 길이 변화) — 저장소 편집 알림 안에서, 한글 폭 보정이 범위를 문단으로 넓히기 전의 정확한 값.
+    /// 편집기는 그 문단의 구문 색(렌더링 속성)을 다음 턴에 다시 검증한다. 전체 교체(load/reload)는 보내지 않는다 — 어차피 전부 다시 만들어진다
+    public let characterEdits = PassthroughSubject<(range: NSRange, delta: Int), Never>()
     /// 상태 추적이 꺼진 동안 편집이 있었으면 `liveLineIndex` 가 낡았다 — 추적을 켤 때 다시 센다
     private var liveIndexStale = false
 
@@ -465,6 +468,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             // 문자 변경은 모두 '편집' 이다 — 텍스트 뷰를 거치지 않는 undo/redo(macOS 27 TextKit 2 는 shouldChangeText/didChangeText 를 부르지 않는다)도
             // 여기서 잡아 dirty·자동 저장·줄 인덱스 재계산을 건다. 뷰 경로의 textDidChange() 와 겹쳐도 예약 취소·재예약뿐이라 비용은 없다.
             if programmaticReplaceDepth == 0, isLoaded { editedSinceLoad = true; textDidChange() }
+            if programmaticReplaceDepth == 0 { characterEdits.send((editedRange, delta)) }
             // grammar: 줄 상태 증분 갱신 — 전체 교체(load/reload)는 replaceAll 이 끝나고 통째로 계산한다
             if programmaticReplaceDepth == 0 {
                 if lineStates.isTracking { updateLineStates(editedRange: editedRange, changeInLength: delta) } else { liveIndexStale = true }

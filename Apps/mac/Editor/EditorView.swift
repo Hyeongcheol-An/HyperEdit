@@ -49,10 +49,8 @@ struct EditorView: NSViewRepresentable {
             c.applyCursor()                        // appearance: 커서 스타일·깜빡임 (값 비교만)
             Perf.measure("  restoreViewState") { c.restoreViewStateIfNeeded() }
             c.textView?.isEditable = document.isLoaded          // 읽지 못한 파일은 편집해도 저장되지 않으므로 편집 자체를 막는다
-            if c.role == .primary {   // split: 스토리지 속성(검색 강조)과 창 제목은 주 편집기만
-                c.updateMatchHighlights(model.searchHits, color: theme.selection.nsColor.withAlphaComponent(0.45))
-                c.updateWindowTitle()
-            }
+            c.updateMatchHighlights(model.searchHits, generation: model.searchGeneration, color: theme.selection.nsColor.withAlphaComponent(0.45))   // 뷰마다 그린다 (분할 보기 포함)
+            if c.role == .primary { c.updateWindowTitle() }   // split: 창 제목은 주 편집기만
             c.gutter?.needsDisplay = true
         }
     }
@@ -174,13 +172,19 @@ struct EditorView: NSViewRepresentable {
             guard let cs = lm.textContentManager as? NSTextContentStorage else { return }
             let tr = fragment.rangeInElement
             Perf.measure("highlight.fragment", threshold: 0.2) {
-                // 이전 검증의 색은 걷어낸다 (편집으로 토큰 경계가 바뀌었을 수 있음)
-                lm.removeRenderingAttribute(.foregroundColor, for: tr)
-                guard highlightEnabled, let ts = cs.textStorage else { return }
+                guard let ts = cs.textStorage else { return }
                 let start = cs.offset(from: cs.documentRange.location, to: tr.location)
                 let length = cs.offset(from: tr.location, to: tr.endLocation)
                 guard length > 0 else { return }
                 let ns = ts.string as NSString
+                // 이전 검증의 색은 걷어낸다 (편집으로 토큰 경계가 바뀌었을 수 있음). 끝의 개행은 빼고 — 실측(macOS 27 TextKit 2, 2026-11-02):
+                // 개행까지 포함한 범위로 걷어내면 바로 다음 문단 머리에서 시작하는 런(제목·번호)까지 지워진다(빈 줄을 다시 만들면 그 아래 `[제목]` 색이
+                // 사라졌다). 토큰은 개행을 포함하지 않으므로 빼도 남는 색이 없다
+                let removeLength = length - (ns.character(at: start + length - 1) == 10 ? 1 : 0)
+                if removeLength > 0, let removeEnd = cs.location(tr.location, offsetBy: removeLength), let rr = NSTextRange(location: tr.location, end: removeEnd) {
+                    lm.removeRenderingAttribute(.foregroundColor, for: rr)
+                }
+                guard highlightEnabled else { return }
                 // grammar: 이 문단(= 줄)의 진입 상태(블록 주석·여러 줄 문자열·펜스 안인가)를 문서의 줄 상태 표에서 받아 이어서 칠한다
                 let entering = document.lineState(atUTF16Offset: start)
                 for token in document.grammar.scanLine(in: ns, range: NSRange(location: start, length: length), entering: entering) {
@@ -205,7 +209,8 @@ struct EditorView: NSViewRepresentable {
         /// 보이는 줄의 색을 다시 계산하게 한다 (켜기/끄기).
         /// 실측(macOS 27 TextKit 2): `invalidateLayout(for:)`·`invalidateRenderingAttributes(for:)` 는 뷰포트든 문서 전체든
         /// 이미 레이아웃된 프래그먼트의 validator 를 다시 부르지 않는다. 스토리지에 속성 편집을 알리면(테마 적용의 setAttributes 와 같은 경로)
-        /// 보이는 프래그먼트가 재생성되며 validator 가 즉시 다시 계산한다. 편집된 문단은 TextKit 2 가 스스로 다시 검증하므로 키 입력마다 할 일은 없다.
+        /// 보이는 프래그먼트가 재생성되며 validator 가 즉시 다시 계산한다. 편집된 문단은 TextKit 2 가 편집 처리 중에 다시 검증하지만 그 뒤 렌더링 속성
+        /// 런을 옮겨 색이 어긋나므로 `scheduleParagraphRevalidation` 이 다음 턴에 그 문단만 한 번 더 만든다.
         private func invalidateHighlight() {
             guard let tv = textView, let lm = tv.textLayoutManager, let ts = tv.textStorage else { return }
             Perf.measure("highlight.invalidate len=\(ts.length)", threshold: 1) {
@@ -247,6 +252,34 @@ struct EditorView: NSViewRepresentable {
                 ts.endEditing()
             }
             tv.needsDisplay = true
+        }
+
+        // 편집된 문단의 구문 색 재검증. 실측(macOS 27 TextKit 2, `--selftest-probe` 로 확인, 2026-11-02): 편집된 프래그먼트의 validator 는 편집 처리 중에
+        // 불리고 토큰도 맞지만, 그 뒤 TextKit 2 가 편집 위치 뒤의 렌더링 속성 런을 delta 만큼 옮겨 방금 칠한 색이 어긋난다(줄 끝에 입력한 URL 의 색이
+        // 밀리고, undo 뒤 다음 줄 머리에 링크색이 남는다). 검색 강조가 스토리지 속성이던 때는 결과가 떠 있는 동안 키 입력마다 문서 전체가 다시 만들어져
+        // 이를 가렸다. 다음 턴에 그 문단(들)만 속성 편집 통지로 다시 만들게 한다 — 문단 하나라 수십 µs. 밀린 런은 최대 delta 만큼 뒤까지 갈 수 있어 그만큼 넓힌다.
+        private var pendingRevalidation: NSRange?
+
+        private func scheduleParagraphRevalidation(_ edited: NSRange, delta: Int) {
+            guard role == .primary, highlightEnabled, edited.location != NSNotFound else { return }   // 스토리지 속성 편집은 모든 레이아웃 매니저에 전달된다
+            let span = NSRange(location: edited.location, length: edited.length + max(0, delta))
+            pendingRevalidation = pendingRevalidation.map { NSUnionRange($0, span) } ?? span
+            DispatchQueue.main.async { [weak self] in self?.flushParagraphRevalidation() }
+        }
+
+        private func flushParagraphRevalidation() {
+            guard let span = pendingRevalidation else { return }
+            pendingRevalidation = nil
+            guard highlightEnabled, let tv = textView, let ts = tv.textStorage else { return }
+            let len = ts.length
+            let loc = min(span.location, len), end = min(NSMaxRange(span), len)
+            let para = (ts.string as NSString).paragraphRange(for: NSRange(location: loc, length: max(0, end - loc)))
+            guard para.length > 0 else { return }
+            Perf.measure("highlight.revalidate len=\(para.length)", threshold: 1) {
+                ts.beginEditing()
+                ts.edited(.editedAttributes, range: para, changeInLength: 0)
+                ts.endEditing()
+            }
         }
 
         func attach(container: EditorContainerView, scrollView: NSScrollView, textView: HyperTextView, gutter: GutterView) {
@@ -332,6 +365,9 @@ struct EditorView: NSViewRepresentable {
             document.lineStatesChanged
                 .sink { [weak self] lines in self?.scheduleLineStateInvalidation(lines) }
                 .store(in: &docCancellables)
+            document.characterEdits
+                .sink { [weak self] edit in self?.scheduleParagraphRevalidation(edit.range, delta: edit.delta) }
+                .store(in: &docCancellables)
             document.$grammarGeneration
                 .dropFirst()
                 .sink { [weak self] _ in
@@ -349,6 +385,7 @@ struct EditorView: NSViewRepresentable {
             lastReloadGeneration = newDoc.reloadGeneration
             restored = false
             appliedThemeID = nil
+            appliedHighlightGeneration = -1; textView?.matchHighlights = []   // search: 새 문서의 결과는 다음 update 가 다시 넘긴다
             bindDocument()
             foldController?.bind(document: newDoc)   // fold
             secretController?.bind(document: newDoc)   // secrets
@@ -397,8 +434,6 @@ struct EditorView: NSViewRepresentable {
                 if let h = hangul { Perf.measure("  apply.hangul") { HangulFontFixer.apply(font: h, to: ts, in: full) } }
                 Perf.measure("  apply.endEditing") { ts.endEditing() }
                 tv.textColor = theme.foreground.nsColor   // NSText.textColor 는 스토리지 전체에 색을 입힌다 — 주 편집기만
-                highlightKey = ""   // 전체 속성 재적용으로 매치 강조가 지워졌으니 다음 update 에서 다시 칠한다
-                highlightedRanges = []
             } else {
                 // 보조 편집기: 이 뷰의 레이아웃 매니저만 새 색 표로 다시 칠하게 한다 (보이는 프래그먼트만 재생성 — 수 ms)
                 invalidateHighlight()
@@ -462,32 +497,21 @@ struct EditorView: NSViewRepresentable {
             }
         }
 
-        // MARK: 검색 매치 강조 (문서 속성에 배경색만 얹는다 — 저장되는 문자열·undo 에는 영향 없음)
+        // MARK: 검색 매치 강조 — 텍스트 뷰가 직접 그린다 (HyperTextView.matchHighlights)
+        // 예전에는 스토리지에 .backgroundColor 속성을 얹었다. TextKit 2 는 속성 편집 범위의 레이아웃을 무효화하므로 1.3 MB 문서에서는 편집마다
+        // (문서 전체 걷어내기)·지연 재검색마다(첫 매치~끝 매치) 뷰포트가 문서 맨 위로 튀었다(2026-11-02 보고). 이제 스토리지는 건드리지 않고,
+        // 편집 중 범위 이동은 뷰가 저장소 알림으로 스스로 처리하므로 걷어낼 일도 없다. 검색이 끝날 때마다(generation) 새 범위를 넘긴다 — 같은 결과라도
+        // 편집 뒤 재검색이면 범위가 달라졌을 수 있다.
 
-        private var highlightedRanges: [NSRange] = []
-        private var highlightKey = ""
+        private var appliedHighlightGeneration = -1
 
-        func updateMatchHighlights(_ hits: [SearchHit], color: NSColor) {
-            guard let ts = textView?.textStorage else { return }
-            let key = "\(hits.count):\(hits.first?.range.location ?? -1):\(hits.last?.range.location ?? -1):\(ts.length)"
-            guard key != highlightKey else { return }
-            highlightKey = key
-            let len = ts.length
-            ts.beginEditing()
-            for r in highlightedRanges where NSMaxRange(r) <= len { ts.removeAttribute(.backgroundColor, range: r) }
-            highlightedRanges = hits.prefix(3000).map(\.range).filter { $0.location >= 0 && NSMaxRange($0) <= len }
-            for r in highlightedRanges { ts.addAttribute(.backgroundColor, value: color, range: r) }
-            ts.endEditing()
-        }
-
-        /// 편집으로 범위가 낡으면 전부 걷어낸다 (다음 검색에서 다시 칠한다)
-        func clearMatchHighlights() {
-            guard !highlightedRanges.isEmpty, let ts = textView?.textStorage else { return }
-            ts.beginEditing()
-            ts.removeAttribute(.backgroundColor, range: NSRange(location: 0, length: ts.length))
-            ts.endEditing()
-            highlightedRanges = []
-            highlightKey = ""
+        func updateMatchHighlights(_ hits: [SearchHit], generation: Int, color: NSColor) {
+            guard let tv = textView else { return }
+            if tv.matchHighlightColor != color { tv.matchHighlightColor = color }
+            guard generation != appliedHighlightGeneration else { return }
+            appliedHighlightGeneration = generation
+            tv.matchHighlights = hits.map(\.range)   // 검색 엔진이 문서 순서로 돌려준다
+            tv.needsDisplay = true
         }
 
         /// 보이는 영역의 첫 레이아웃 조각이 속한 줄(1-based)을 EditorCaret 에 발행한다 — 거터와 같은 TextKit 2 질의
@@ -856,9 +880,8 @@ struct EditorView: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             document.textDidChange()
-            clearMatchHighlights()
             gutter?.needsDisplay = true
-            session.didEdit(from: self)   // split: 다른 편집기의 거터·강조 갱신
+            session.didEdit(from: self)   // split: 다른 편집기의 거터 갱신
         }
 
         private var lastCaretLine = 0

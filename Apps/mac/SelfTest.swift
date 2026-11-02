@@ -333,6 +333,7 @@ enum SelfTest {
         await runGrammar(model: model, check: check, log: log)   // grammar: 여러 줄 상태 추적·사용자 문법 (SelfTest+Grammar.swift)
         await runAppearance(model: model, check: check, log: log)   // appearance: 커서 스타일·배경 투명도·블러
         await runAppLock(model: model, check: check, log: log)   // applock: 잠금·오버레이·입력 차단·가짜 인증기·유휴 타이머
+        await runSearchHighlight(model: model, check: check, log: log)   // search: 찾기 결과 강조가 편집·재검색에 뷰포트를 흔들지 않는지 (SelfTest+Search.swift)
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()
