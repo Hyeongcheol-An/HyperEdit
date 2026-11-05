@@ -29,10 +29,11 @@ HyperEdit는 메모·로그·코드 조각이 수만 줄 쌓인 텍스트 파일
 
 ```sh
 brew tap Hyeongcheol-An/tap
+brew trust Hyeongcheol-An/tap      # Homebrew 7 이상: 외부 tap 은 한 번 신뢰 처리
 brew install --cask hyperedit
 ```
 
-Homebrew 7에서는 먼저 tap 을 신뢰하라고 물을 수 있습니다: `brew trust Hyeongcheol-An/tap`.
+Homebrew 7부터는 외부 tap 의 cask 를 한 번 신뢰 처리하기 전까지 설치를 거부합니다(`Error: Refusing to load cask … from untrusted tap`). `brew trust` 줄이 그 처리입니다. 7 미만에는 `brew trust` 명령이 없으므로 그 줄은 건너뜁니다.
 
 **DMG**
 

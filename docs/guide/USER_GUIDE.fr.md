@@ -39,10 +39,11 @@ HyperEdit est un éditeur de texte brut rapide pour macOS, conçu autour d'un se
 
 ```sh
 brew tap Hyeongcheol-An/tap
+brew trust Hyeongcheol-An/tap      # Homebrew 7+ : faire confiance au tap tiers une fois
 brew install --cask hyperedit
 ```
 
-Mettez à jour plus tard avec `brew upgrade --cask hyperedit`. Homebrew 7 peut vous demander d'abord de faire confiance au tap : `brew trust Hyeongcheol-An/tap`.
+Mettez à jour plus tard avec `brew upgrade --cask hyperedit`. À partir de Homebrew 7, les casks d'un tap tiers ne sont pas chargés tant que vous n'avez pas fait confiance au tap une fois (`Error: Refusing to load cask … from untrusted tap`) ; c'est ce que fait la ligne `brew trust`. Les versions plus anciennes de Homebrew n'ont pas la commande `brew trust` : sautez cette ligne.
 
 **DMG :** téléchargez `HyperEdit-x.y.z-universal.dmg` depuis [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases), ouvrez-le et glissez `HyperEdit.app` dans `Applications`. Pour vérifier un téléchargement, placez `SHA256SUMS` à côté du DMG et lancez `shasum -a 256 -c SHA256SUMS`.
 

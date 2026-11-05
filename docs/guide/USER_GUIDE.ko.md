@@ -39,10 +39,11 @@ HyperEdit는 몇 년이고 끝에 덧붙여 쓰는 큰 메모 파일 하나를 �
 
 ```sh
 brew tap Hyeongcheol-An/tap
+brew trust Hyeongcheol-An/tap      # Homebrew 7 이상: 외부 tap은 한 번 신뢰 처리
 brew install --cask hyperedit
 ```
 
-이후 업데이트는 `brew upgrade --cask hyperedit`로 합니다. Homebrew 7에서는 먼저 tap을 신뢰하라고 물을 수 있습니다: `brew trust Hyeongcheol-An/tap`.
+이후 업데이트는 `brew upgrade --cask hyperedit`로 합니다. Homebrew 7부터는 외부 tap의 cask를 한 번 신뢰 처리하기 전까지 설치를 거부합니다(`Error: Refusing to load cask … from untrusted tap`). `brew trust` 줄이 그 처리입니다. 7 미만에는 `brew trust` 명령이 없으므로 그 줄은 건너뜁니다.
 
 **DMG:** [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases)에서 `HyperEdit-x.y.z-universal.dmg`를 내려받아 열고 `HyperEdit.app`을 `Applications`로 드래그합니다. 내려받은 파일을 검증하려면 `SHA256SUMS`를 DMG 옆에 두고 `shasum -a 256 -c SHA256SUMS`를 실행하세요.
 
