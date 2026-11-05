@@ -39,10 +39,11 @@ HyperEdit macOS के लिए एक तेज़ प्लेन-टेक�
 
 ```sh
 brew tap Hyeongcheol-An/tap
+brew trust Hyeongcheol-An/tap      # Homebrew 7+: थर्ड-पार्टी टैप पर एक बार भरोसा करें
 brew install --cask hyperedit
 ```
 
-बाद में `brew upgrade --cask hyperedit` से अपडेट करें। Homebrew 7 पहले आपसे टैप पर भरोसा करने को कह सकता है: `brew trust Hyeongcheol-An/tap`।
+बाद में `brew upgrade --cask hyperedit` से अपडेट करें। Homebrew 7 और उसके बाद के संस्करण थर्ड-पार्टी टैप के cask को तब तक लोड नहीं करते जब तक आप उस टैप पर एक बार भरोसा न कर लें (`Error: Refusing to load cask … from untrusted tap`); `brew trust` वाली पंक्ति यही करती है। पुराने Homebrew में `brew trust` कमांड नहीं है, वहाँ वह पंक्ति छोड़ दें।
 
 **DMG:** [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases) से `HyperEdit-x.y.z-universal.dmg` डाउनलोड करें, उसे खोलें और `HyperEdit.app` को `Applications` में खींचें। डाउनलोड की जाँच के लिए `SHA256SUMS` को DMG के बगल में रखें और `shasum -a 256 -c SHA256SUMS` चलाएँ।
 

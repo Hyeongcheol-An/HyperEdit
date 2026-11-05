@@ -133,7 +133,7 @@
         "failComment": false,
         "failTitle": false,
         "releasedLabels": false,
-        "releaseBodyTemplate": "<%= nextRelease.notes %>\n\n## Downloads\n\n| Asset | Contents |\n|---|---|\n| **HyperEdit-<%= nextRelease.version %>-universal.dmg** | macOS app, **universal binary — Apple Silicon (arm64) and Intel (x86_64)**, macOS 15 or later, Developer ID signed and notarized |\n| SHA256SUMS | Checksum of the DMG — verify with `shasum -a 256 -c SHA256SUMS` |\n| hyperedit-themes.json | The 22 HyperEdit palettes as Zed themes |\n\n## Install\n\n- **Homebrew**: `brew tap Hyeongcheol-An/tap && brew install --cask hyperedit` (upgrade with `brew upgrade --cask hyperedit`)\n- **DMG**: open the DMG and drag `HyperEdit.app` to `Applications`. The app opens without Gatekeeper warnings.\n"
+        "releaseBodyTemplate": "<%= nextRelease.notes %>\n\n## Downloads\n\n| Asset | Contents |\n|---|---|\n| **HyperEdit-<%= nextRelease.version %>-universal.dmg** | macOS app, **universal binary — Apple Silicon (arm64) and Intel (x86_64)**, macOS 15 or later, Developer ID signed and notarized |\n| SHA256SUMS | Checksum of the DMG — verify with `shasum -a 256 -c SHA256SUMS` |\n| hyperedit-themes.json | The 22 HyperEdit palettes as Zed themes |\n\n## Install\n\n- **Homebrew**: `brew tap Hyeongcheol-An/tap`, then `brew trust Hyeongcheol-An/tap` (Homebrew 7+ refuses casks from an untrusted third-party tap; older Homebrew has no such command, skip it), then `brew install --cask hyperedit`. Upgrade with `brew upgrade --cask hyperedit`.\n- **DMG**: open the DMG and drag `HyperEdit.app` to `Applications`. The app opens without Gatekeeper warnings.\n"
       }
     ]
   ]

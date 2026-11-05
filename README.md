@@ -29,10 +29,11 @@ HyperEdit is for people who keep a single, ever-growing text file — tens of th
 
 ```sh
 brew tap Hyeongcheol-An/tap
+brew trust Hyeongcheol-An/tap      # Homebrew 7+: trust a third-party tap once
 brew install --cask hyperedit
 ```
 
-Homebrew 7 may ask you to trust the tap first: `brew trust Hyeongcheol-An/tap`.
+Homebrew 7 and later refuse to load casks from a third-party tap until you trust it once (`Error: Refusing to load cask … from untrusted tap`); the `brew trust` line does that. Older Homebrew has no `brew trust` command, so skip that line there.
 
 **DMG**
 

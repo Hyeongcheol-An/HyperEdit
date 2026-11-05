@@ -39,10 +39,11 @@ HyperEdit محرر نصوص عادية سريع لنظام macOS، مبني حو
 
 ```sh
 brew tap Hyeongcheol-An/tap
+brew trust Hyeongcheol-An/tap      # Homebrew 7+: الوثوق بالـ tap الخارجي مرة واحدة
 brew install --cask hyperedit
 ```
 
-حدِّث لاحقًا بالأمر `brew upgrade --cask hyperedit`. قد يطلب منك Homebrew 7 الوثوق بالـ tap أولًا: `brew trust Hyeongcheol-An/tap`.
+حدِّث لاحقًا بالأمر `brew upgrade --cask hyperedit`. بدءًا من Homebrew 7 لا تُحمَّل حزم cask من tap خارجي حتى تثق به مرة واحدة (`Error: Refusing to load cask … from untrusted tap`)، وهذا ما يفعله سطر `brew trust`. إصدارات Homebrew الأقدم لا تملك الأمر `brew trust`، فتجاوز ذلك السطر.
 
 **DMG:** نزِّل `HyperEdit-x.y.z-universal.dmg` من [GitHub Releases](https://github.com/Hyeongcheol-An/HyperEdit/releases)، وافتحه، واسحب `HyperEdit.app` إلى `Applications`. للتحقق من التنزيل، ضع `SHA256SUMS` بجوار ملف DMG وشغِّل `shasum -a 256 -c SHA256SUMS`.
 
