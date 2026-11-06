@@ -1,6 +1,6 @@
 cask "hyperedit" do
-  version "0.8.3"
-  sha256 "18d32de275d2dd19a09115b1fb03501335e40ab506912c89165e5653d72e5f48"
+  version "0.9.0"
+  sha256 "bad8fd5ed12adb552042fcacd48f11bcf80fe55766210b91e0c62998fc4464a5"
 
   url "https://github.com/Hyeongcheol-An/HyperEdit/releases/download/v#{version}/HyperEdit-#{version}-universal.dmg"
   name "HyperEdit"
