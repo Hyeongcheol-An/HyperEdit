@@ -9,12 +9,18 @@ public enum AppDefaults {
     /// 전역 도메인 값과 구분해 읽어야 하는 키(AppleLanguages)에 쓴다
     nonisolated(unsafe) public static var domainName: String = Bundle.main.bundleIdentifier ?? "hyperedit"
 
-    /// 자동화용 임시 suite 로 전환 (이전 실행의 잔여물은 비운다)
+    /// 스냅샷(`before-first-save` 등) 폴더 — 휘발성 실행에서는 임시 폴더. nil 이면 Application Support/HyperEdit/snapshots
+    nonisolated(unsafe) public static var snapshotDirectoryOverride: URL?
+
+    /// 자동화용 임시 suite 로 전환 (이전 실행의 잔여물은 비운다). 스냅샷도 임시 폴더로 — 셀프테스트·벤치의 1~28 MB 샘플이 실제 폴더에 쌓이지 않게 (2026-11-06)
     public static func useEphemeral(suiteName: String = "hyperedit.automation") {
         guard let d = UserDefaults(suiteName: suiteName) else { return }
         d.removePersistentDomain(forName: suiteName)
         store = d
         domainName = suiteName
+        let snaps = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-\(suiteName)-snapshots", isDirectory: true)
+        try? FileManager.default.removeItem(at: snaps)
+        snapshotDirectoryOverride = snaps
     }
 }
 

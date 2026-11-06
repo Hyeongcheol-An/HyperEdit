@@ -210,7 +210,7 @@ Apps/mac/            SwiftUI shell: ribbon, panels, settings, menus (HyperEditAp
   Editor/            AppKit editor: HyperTextView (TextKit 2, caret styles), GutterView, EditorSession (split), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       Non-activating NSPanel, controller and the Carbon global hot key
   Panels/ Markdown/  Sidebar and bottom panels, SnippetPickerView · WKWebView Markdown preview
-Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, secret-block scanner, syntax grammars with line-state tracking and user grammars, HTML export, themes, fonts, Markdown → HTML, per-language welcome text) + 260 unit tests
+Packages/HyperCore/  Engine (document, line index, search, text tools, comment toggle, JSON formatter, snippets, macro model, Quick Append composer, column-block math, outline/timeline, fold scanner, secret-block scanner, syntax grammars with line-state tracking and user grammars, HTML export, themes, fonts, Markdown → HTML, per-language welcome text) + 261 unit tests
 themes/              palettes.json (single source), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                guide/ (USER_GUIDE.md + 10 translations) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/ · release-notes/ · screenshots/ · sample/
 l10n/                ui.<language>.json — one flat dictionary per language (exported by scripts/l10n-export.py, merged by scripts/l10n-add.py) · context.json

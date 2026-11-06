@@ -375,6 +375,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     }
 
     public static var snapshotDirectory: URL {
+        if let o = AppDefaults.snapshotDirectoryOverride { return o }   // --ephemeral · 셀프테스트 · 벤치
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appendingPathComponent("HyperEdit/snapshots", isDirectory: true)
     }

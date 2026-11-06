@@ -210,7 +210,7 @@ Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.sw
   Editor/            AppKit 편집기: HyperTextView(TextKit 2, 캐럿 스타일), GutterView, EditorSession(분할), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
-Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 260개
+Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 261개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                guide/ (USER_GUIDE.md + 번역 10개) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
 l10n/                ui.<언어>.json — 언어별 평면 사전(scripts/l10n-export.py 로 내보내고 scripts/l10n-add.py 로 카탈로그에 병합) · context.json
