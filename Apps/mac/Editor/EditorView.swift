@@ -49,7 +49,7 @@ struct EditorView: NSViewRepresentable {
             c.applyCursor()                        // appearance: 커서 스타일·깜빡임 (값 비교만)
             Perf.measure("  restoreViewState") { c.restoreViewStateIfNeeded() }
             c.textView?.isEditable = document.isLoaded          // 읽지 못한 파일은 편집해도 저장되지 않으므로 편집 자체를 막는다
-            c.updateMatchHighlights(model.searchHits, generation: model.searchGeneration, color: theme.selection.nsColor.withAlphaComponent(0.45))   // 뷰마다 그린다 (분할 보기 포함)
+            c.updateMatchHighlights(model.searchHits, generation: model.highlightGeneration, color: theme.selection.nsColor.withAlphaComponent(0.45))   // 뷰마다 그린다 (분할 보기 포함)
             if c.role == .primary { c.updateWindowTitle() }   // split: 창 제목은 주 편집기만
             c.gutter?.needsDisplay = true
         }
@@ -505,13 +505,21 @@ struct EditorView: NSViewRepresentable {
 
         private var appliedHighlightGeneration = -1
 
+        /// 조용한 재검색(발행 없음)의 완료: SwiftUI 갱신 없이 모델이 직접 부른다 — 색은 마지막으로 적용한 테마에서
+        func refreshMatchHighlights(_ hits: [SearchHit], generation: Int) {
+            guard let t = lastTheme else { return }
+            updateMatchHighlights(hits, generation: generation, color: t.selection.nsColor.withAlphaComponent(0.45))
+        }
+
         func updateMatchHighlights(_ hits: [SearchHit], generation: Int, color: NSColor) {
             guard let tv = textView else { return }
             if tv.matchHighlightColor != color { tv.matchHighlightColor = color }
             guard generation != appliedHighlightGeneration else { return }
             appliedHighlightGeneration = generation
-            tv.matchHighlights = hits.map(\.range)   // 검색 엔진이 문서 순서로 돌려준다
-            tv.needsDisplay = true
+            Perf.measure("updateMatchHighlights hits=\(hits.count)") {
+                tv.matchHighlights = hits.map(\.range)   // 검색 엔진이 문서 순서로 돌려준다
+                tv.needsDisplay = true
+            }
         }
 
         /// 보이는 영역의 첫 레이아웃 조각이 속한 줄(1-based)을 EditorCaret 에 발행한다 — 거터와 같은 TextKit 2 질의

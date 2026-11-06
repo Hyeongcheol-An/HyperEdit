@@ -76,18 +76,13 @@ struct SearchPanel: View {
             }
             theme.border.color.frame(height: 1)
 
+            // 결과 목록은 NSTableView (SearchResultsTable) — SwiftUI List 는 1만 건 재발행에 230 ms, 캐럿 추적에 키 입력당 ~10 ms 를 썼다 (perf)
             if model.findScope == .document {
-                SearchHitList(theme: theme)
+                SearchResultsTable(items: model.searchHits, generation: model.searchGeneration, resetScrollToken: model.searchRequestGeneration, theme: theme,
+                                   caret: model.caret, onSelect: { model.jump(to: $0) }, tooltip: nil)
             } else {
-                List(model.fileHits) { hit in
-                    SearchHitRow(line: hit.line, text: hit.lineText, match: hit.matchInLine, file: hit.fileName, theme: theme, isCurrent: false)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { model.open(hit: hit) }
-                        .onTapGesture { model.open(hit: hit) }
-                        .help(hit.url.path)
-                        .listRowBackground(Color.clear).listRowSeparator(.hidden)
-                }
-                .listStyle(.plain).scrollContentBackground(.hidden)
+                SearchResultsTable(items: model.fileHits, generation: model.fileSearchGeneration, resetScrollToken: model.fileSearchGeneration, theme: theme,
+                                   caret: nil, onSelect: { model.open(hit: $0) }, tooltip: { $0.url.path })
             }
         }
         .tint(theme.accent.color)   // 네이티브 컨트롤(세그먼트·토글 버튼)도 시스템 강조색 대신 테마 악센트를 쓴다
@@ -110,62 +105,5 @@ struct SearchPanel: View {
 
     private func smallButton(_ title: LocalizedStringKey, _ help: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(title, action: action).controlSize(.small).font(.system(size: 11)).help(help)
-    }
-}
-
-/// 문서 검색 결과 목록. 캐럿(EditorCaret)은 이 뷰만 구독한다 — 패널 전체가 구독하면 키 입력마다 세그먼트·버튼 줄까지 다시 평가·배치된다 (perf)
-struct SearchHitList: View {
-    @EnvironmentObject var model: AppModel
-    @EnvironmentObject var caret: EditorCaret
-    let theme: Theme
-
-    var body: some View {
-        List(model.searchHits) { hit in
-            SearchHitRow(line: hit.line, text: hit.lineText, match: hit.matchInLine, file: nil, theme: theme,
-                         isCurrent: hit.range.location == caret.offset && hit.range.length == caret.selectionLength)
-                .contentShape(Rectangle())
-                .onTapGesture { model.jump(to: hit) }
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
-        }
-        .listStyle(.plain).scrollContentBackground(.hidden)
-    }
-}
-
-struct SearchHitRow: View {
-    let line: Int
-    let text: String
-    let match: NSRange
-    let file: String?
-    let theme: Theme
-    let isCurrent: Bool
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if let file {
-                Text(file).font(.system(size: 11, design: .monospaced)).foregroundStyle(theme.accent.color)
-                    .frame(width: 140, alignment: .leading).lineLimit(1).truncationMode(.middle)
-            }
-            Text(verbatim: "\(line)")
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(isCurrent ? theme.accent.color : theme.foregroundDim.color)
-                .frame(width: 56, alignment: .trailing)
-            Text(attributed)
-                .font(.system(size: 11.5, design: .monospaced))
-                .foregroundStyle(theme.foreground.color)
-                .lineLimit(1)
-        }
-        .padding(.vertical, 1)
-        .background(isCurrent ? theme.selection.color.opacity(0.5) : Color.clear)
-    }
-
-    private var attributed: AttributedString {
-        var a = AttributedString(text)
-        if let r = Range(match, in: text),
-           let lo = AttributedString.Index(r.lowerBound, within: a),
-           let hi = AttributedString.Index(r.upperBound, within: a) {
-            a[lo..<hi].backgroundColor = theme.selection.color
-            a[lo..<hi].font = .system(size: 11.5, weight: .bold, design: .monospaced)
-        }
-        return a
     }
 }

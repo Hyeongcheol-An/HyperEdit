@@ -10,11 +10,11 @@ extension SelfTest {
     @MainActor
     static func runSearchHighlight(model: AppModel, check: (Bool, String) -> Void, log: (String) -> Void) async {
         func wait(_ ms: UInt64) async { pumpEvent(); try? await Task.sleep(nanoseconds: ms * 1_000_000) }
-        /// 지연 재검색(250 ms 줄 인덱스 + 1.2 s 디바운스 + 검색)이 끝나 결과가 새로 발행될 때까지 — 고정 대기 대신 폴링 (느린 머신에서 플레이크 방지)
+        /// 지연 재검색(250 ms 줄 인덱스 + 1.2 s 디바운스 + 검색)이 끝날 때까지 — 고정 대기 대신 폴링 (느린 머신에서 플레이크 방지). 결과가 같으면 발행 없이 완료 카운터만 오른다
         func awaitResearch(from generation: Int, timeoutMs: Int = 6000) async -> Bool {
             var waited = 0
-            while model.searchGeneration == generation, waited < timeoutMs { await wait(100); waited += 100 }
-            let changed = model.searchGeneration != generation
+            while model.searchCompletionCount == generation, waited < timeoutMs { await wait(100); waited += 100 }
+            let changed = model.searchCompletionCount != generation
             await wait(150)   // 결과 발행 뒤 SwiftUI 가 updateNSView 로 텍스트 뷰에 새 범위를 넘길 틱을 준다
             return changed
         }
@@ -39,16 +39,18 @@ extension SelfTest {
         model.open(url: big); await wait(1000)
         check(model.document.lineIndex.lineCount == 30_001, "search: big sample loaded lines=\(model.document.lineIndex.lineCount)")
         model.showBottomPanel = true; model.bottomTab = .findResults
-        var gen = model.searchGeneration
+        var gen = model.searchCompletionCount
         model.searchQuery = "NEEDLE-HL"; model.runSearch()
         _ = await awaitResearch(from: gen, timeoutMs: 3000)
         check(model.searchHits.count == 100, "search: 100 hits in the big sample (\(model.searchHits.count))")
+        let table = SearchResultsCoordinatorBase.document   // 결과 목록(NSTableView)
+        check(table?.rowCount == 100, "search: results table lists 100 rows (\(table?.rowCount ?? -1))")
 
         // 1. 마지막 줄에 입력 → 뷰포트 유지 (즉시, 그리고 지연 재검색 뒤)
         model.goToEnd(); await wait(600)
         let y0 = tv.visibleRect.minY
         check(y0 > 1000, "search: viewport is near the end (minY \(Int(y0)))")
-        gen = model.searchGeneration
+        gen = model.searchCompletionCount
         model.send(.perform { tv in tv.insertText("x", replacementRange: tv.selectedRange()) }); await wait(150)
         let y1 = tv.visibleRect.minY
         check(abs(y1 - y0) <= lineH * 2, "search: typing on the last line keeps the viewport (minY \(Int(y0)) → \(Int(y1)))")
@@ -61,8 +63,10 @@ extension SelfTest {
         if let mid = model.searchHits.dropFirst(50).first {
             model.jump(to: mid); await wait(500)
             let y3 = tv.visibleRect.minY
-            gen = model.searchGeneration
+            check(table?.currentIndex == 50, "search: results table highlights the jumped-to row (\(table?.currentIndex.map(String.init) ?? "nil"))")
+            gen = model.searchCompletionCount
             model.send(.perform { tv in tv.insertText("y", replacementRange: NSRange(location: tv.selectedRange().location, length: 0)) }); await wait(150)
+            check(table?.currentIndex == nil, "search: the current row clears once the caret leaves the match (\(table?.currentIndex.map(String.init) ?? "nil"))")
             check(abs(tv.visibleRect.minY - y3) <= lineH * 2, "search: typing at a middle match keeps the viewport (minY \(Int(y3)) → \(Int(tv.visibleRect.minY)))")
             _ = await awaitResearch(from: gen)
             check(abs(tv.visibleRect.minY - y3) <= lineH * 2, "search: viewport survives the re-search after a middle edit (minY \(Int(y3)) → \(Int(tv.visibleRect.minY)))")
@@ -76,15 +80,35 @@ extension SelfTest {
         check(tv.matchHighlights.count == 100 && tv.matchHighlights.first?.location == (before.first?.location ?? -10) + 2,
               "search: highlights shift by +2 after inserting before them (first \(before.first?.location ?? -1) → \(tv.matchHighlights.first?.location ?? -1))")
         if let first = tv.matchHighlights.first {
-            gen = model.searchGeneration
+            gen = model.searchCompletionCount
             model.send(.perform { tv in tv.insertText("", replacementRange: first) }); await wait(100)
             check(tv.matchHighlights.count == 99, "search: deleting a match drops its highlight at once (\(tv.matchHighlights.count))")
             _ = await awaitResearch(from: gen)
             check(model.searchHits.count == 99 && tv.matchHighlights.count == 99, "search: re-search agrees after the deletion (hits \(model.searchHits.count), highlights \(tv.matchHighlights.count))")
-            gen = model.searchGeneration
+            gen = model.searchCompletionCount
             model.send(.perform { tv in tv.undoManager?.undo() })   // undo 는 shouldChangeText 를 거치지 않는 저장소 알림 경로
             _ = await awaitResearch(from: gen)
             check(model.searchHits.count == 100 && tv.matchHighlights.count == 100, "search: undo brings the match and its highlight back (hits \(model.searchHits.count), highlights \(tv.matchHighlights.count))")
+        }
+        // 3b. 매치 안에 입력했다가 재검색 전에 지우면(오타 수정) 결과는 그대로라 발행이 없지만, 뷰가 지웠던 강조는 완료 때 다시 채워진다
+        if let first = tv.matchHighlights.first {
+            gen = model.searchCompletionCount
+            model.send(.perform { tv in tv.insertText("Z", replacementRange: NSRange(location: first.location + 2, length: 0)) }); await wait(100)
+            check(tv.matchHighlights.count == 99, "search: typing inside a match drops its highlight at once (\(tv.matchHighlights.count))")
+            model.send(.perform { tv in tv.insertText("", replacementRange: NSRange(location: first.location + 2, length: 1)) }); await wait(100)
+            let hitsBefore = model.searchGeneration
+            _ = await awaitResearch(from: gen)
+            check(model.searchGeneration == hitsBefore, "search: a re-search with unchanged results publishes nothing")
+            check(model.searchHits.count == 100 && tv.matchHighlights.count == 100, "search: a typo fixed before the re-search gets its highlight back (hits \(model.searchHits.count), highlights \(tv.matchHighlights.count))")
+        }
+        // 3c. 매치를 지웠다가 재검색 전에 ⌘Z — 마찬가지로 발행 없이 강조만 복구
+        if let first = tv.matchHighlights.first {
+            gen = model.searchCompletionCount
+            model.send(.perform { tv in tv.breakUndoCoalescing(); tv.insertText("", replacementRange: first) }); await wait(100)
+            check(tv.matchHighlights.count == 99, "search: deleting a match drops its highlight at once (second time, \(tv.matchHighlights.count))")
+            model.send(.perform { tv in tv.undoManager?.undo() }); await wait(100)
+            _ = await awaitResearch(from: gen)
+            check(model.searchHits.count == 100 && tv.matchHighlights.count == 100, "search: undo before the re-search gets the highlight back (hits \(model.searchHits.count), highlights \(tv.matchHighlights.count))")
         }
 
         // B. 한글 긴 줄(자동 줄바꿈으로 2~3줄씩 감김) 3,000줄 — 보고된 문서처럼 추정 높이와 실측이 크게 다른 경우. 매치는 줄 가운데(그 줄 끝에 입력해도 살아 있어야 한다)
@@ -95,13 +119,13 @@ extension SelfTest {
         if let koURL = write("big-ko.md", ko) {
             model.open(url: koURL); await wait(1000)
             log("search: hangul fixer \(coord.document.hangulFont == nil ? "off (no Hangul font)" : "on")")
-            gen = model.searchGeneration
+            gen = model.searchCompletionCount
             model.searchQuery = "표식-HL"; model.runSearch()
             _ = await awaitResearch(from: gen, timeoutMs: 3000)
             check(model.searchHits.count == 100, "search(ko): 100 hits (\(model.searchHits.count))")
             model.goToEnd(); await wait(600)
             let k0 = tv.visibleRect.minY
-            gen = model.searchGeneration
+            gen = model.searchCompletionCount
             model.send(.perform { tv in tv.insertText("가", replacementRange: tv.selectedRange()) }); await wait(150)
             check(abs(tv.visibleRect.minY - k0) <= lineH * 2, "search(ko): typing on the last wrapped line keeps the viewport (minY \(Int(k0)) → \(Int(tv.visibleRect.minY)))")
             _ = await awaitResearch(from: gen)

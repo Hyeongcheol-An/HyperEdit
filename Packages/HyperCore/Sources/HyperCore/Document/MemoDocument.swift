@@ -252,7 +252,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         indexTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard let self, !Task.isCancelled else { return }
-            let snapshot = self.immutableSnapshot()
+            let snapshot = PerfProbe.measure("index rebuild: snapshot copy (main)") { self.immutableSnapshot() }
             let idx = await Task.detached(priority: .userInitiated) { LineIndex(nsString: snapshot) }.value
             if Task.isCancelled { return }
             self.lineIndex = idx

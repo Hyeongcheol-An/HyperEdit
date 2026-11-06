@@ -256,7 +256,7 @@ final class SecretController {
             }.value
             guard let self, !Task.isCancelled else { return }
             guard gen == self.editGeneration else { return }   // 스캔 중 편집 — 그 편집이 줄 인덱스를 다시 발행해 새 스캔이 돈다
-            self.apply(spans: Self.spans(from: found, length: (text as NSString).length))
+            Perf.measure("secrets.apply blocks=\(found.count)") { self.apply(spans: Self.spans(from: found, length: (text as NSString).length)) }
         }
     }
 

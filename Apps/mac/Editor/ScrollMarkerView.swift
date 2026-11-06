@@ -66,7 +66,9 @@ final class ScrollMarkerView: NSView {
         needsDisplay = true
     }
 
-    override func draw(_ dirtyRect: NSRect) {
+    override func draw(_ dirtyRect: NSRect) { Perf.measure("ScrollMarkerView.draw hits=\(model.searchHits.count)", threshold: 2) { drawImpl() } }
+
+    private func drawImpl() {
         guard model.showScrollMarkers, let sv = scrollView, let docView = sv.documentView, let doc = documentProvider() else { return }
         // 스크롤할 것이 없으면 아무것도 그리지 않는다 (투명)
         guard docView.frame.height > sv.contentView.bounds.height + 1 else { return }

@@ -424,7 +424,7 @@ final class FoldController {
             guard let self, !Task.isCancelled else { return }
             // 스캔 중에 편집이 있었으면 버린다 — 그 편집이 lineIndex 를 다시 발행해 새 스캔이 돈다
             guard gen == self.editGeneration else { return }
-            self.apply(candidates: found)
+            Perf.measure("fold.apply candidates=\(found.count)") { self.apply(candidates: found) }
         }
     }
 
