@@ -11,13 +11,15 @@ scripts/bench.sh --skip-build --only typing,search          # reuse the existing
 scripts/bench.sh --strict                                   # exit 1 on any budget failure or regression
 ```
 
-Results land in `build/bench/<git-sha>.json` and `.md`, and the table is printed to stdout. Everything runs on a corpus that the harness generates in a temporary folder (small 2 KB, medium 200 KB, large 1.3 MB / ~25k lines, huge 8 MB / ~158k lines of mixed Korean, English, code, URLs, tab tables and log lines, from a fixed PRNG seed; plus, for the `findui` phase only, log 28 MB / ~265k server-log lines with occasional stack traces and Korean messages) and with throwaway preferences (`--ephemeral`), so it never touches your documents or settings.
+Results land in `build/bench/<git-sha>.json` and `.md`, and the table is printed to stdout. Everything runs on a corpus that the harness generates in a temporary folder (small 2 KB, medium 200 KB, large 1.3 MB / ~25k lines, huge 8 MB / ~158k lines of mixed Korean, English, code, URLs, tab tables and log lines, from a fixed PRNG seed; plus, for the `findui` and `findquery` phases, log 28 MB / ~265k server-log lines with occasional stack traces and Korean messages) and with throwaway preferences (`--ephemeral`), so it never touches your documents or settings.
 
-The in-app part is `Apps/mac/Bench.swift`, started with `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]`. It drives the real editor (the same `NSTextView`, coordinator and model the user types into), repeats each measurement at least five times and reports the median and p95. Phases: `idle`, `open`, `memory`, `scroll`, `search`, `outline`, `theme`, `typing`, `findui`, `replace`, `save`.
+The in-app part is `Apps/mac/Bench.swift`, started with `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]`. It drives the real editor (the same `NSTextView`, coordinator and model the user types into), repeats each measurement at least five times and reports the median and p95. Phases: `idle`, `open`, `memory`, `scroll`, `search`, `outline`, `theme`, `typing`, `findui`, `findquery`, `replace`, `save`.
 
 Launch time is measured by `scripts/bench.sh` with `--quit-after-launch --bench-launch-log <file>`: the app records milliseconds from the kernel's process start time to `applicationDidFinishLaunching`, the first `ContentView.onAppear` and the first visible window, then quits. The first of the runs is discarded as warm-up. Because the benchmark execs the binary directly (no LaunchServices `oapp` event), launch-timing mode asks for the initial window 50 ms after `didFinishLaunching` instead of waiting for the app's 0.4 s "no window" fallback, which mirrors what a Dock or Finder launch does.
 
 The `findui` phase (added 2026-11-06 after a report that a 28 MB log became hard to use once a search was open) measures the find UI end to end rather than the engine: it opens a generated 28 MB server log with the Find Results panel showing, searches for a common and a rare term, and then — with 10,000 results on screen — types at the end and in the middle, lets the 1.2 s re-search run both ways (an edit before every result republishes 10,000 rows; an edit at the end leaves the results unchanged and publishes nothing), scrolls, jumps to results and moves the caret. Typing at the end and caret movement each have a control without results, and the re-search gap is also measured with the panel hidden and with scroll markers off (both informational), so a regression points at the list, the markers or the editor. Run it alone with `scripts/bench.sh --skip-build --only findui`.
+
+The `findquery` phase types into the find field itself (through the `FindFields` object the text field is bound to) with 10,000 results open and a 9,200-entry folder tree in the file view, plus controls with the file view hidden and with the results panel hidden. When the field was bound to the app model every keystroke re-evaluated the whole window (20–27 ms on the 28 MB log, the same with the sidebar or panel hidden); the budget is one frame.
 
 ## Budgets
 
@@ -30,7 +32,8 @@ The `findui` phase (added 2026-11-06 after a report that a 28 MB log became hard
 | Replace all of ~5,000 matches, and the single ⌘Z that reverts it, large | 500 ms each | bulk edit is allowed a short pause, not a hang |
 | Scroll step (1/40 of the large document) | median ≤ 16 ms, p95 ≤ 33 ms | one or two frames per jump |
 | Go to end / go to line 1, large | 50 ms | |
-| Find on the 28 MB log, results panel open: results published (10,000 and 9 hits); first frame after publish (`findui`) | 1500 ms (informational); 30 ms | the results list must not stall the main thread when results arrive |
+| Find on the 28 MB log, results panel open: Enter → results listed and drawn (10,000 and 9 hits; `find.e2e`) | 600 / 400 ms | the whole search, including the SwiftUI commit of 10,000 rows, must feel immediate (`find.publish` and `find.frame` split it, informational) |
+| Typing in the find field with 10,000 results open and a 9,200-entry file tree (`findquery`) | median ≤ 8 ms, p95 ≤ 16 ms | a keystroke in the find field must not re-evaluate the window |
 | With 10,000 find results open, log: typing at end / middle, caret ↓ (`findui`) | median ≤ 8 ms, p95 ≤ 16 ms | the list follows the caret, but must not add per-keystroke cost (controls: the same without results) |
 | Re-search after an edit (1.2 s debounce), log: longest run-loop gap until the pass completes — an edit before all results (10,000 rows republished) and an edit at the end (results unchanged, nothing published) (`findui`; panel-hidden and markers-off variants of the republishing case are informational) | 50 ms each | republishing 10,000 results must not freeze typing, and an unchanged pass must cost nothing |
 | Scroll step with results open; jump to a result from the list, log (`findui`) | 16 / 33 ms; 50 ms | |
@@ -154,7 +157,7 @@ Ordered by expected gain for the typing path, which is where the remaining per-k
 ## 한국어 요약
 
 - `scripts/bench.sh` 가 Release 빌드 → 콜드 실행 시간 5회 → `--bench` 하네스(`Apps/mac/Bench.swift`) → 번들·바이너리 크기를 재서 `build/bench/<sha>.json`·`.md` 로 남긴다. `--compare <기준.json>` 은 변화율과 15 % 넘는 퇴행을 표시하고, `--strict` 는 예산 실패 시 종료 코드 1.
-- 임시 폴더의 자체 말뭉치(2 KB·200 KB·1.3 MB·8 MB·`findui` 단계의 28 MB 로그)와 휘발성 설정만 쓰므로 사용자 문서·설정은 건드리지 않는다.
+- 임시 폴더의 자체 말뭉치(2 KB·200 KB·1.3 MB·8 MB·`findui`·`findquery` 단계의 28 MB 로그)와 휘발성 설정만 쓰므로 사용자 문서·설정은 건드리지 않는다.
 - 예산: 타이핑 중앙값 8 ms / p95 16 ms, 큰 파일 열기 150 ms, 검색 60 ms, 테마 전환 300 ms, 유휴 CPU 1 % 미만, 8 MB 로드 뒤 RSS 400 MB 등. 예산은 제품 요구치이므로 그날의 측정값에 맞춰 느슨하게 하지 않는다. 표 머리에 부하 평균이 찍히며 코어 수를 넘으면 "measured under load" 로 표시된다.
 - 이번에 고친 것: 모두 바꾸기 5,000건의 ⌘Z 1.7 s → 0.25 s(일괄 undo 직접 등록), 키 입력마다 일어나던 SwiftUI 재평가 제거(`isDirty` 중복 발행, 검색 패널·아웃라인의 캐럿 구독), `availableFontFamilies` 캐시, 하이라이터 줄 버퍼 할당 제거, `LineIndex` 증분 갱신(배선은 후속 권고).
 - CI 에는 벤치를 넣지 않는다(GitHub 러너는 너무 시끄럽다). 성능에 민감한 변경은 로컬에서 `--compare` 로 전후를 비교해 PR 에 붙인다.

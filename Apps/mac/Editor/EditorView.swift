@@ -505,6 +505,14 @@ struct EditorView: NSViewRepresentable {
 
         private var appliedHighlightGeneration = -1
 
+        /// secrets: 오프셋이 지금 가려진 비밀 블록 안인가 (빠른 찾기의 자동 점프가 블록을 드러내지 않게)
+        func isOffsetInMaskedSecret(_ offset: Int) -> Bool {
+            guard let sc = secretController, sc.hasMasks else { return false }
+            let len = document.textStorage.length
+            let para = document.textStorage.mutableString.paragraphRange(for: NSRange(location: min(max(0, offset), len), length: 0))
+            return sc.isMasked(paragraphStart: para.location)
+        }
+
         /// 조용한 재검색(발행 없음)의 완료: SwiftUI 갱신 없이 모델이 직접 부른다 — 색은 마지막으로 적용한 테마에서
         func refreshMatchHighlights(_ hits: [SearchHit], generation: Int) {
             guard let t = lastTheme else { return }
@@ -590,6 +598,8 @@ struct EditorView: NSViewRepresentable {
             switch cmd {
             case .selectRange(let r):
                 select(r, center: true, indicator: true)
+            case .selectMatch(let r):   // 빠른 찾기: 입력창 포커스 유지, 풍선 없음
+                select(r, center: true, indicator: false, focus: false)
             case .goToLine(let n):
                 let r = document.lineIndex.range(ofLine: n)
                 select(NSRange(location: r.location, length: 0), center: true, indicator: true)

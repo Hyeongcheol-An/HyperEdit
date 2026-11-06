@@ -153,5 +153,54 @@ extension SelfTest {
         try? FileManager.default.removeItem(at: dir)
         check(model.document.url.lastPathComponent == previous.lastPathComponent, "search: back on \(previous.lastPathComponent)")
         check(tv.matchHighlights.isEmpty, "search: highlights cleared after switching documents (\(tv.matchHighlights.count))")
+
+        // 입력창(FindFields)은 모델과 분리돼 글자마다 모델이 발행되지 않는다 (perf); 프로그램이 모델을 바꾸면 입력창이 따라간다
+        model.findFields.query = "draft-only"
+        check(model.searchQuery.isEmpty, "search: typing in the find field does not change the committed query at once ('\(model.searchQuery)')")
+        model.runCurrentSearch(); await wait(300)
+        check(model.searchQuery == "draft-only", "search: Enter commits the find field ('\(model.searchQuery)')")
+        model.searchQuery = ""; model.runSearch(); await wait(300)
+        check(model.findFields.query.isEmpty, "search: clearing the committed query mirrors into the find field ('\(model.findFields.query)')")
+
+        // 빠른 찾기 (UltraEdit Quick Find 식): 글자를 치면 150 ms 뒤 검색·첫 매치 선택(앵커 뒤), Enter 는 다음 매치, Esc 는 닫기 + 강조 제거
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)   // 위에서 지운 임시 폴더를 다시
+        if let koURL = write("quick-ko.md", ko) {
+            model.open(url: koURL); await wait(800)
+            model.showBottomPanel = true; model.bottomTab = .findResults
+            model.jump(toLine: 1000); await wait(300)
+            let anchor = tv.selectedRange().location
+            model.quickFindFocusGained()
+            gen = model.searchCompletionCount
+            model.findFields.query = "표식"; model.quickFindTextChanged()
+            _ = await awaitResearch(from: gen, timeoutMs: 3000)
+            let sel = tv.selectedRange()
+            let firstAfter = model.searchHits.first { $0.range.location >= anchor }
+            check(model.searchHits.count == 100, "quickfind: typing searched after the debounce (\(model.searchHits.count) hits)")
+            check(firstAfter != nil && sel == firstAfter!.range, "quickfind: the first match after the caret is selected (sel \(sel), expected \(firstAfter?.range ?? NSRange()))")
+            check(model.searchQuery == "표식", "quickfind: the typed query was committed ('\(model.searchQuery)')")
+            gen = model.searchCompletionCount
+            model.findFields.query = "표식-HL"; model.quickFindTextChanged()
+            _ = await awaitResearch(from: gen, timeoutMs: 3000)
+            check(tv.selectedRange().location == sel.location && tv.selectedRange().length == 5, "quickfind: refining the query keeps the anchor and extends the selection (\(tv.selectedRange()))")
+            let before = tv.selectedRange()
+            let completions = model.searchCompletionCount
+            model.submitFind(); await wait(400)
+            let next = model.searchHits.first { $0.range.location > before.location }
+            check(next != nil && tv.selectedRange() == next!.range, "quickfind: Enter selects the next match (\(tv.selectedRange()), expected \(next?.range ?? NSRange()))")
+            check(model.searchCompletionCount == completions && model.searchHits.count == 100, "quickfind: Enter with current results does not re-search (completions \(model.searchCompletionCount - completions))")
+            // 모델이 검색어를 밀어 넣은 메아리는 빠른 찾기를 돌리지 않는다 (셀프테스트·--search 경로가 사용자 검색을 취소하지 않게)
+            gen = model.searchCompletionCount
+            model.searchQuery = "표식"; model.quickFindTextChanged(); await wait(400)   // 다른 값을 밀어 넣어야 미러(메아리)가 생긴다
+            check(model.searchCompletionCount == gen, "quickfind: a query pushed by the model does not trigger a quick find (completions \(model.searchCompletionCount - gen))")
+            let keep = tv.selectedRange()
+            model.closeQuickFind(); await wait(300)
+            check(!model.showBottomPanel && model.searchHits.isEmpty && tv.matchHighlights.isEmpty, "quickfind: Esc hides the bar and clears results and highlights (panel \(model.showBottomPanel), hits \(model.searchHits.count), highlights \(tv.matchHighlights.count))")
+            check(tv.selectedRange() == keep, "quickfind: Esc keeps the selection (\(tv.selectedRange()))")
+            model.showBottomPanel = true
+            model.findFields.query = ""; model.quickFindTextChanged(); await wait(200)
+            model.quickFindFocusLost()   // 앵커를 남기지 않는다
+            model.open(url: previous); await wait(800)
+            try? FileManager.default.removeItem(at: dir)
+        }
     }
 }

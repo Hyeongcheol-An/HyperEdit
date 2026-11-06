@@ -95,7 +95,7 @@ Bố cục theo kiểu trình soạn thảo ribbon cổ điển, với thanh ti�
 
 ## 6. Tìm và thay thế
 
-- **Tìm (⌘F)** mở thanh Tìm. Gõ truy vấn và nhấn Enter: mọi kết quả được liệt kê trong bảng dưới kèm số dòng, và các kết quả được tô sáng trong trình soạn thảo khi danh sách đang mở. Các nút bật/tắt: biểu thức chính quy `.*`, phân biệt hoa thường `Aa`, cả từ `W`. **F3 / ⇧F3** chuyển tới kết quả kế tiếp / trước. Danh sách tự làm mới khoảng một giây sau khi bạn chỉnh sửa.
+- **Tìm (⌘F)** mở thanh Tìm. Khi bạn gõ, kết quả đầu tiên sau con trỏ được chọn, mọi kết quả được tô sáng trong trình soạn thảo và liệt kê trong bảng dưới kèm số dòng (giống Quick Find của UltraEdit; với tệp trên 64 MB, việc tìm chờ đến khi nhấn Enter). Enter chuyển tới kết quả kế tiếp, ⇧Enter tới kết quả trước, tiêu điểm vẫn ở ô nhập; Esc đóng thanh và xóa tô sáng. Các nút bật/tắt: biểu thức chính quy `.*`, phân biệt hoa thường `Aa`, cả từ `W`. **F3 / ⇧F3** chuyển tới kết quả kế tiếp / trước tính từ con trỏ. Danh sách tự làm mới khoảng một giây sau khi bạn chỉnh sửa.
 - **Thay thế (⌘R)** thêm ô thay thế: thay kết quả hiện tại rồi chuyển tiếp, hoặc **Thay thế tất cả**. Khi bật biểu thức chính quy, các mẫu như `$1` chèn nhóm bắt. Thay thế tất cả là một bước hoàn tác, kể cả với hàng nghìn kết quả.
 - **Tìm trong tệp (⇧⌘F)** tìm trong một thư mục (gồm cả thư mục con). Chọn thư mục, tùy chọn giới hạn bằng mẫu lọc như `*.md;*.txt`, và nhấp một kết quả để mở tệp đó tại đúng dòng. Tệp ẩn, gói, tệp nhị phân và tệp trên 20 MB bị bỏ qua.
 - **Chọn tất cả kết quả (⌥⌘A)** biến mọi kết quả thành một con trỏ — xem phần đa con trỏ bên dưới.

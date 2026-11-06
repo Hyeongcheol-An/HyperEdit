@@ -51,6 +51,7 @@ struct Replacement { let range: NSRange; let string: String }
 
 enum EditorCommand {
     case selectRange(NSRange)
+    case selectMatch(NSRange)        // 빠른 찾기: 선택·스크롤만 — 포커스는 입력창에 남기고 찾기 표시 풍선도 띄우지 않는다
     case goToLine(Int)
     case goToEnd
     case insertTimestamp
@@ -102,6 +103,17 @@ struct OutputLine: Identifiable {
     var isError = false
 }
 
+/// 찾기 패널 입력창(검색어·바꿀 글·파일 마스크)의 글자 — AppModel 과 분리된 작은 객체 (perf).
+/// 입력창을 `AppModel` 의 @Published 에 바로 묶으면 글자마다 모델이 발행돼 창 전체(리본·메뉴 명령·상태바·사이드바·패널)가 다시 평가된다 — 28 MB 로그에
+/// 결과 1만 건을 띄운 상태에서 키 입력당 20~27 ms (2026-11-06 벤치 `findquery`). 모델의 `searchQuery`·`replaceText`·`fileMask` 는 '확정된' 값이고
+/// Enter·F3·옵션 변경·바꾸기 같은 사용자 동작 때 `commitFindFields()` 로 옮겨진다 (UltraEdit 처럼 글자를 치는 동안은 아무것도 돌지 않는다)
+@MainActor
+final class FindFields: ObservableObject {
+    @Published var query = ""
+    @Published var replacement = ""
+    @Published var mask = ""
+}
+
 /// 키 입력마다 바뀌는 상태만 따로 발행 — 상태바·아웃라인·타임라인만 구독하고 리본/패널은 다시 그리지 않는다
 @MainActor
 final class EditorCaret: ObservableObject {
@@ -148,9 +160,9 @@ final class AppModel: ObservableObject {
     // 바꾸기 / 파일에서 찾기
     @Published var findScope: FindScope = .document
     @Published var replaceVisible = false
-    @Published var replaceText = ""
+    @Published var replaceText = "" { didSet { if findFields.replacement != replaceText { findFields.replacement = replaceText } } }
     @Published var fileSearchDirectory: URL
-    @Published var fileMask = ""
+    @Published var fileMask = "" { didSet { if findFields.mask != fileMask { findFields.mask = fileMask } } }
     @Published var fileHits: [FileSearchHit] = [] { didSet { fileSearchGeneration &+= 1 } }
     var fileSearchGeneration = 0   // 결과 목록(NSTableView)이 다시 읽을 시점
     @Published var fileSearchSummary = ""
@@ -177,7 +189,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var output: [OutputLine] = []
 
     // 검색
-    @Published var searchQuery = ""
+    @Published var searchQuery = "" { didSet { if findFields.query != searchQuery { mirroredQuery = searchQuery; findFields.query = searchQuery } } }   // 프로그램이 바꾸면 입력창도 따라간다 (그 메아리는 빠른 찾기가 아니다)
+    let findFields = FindFields()
     @Published var searchOptions = SearchOptions()
     @Published var searchHits: [SearchHit] = [] { didSet { searchGeneration &+= 1; highlightGeneration &+= 1 } }
     /// 검색 결과가 바뀔 때마다 증가 — 편집기가 매치 강조 범위를 다시 받는 기준 (같은 결과라도 편집 뒤 재검색이면 범위가 달라졌을 수 있다)
@@ -186,6 +199,22 @@ final class AppModel: ObservableObject {
     var searchRequestGeneration = 0
     /// 검색이 끝날 때마다 1 (결과가 그대로라 발행하지 않은 재검색 포함) — 셀프테스트·벤치가 완료를 기다리는 기준
     var searchCompletionCount = 0
+    /// 지금 결과(`searchHits`)가 어느 검색어의 것인가 — 입력창의 Enter 가 "다음 매치"인지 "새 검색"인지 가르는 기준
+    private(set) var hitsQuery: String?
+    // 빠른 찾기 (UltraEdit Quick Find 식): 글자를 치는 동안 첫 매치를 선택하고 전부 강조·나열, Enter 는 다음 매치, Esc 는 닫기 + 강조 제거
+    private var quickFindTask: Task<Void, Never>?
+    /// 입력을 시작한 캐럿 위치 — 글자를 더 쳐도 여기서부터 첫 매치를 고른다 (UltraEdit incremental search: 원래 위치에서 다시 찾는다). 입력창이 포커스를 잃으면 지운다
+    private var quickFindAnchor: Int?
+    private var jumpToFirstMatchAfterSearch = false
+    private var jumpAfterFocusesEditor = false       // F3 경로의 점프는 편집기 포커스·풍선, 입력창 경로는 포커스 유지
+    /// 모델이 입력창에 밀어 넣은 값 — 뷰의 onChange 로 돌아오는 메아리는 사용자 입력이 아니므로 빠른 찾기를 돌리지 않는다
+    private var mirroredQuery: String?
+    /// 사용자 검색(빠른 찾기 포함)이 돌고 있는가 — 조용한 재검색이 이를 취소하면 그 성격(스피너·점프·발행)을 물려받는다
+    private var userSearchInFlight = false
+    /// ⌘F 로 패널을 새로 열 때: 새로 만들어진 패널은 onChange(searchFocusToken) 이 발화하지 않으므로 onAppear 가 이 플래그로 포커스를 잡는다
+    var pendingFindFocus = false
+    /// 이보다 큰 문서(UTF-16 단위)는 글자마다 스캔하지 않고 Enter 때만 찾는다 — UltraEdit 의 대용량 파일 모드처럼 기능을 줄인다
+    static let quickFindMaxLength = 64_000_000
     /// 편집기가 매치 강조 범위를 다시 받는 기준 — 결과 발행마다, 그리고 결과가 그대로라 발행하지 않은 재검색의 완료마다 오른다
     /// (편집이 매치를 걸치면 뷰는 그 강조를 지우고 재검색이 다시 채우기를 기대한다 — 오타를 바로 고치면 결과는 같아도 강조는 다시 넣어야 한다)
     var highlightGeneration = 0
@@ -338,6 +367,7 @@ final class AppModel: ObservableObject {
             bookmarks.switchTo(fileURL: document.url)
             MemoLocation.remember(document.url)
             cancelSearch()   // 이전 문서의 검색이 뒤늦게 끝나 새 문서에 결과·강조를 얹지 않도록
+            quickFindTask?.cancel(); quickFindTask = nil; quickFindAnchor = nil   // 옛 문서의 오프셋은 새 문서에 맞지 않는다
             if !searchHits.isEmpty { searchHits = [] }
             if searchError != nil { searchError = nil }
             rescanStructure()
@@ -385,6 +415,7 @@ final class AppModel: ObservableObject {
     // MARK: 검색
 
     func findInEditor() {
+        pendingFindFocus = true   // 패널이 새로 만들어지면 onAppear 가, 이미 보이면 onChange(searchFocusToken) 이 포커스를 잡는다
         showBottomPanel = true
         bottomTab = .findResults
         searchFocusToken += 1
@@ -393,23 +424,96 @@ final class AppModel: ObservableObject {
     /// 진행 중인 검색을 버린다 — 켜 두었던 스피너도 함께 끈다 (취소된 작업의 continuation 은 돌아오지 않는다)
     private func cancelSearch() {
         searchTask?.cancel()
+        userSearchInFlight = false
         if isSearching { isSearching = false }
+    }
+
+    // MARK: 빠른 찾기 (UltraEdit Quick Find 식 — docs/find-model.ko.md)
+
+    /// 입력창의 글자가 바뀜: 150 ms 뒤 확정하고 검색해 앵커 뒤의 첫 매치를 선택한다 (포커스는 입력창에). 빈 문자열이면 결과·강조를 비운다
+    func quickFindTextChanged() {
+        quickFindTask?.cancel(); quickFindTask = nil
+        guard findScope == .document else { return }
+        let q = findFields.query
+        if let m = mirroredQuery, m == q { mirroredQuery = nil; return }   // 셀프테스트·--search·찾기 선택이 밀어 넣은 값의 메아리
+        if quickFindAnchor == nil { quickFindAnchor = caretOffset }
+        if q.isEmpty {   // 다 지움: 돌고 있던 검색도 버린다 (뒤늦게 끝나 빈 입력창에 결과를 올리지 않게)
+            cancelSearch(); jumpToFirstMatchAfterSearch = false
+            commitFindFields(); if !searchHits.isEmpty { searchHits = [] }; hitsQuery = nil
+            return
+        }
+        guard document.textStorage.length <= Self.quickFindMaxLength else { return }   // 큰 문서: Enter 때만
+        quickFindTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard let self, !Task.isCancelled, self.findScope == .document else { return }
+            self.commitFindFields()
+            self.jumpToFirstMatchAfterSearch = true
+            self.jumpAfterFocusesEditor = false
+            self.runSearch(quick: true)
+        }
+    }
+
+    /// 입력창에 포커스가 들어옴(⌘F·클릭): 지금 캐럿이 앵커
+    func quickFindFocusGained() { quickFindAnchor = caretOffset; mirroredQuery = nil }
+    /// 입력창이 포커스를 잃음: 앵커를 버린다 (다음에 들어올 때 새 캐럿에서)
+    func quickFindFocusLost() { quickFindAnchor = nil; quickFindTask?.cancel(); quickFindTask = nil }
+
+    /// 입력창의 Enter: 결과가 지금 검색어의 것이면 다음 매치로(포커스는 입력창에 남는다), 아니면 검색하고 앵커 뒤 첫 매치로. 파일 범위면 폴더 검색
+    func submitFind() {
+        quickFindTask?.cancel(); quickFindTask = nil
+        if findScope == .files { commitFindFields(); runFindInFiles(); return }
+        let stale = resultsAreStale
+        commitFindFields()
+        if stale { jumpToFirstMatchAfterSearch = true; jumpAfterFocusesEditor = false; runSearch() }   // 사용자 검색 — 큰 문서에서도 스피너·로그가 있다
+        else { findNext(focusEditor: false); quickFindAnchor = nil }   // 다음 입력은 새 캐럿에서
+    }
+
+    /// 입력창의 Esc: 바를 닫고 강조·결과를 지운다 (선택은 그대로) — UltraEdit: "All match highlighting is cleared when you close the quick find"
+    func closeQuickFind() {
+        quickFindTask?.cancel(); quickFindTask = nil
+        cancelSearch()
+        quickFindAnchor = nil; mirroredQuery = nil
+        if !searchHits.isEmpty { searchHits = [] }
+        hitsQuery = nil
+        showBottomPanel = false
+        focusEditor()
+    }
+
+    /// 앵커(없으면 캐럿) 뒤의 첫 매치를 선택 — 끝이면 처음부터 (wrap). 가려진 비밀 블록 안의 매치는 건너뛴다 (자동 점프가 블록을 드러내지 않게 — secrets)
+    private func jumpToFirstMatch() {
+        let from = quickFindAnchor ?? caretOffset
+        let focusEditor = jumpAfterFocusesEditor
+        jumpAfterFocusesEditor = false
+        let primary = session.primary
+        func visible(_ h: SearchHit) -> Bool { primary?.isOffsetInMaskedSecret(h.range.location) != true }
+        guard let h = searchHits.first(where: { $0.range.location >= from && visible($0) }) ?? searchHits.first(where: visible) else { return }
+        if focusEditor { jump(to: h) } else { editorCommands.send(.selectMatch(h.range)) }
     }
 
     /// `keepScroll`: 편집 뒤 지연 재검색(조용한 갱신) — 스피너·출력 로그 없이, 결과 목록의 스크롤을 되돌리지 않고, 결과가 같으면 발행하지 않는다
     /// (강조만 다시 넣는다). 28 MB 로그에서는 발행 하나가 SwiftUI 전체 재평가·목록 갱신·강조 재적용을 끌고 와 입력을 멈추게 했다 (perf).
-    /// 사용자가 시작한 검색이 아직 돌고 있을 때 들어온 재검색은 그 검색을 대신하므로 조용하지 않다 — 스피너를 끄고 로그·발행까지 물려받는다
-    func runSearch(keepScroll: Bool = false) {
-        let replacesUserSearch = isSearching
+    /// 사용자가 시작한 검색이 아직 돌고 있을 때 들어온 재검색은 그 검색을 대신하므로 조용하지 않다 — 스피너를 끄고 로그·발행까지 물려받는다.
+    /// `quick`: 빠른 찾기(입력 중) — 스피너·로그는 없지만 사용자 검색이다 (목록은 맨 위로, 결과는 발행)
+    func runSearch(keepScroll: Bool = false, quick: Bool = false) {
+        let replacesUserSearch = userSearchInFlight
         cancelSearch()
         let silent = keepScroll && !replacesUserSearch
-        if !silent { searchRequestGeneration &+= 1 }
+        let showProgress = !silent && !quick
+        if !silent && !quick { searchRequestGeneration &+= 1 }   // 빠른 찾기는 목록을 맨 위로 되돌리지 않는다 (현재 행만 따라간다)
+        let jumpAfter = !silent && jumpToFirstMatchAfterSearch
+        jumpToFirstMatchAfterSearch = false
         let q = searchQuery, opts = searchOptions
-        guard !q.isEmpty else { searchHits = []; searchError = nil; return }
+        guard !q.isEmpty else {
+            if !searchHits.isEmpty { searchHits = [] }   // 빈 배열 재대입도 발행이다 — 빈 입력창에서 Enter 를 눌러도 창 전체가 다시 평가되지 않게
+            if searchError != nil { searchError = nil }
+            hitsQuery = nil
+            return
+        }
         let text = Perf.measure("runSearch: text snapshot") { document.textStorage.string }
         let maskSecrets = secrets.maskEnabled   // secrets: 비밀 줄의 결과 미리보기는 마스크로 (매치·줄 번호는 그대로)
         let previous = searchHits
-        if !silent { isSearching = true }
+        userSearchInFlight = !silent
+        if showProgress { isSearching = true }
         searchTask = Task { [weak self] in
             // 줄 인덱스는 같은 스냅샷에서 새로 만든다 — 편집 직후 250ms 안에는 document.lineIndex 가 낡아 범위 밖 접근으로 크래시할 수 있다
             let outcome: (hits: [SearchHit], error: String?, unchanged: Bool) = await Task.detached(priority: .userInitiated) {
@@ -422,9 +526,11 @@ final class AppModel: ObservableObject {
                 catch { return ([], error.localizedDescription, false) }
             }.value
             guard let self, !Task.isCancelled else { return }
+            self.userSearchInFlight = false
             let tCont = CFAbsoluteTimeGetCurrent()
             defer { if Perf.enabled { Perf.log(String(format: "runSearch: continuation (sync) %.1f ms", (CFAbsoluteTimeGetCurrent() - tCont) * 1000)) } }
-            if !silent { self.isSearching = false }
+            if showProgress { self.isSearching = false }
+            self.hitsQuery = q
             if silent && outcome.unchanged {
                 // 결과가 그대로 — 발행하지 않는다. 편집이 매치를 걸쳐 뷰가 지운 강조(오타를 고친 경우 등)만 다시 넣는다 (SwiftUI 를 거치지 않고 편집기마다 직접)
                 self.highlightGeneration &+= 1
@@ -438,7 +544,8 @@ final class AppModel: ObservableObject {
             }
             if self.searchError != outcome.error { self.searchError = outcome.error }
             self.searchCompletionCount &+= 1
-            if !silent { self.log(String(localized: "Find '\(q)' · \(outcome.hits.count) hits") + (outcome.error.map { " · " + $0 } ?? "")) }
+            if jumpAfter { self.jumpToFirstMatch() }
+            if showProgress { self.log(String(localized: "Find '\(q)' · \(outcome.hits.count) hits") + (outcome.error.map { " · " + $0 } ?? "")) }
         }
     }
 
@@ -464,6 +571,7 @@ final class AppModel: ObservableObject {
     }
 
     func runFindInFiles() {
+        commitFindFields()
         fileSearchTask?.cancel()
         let q = searchQuery, opts = searchOptions, dir = fileSearchDirectory, mask = fileMask, redact = secrets.maskEnabled   // secrets
         guard !q.isEmpty else { fileHits = []; fileSearchSummary = ""; return }
@@ -497,24 +605,46 @@ final class AppModel: ObservableObject {
     }
 
     /// 현재 범위의 검색/바꾸기 실행 (Enter)
+    /// 입력창의 글자를 확정된 검색어·바꿀 글·마스크로 — 사용자 동작(Enter·F3·옵션 변경·바꾸기·파일에서 찾기)의 첫 줄에서만.
+    /// 조용한 재검색(`runSearch(keepScroll: true)`)은 부르지 않는다: 새 검색어를 치는 도중의 편집은 확정된 검색어로 갱신된다
+    func commitFindFields() {
+        if searchQuery != findFields.query { searchQuery = findFields.query }
+        if replaceText != findFields.replacement { replaceText = findFields.replacement }
+        if fileMask != findFields.mask { fileMask = findFields.mask }
+    }
+
     func runCurrentSearch() {
+        commitFindFields()
         if findScope == .files { runFindInFiles() } else { runSearch() }
     }
 
-    func findNext() {
+    /// 결과 목록이 지금 입력창의 검색어와 다르거나 비어 있으면 참 — F3·Enter 는 그때 먼저 검색한다 (입력창에 새 글자를 치고 150 ms 안에 F3 를 눌렀을 때 등)
+    private var resultsAreStale: Bool { hitsQuery != findFields.query }   // 0건이어도 지금 검색어의 결과면 다시 스캔하지 않는다
+
+    /// F3: 캐럿 뒤의 다음 매치 (끝이면 처음부터). 결과가 낡았으면 검색하고 첫 매치로. `focusEditor: false` 는 입력창의 Enter — 포커스를 입력창에 남긴다
+    func findNext(focusEditor: Bool = true) {
+        quickFindTask?.cancel(); quickFindTask = nil
+        let stale = resultsAreStale
+        commitFindFields()
         macros.recordFind(searchQuery)   // macro
-        guard !searchHits.isEmpty else { runSearch(); return }
+        guard !stale else { jumpToFirstMatchAfterSearch = true; jumpAfterFocusesEditor = focusEditor; runSearch(); return }
         let from = caretOffset + (selectionLength > 0 ? 1 : 0)
-        if let h = searchHits.first(where: { $0.range.location >= from }) ?? searchHits.first { jump(to: h) }
+        guard let h = searchHits.first(where: { $0.range.location >= from }) ?? searchHits.first else { return }
+        if focusEditor { jump(to: h) } else { editorCommands.send(.selectMatch(h.range)) }
     }
 
-    func findPrevious() {
-        guard !searchHits.isEmpty else { runSearch(); return }
-        if let h = searchHits.last(where: { $0.range.location < caretOffset }) ?? searchHits.last { jump(to: h) }
+    func findPrevious(focusEditor: Bool = true) {
+        quickFindTask?.cancel(); quickFindTask = nil
+        let stale = resultsAreStale
+        commitFindFields()
+        guard !stale else { jumpToFirstMatchAfterSearch = true; jumpAfterFocusesEditor = focusEditor; runSearch(); return }
+        guard let h = searchHits.last(where: { $0.range.location < caretOffset }) ?? searchHits.last else { return }
+        if focusEditor { jump(to: h) } else { editorCommands.send(.selectMatch(h.range)) }
     }
 
     /// 선택된 매치 하나를 바꾸고 다음으로. 선택이 매치가 아니면 다음 매치로만 이동.
     func replaceCurrent() {
+        commitFindFields()
         let text = document.textStorage.string
         let sel = NSRange(location: caretOffset, length: selectionLength)
         // 선택이 정확히 매치여야 바꾼다. 투명 경계 옵션이 없으면 \b·^·$ 가 선택 가장자리에서 맞아 'concat' 안의 'cat' 도 바뀐다
@@ -533,6 +663,7 @@ final class AppModel: ObservableObject {
     }
 
     func replaceAll() {
+        commitFindFields()
         let text = document.textStorage.string
         guard let hits = try? SearchEngine.search(searchQuery, in: text, index: LineIndex(text: text), options: searchOptions, limit: 1_000_000), !hits.isEmpty else {
             log(String(localized: "Replace all · no matches")); return
