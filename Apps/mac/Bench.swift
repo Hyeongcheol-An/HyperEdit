@@ -5,7 +5,7 @@ import Darwin
 
 /// 성능 벤치마크 하네스 (개발용): `--bench [--bench-out <path.json>] [--bench-strict] [--bench-commit <sha>] [--quit]`
 ///
-/// 임시 폴더에 자체 말뭉치(small 2 KB · medium 200 KB · large 1.3 MB · huge 8 MB)를 만들어 그 위에서만 측정한다 — 사용자 문서·설정은
+/// 임시 폴더에 자체 말뭉치(small 2 KB · medium 200 KB · large 1.3 MB · huge 8 MB · log 28 MB)를 만들어 그 위에서만 측정한다 — 사용자 문서·설정은
 /// 건드리지 않는다 (`HyperEditApp.init` 이 `--bench` 에 휘발성 UserDefaults 를 쓴다). 실행 시 `--file <임시 .md>` 를 함께 주면 기본 문서를
 /// 아예 열지 않는다 (`scripts/bench.sh` 가 그렇게 한다). 결과는 Markdown 표(stderr + `<out>.md`)와 JSON(`<out>`)으로 쓴다.
 /// 항목마다 예산(budget)이 있어 PASS/FAIL 을 표시하고, `--bench-strict` 면 FAIL 이 하나라도 있을 때 종료 코드 1 로 끝난다.
@@ -16,7 +16,7 @@ enum Bench {
     static var enabled: Bool { CommandLine.arguments.contains("--bench") }
     static var strict: Bool { CommandLine.arguments.contains("--bench-strict") }
     static var outPath: String? { LaunchOptions.value("--bench-out") }
-    /// `--bench-only idle,open,memory,scroll,search,outline,theme,typing,replace,save` — 프로파일링용으로 일부 단계만 실행
+    /// `--bench-only idle,open,memory,scroll,search,outline,theme,typing,findui,replace,save` — 프로파일링용으로 일부 단계만 실행
     static func phase(_ name: String) -> Bool {
         guard let only = LaunchOptions.value("--bench-only") else { return true }
         return only.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.contains(name)
@@ -280,6 +280,39 @@ enum Bench {
         return (out, lines + 1)   // 마지막 개행 뒤 빈 줄(에디터 관례)
     }
 
+    /// 서버 로그 말뭉치: 한 줄 ≈ 100 B(시각·스레드·레벨·로거·메시지), 가끔 스택 트레이스 줄과 한글 메시지. 28 MB ≈ 26.5만 줄.
+    /// 사용자 보고(2026-11-05)의 "28 MB 로그를 열고 검색하면 쓰기 어려울 만큼 느리다"를 재현하는 데 쓴다 (`findui` 단계).
+    static func makeLogCorpus(targetBytes: Int, seed: UInt64) -> (text: String, lines: Int) {
+        var rng = Rng(s: seed | 1)
+        var out = ""
+        out.reserveCapacity(targetBytes + 4096)
+        let loggers = ["com.example.api.RequestHandler", "com.example.db.Pool", "com.example.auth.TokenService", "org.apache.http.wire",
+                       "com.example.cache.Lru", "com.example.job.Scheduler"]
+        let msgs = ["request id=%d handled in %d ms", "connection %d returned to pool (idle=%d)", "token refreshed for user=%d ttl=%ds",
+                    "cache miss key=item:%d (size=%d)", "job %d scheduled in %d s", "GET /api/v2/items/%d -> 200 (%d ms)"]
+        let frames = ["com.example.api.RequestHandler.handle(RequestHandler.java:%d)", "com.example.db.Pool.acquire(Pool.java:%d)",
+                      "java.base/java.lang.Thread.run(Thread.java:%d)"]
+        let ko = ["요청 처리 지연 감지", "재시도 후 복구됨", "설정 파일을 다시 읽음"]
+        var bytes = 0, lines = 0, sec = 0
+        while bytes < targetBytes {
+            lines += 1
+            sec += rng.int(3)
+            let level: String
+            switch rng.int(100) { case 0..<4: level = "ERROR"; case 4..<14: level = "WARN "; case 14..<30: level = "DEBUG"; default: level = "INFO " }
+            let stamp = String(format: "2026-11-05 %02d:%02d:%02d.%03d [worker-%d] %@ %@ - ", (sec / 3600) % 24, (sec / 60) % 60, sec % 60, rng.int(1000), rng.int(8), level, rng.pick(loggers))
+            let s: String
+            switch rng.int(100) {
+            case 0..<3: s = "\tat " + String(format: rng.pick(frames), 10 + rng.int(900))
+            case 3..<5: s = stamp + rng.pick(ko) + " (code=\(rng.int(500)))"
+            default: s = stamp + String(format: rng.pick(msgs), rng.int(1_000_000), rng.int(5000))
+            }
+            out += s
+            out += "\n"
+            bytes += s.utf8.count + 1
+        }
+        return (out, lines + 1)
+    }
+
     // MARK: - 실행
 
     @MainActor
@@ -299,7 +332,8 @@ enum Bench {
 
         // 0. 말뭉치
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-bench-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        let urls = ["small", "medium", "large", "huge"].reduce(into: [String: URL]()) { $0[$1] = dir.appendingPathComponent("\($1).md") }
+        var urls = ["small", "medium", "large", "huge"].reduce(into: [String: URL]()) { $0[$1] = dir.appendingPathComponent("\($1).md") }
+        urls["log"] = dir.appendingPathComponent("server.log")
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let t0 = now()
@@ -309,6 +343,11 @@ enum Bench {
                 let c = makeCorpus(targetBytes: bytes, seed: seed)
                 try c.text.write(to: urls[name]!, atomically: true, encoding: .utf8)
                 corpus[name] = CorpusInfo(bytes: c.text.utf8.count, lines: c.lines)
+            }
+            if phase("findui") {
+                let c = makeLogCorpus(targetBytes: 28_000_000, seed: 44)
+                try c.text.write(to: urls["log"]!, atomically: true, encoding: .utf8)
+                corpus["log"] = CorpusInfo(bytes: c.text.utf8.count, lines: c.lines)
             }
             log(String(format: "corpus at %@ · generated in %.0f ms · %@", dir.path, now() - t0,
                        corpus.sorted { $0.value.bytes < $1.value.bytes }.map { "\($0.key)=\($0.value.bytes)B/\($0.value.lines)L" }.joined(separator: " ")))
@@ -528,6 +567,127 @@ enum Bench {
             add(Metric(id: "enter.middle.bookmarked.\(name)", name: "Enter in middle (bookmark tracking on), \(name)", samples: await typeRun(at: middle, count: 20, text: ["\n"]), budget: 8, budgetP95: 16))
             model.jump(toLine: 3); await wait(200); model.toggleBookmarkAtCaret()
             await wait(300)
+        }
+
+        // 8b. 찾기 UI 끝단 (log 28 MB): 결과 패널을 띄운 채 검색 → 결과 발행 → 첫 프레임, 그리고 결과 1만 건이 떠 있는 상태의 타이핑·재검색·스크롤·결과 점프·캐럿 이동
+        // 사용자 보고(2026-11-05): 28 MB 로그를 열고 검색하자 쓰기 어려울 만큼 느려졌다 — 엔진(5)이 아니라 결과를 받은 뒤의 UI 비용을 잰다
+        if phase("findui") {
+            var sync: [Double] = [], settled: [Double] = []
+            for _ in 0..<2 {
+                model.open(url: urls["small"]!); await wait(500)
+                let t = now()
+                model.open(url: urls["log"]!)
+                sync.append(now() - t)
+                await nextTurn(); await afterFrame(); settled.append(now() - t)
+                await wait(3000)
+            }
+            add(Metric(id: "open.log.sync", name: "Open log (28 MB): synchronous part", samples: sync, informational: true))
+            add(Metric(id: "open.log.settled", name: "Open log (28 MB): + first frame", samples: settled, budget: 3000, informational: true))
+            add(Metric(id: "memory.rss.log", name: "RSS after loading log (28 MB)", unit: "MB", samples: [memoryMB().resident], informational: true))
+            // 대조군: 결과가 없을 때의 타이핑·캐럿 이동, 스냅샷 복사·저장의 메인 스레드 비용
+            let logLen0 = model.document.textStorage.length
+            add(Metric(id: "typing.end.nohits.log", name: "Typing at end, no find results, log", samples: await typeRun(at: logLen0, count: 80, text: typingText), budget: 8, budgetP95: 16))
+            await wait(2500)
+            var moves0: [Double] = []
+            model.jump(toLine: 1000); await wait(300)
+            for _ in 0..<40 { let t = now(); tv.moveDown(nil); await nextTurn(); moves0.append(now() - t) }
+            add(Metric(id: "caret.down.nohits.log", name: "Caret ↓, no find results, log", samples: moves0, budget: 8, budgetP95: 16))
+            var copyT: [Double] = []
+            for _ in 0..<5 { let t = now(); _ = model.document.textStorage.mutableString.copy(); copyT.append(now() - t) }
+            add(Metric(id: "snapshot.copy.log", name: "Text snapshot copy (per index rebuild / save), log", samples: copyT, budget: 60, informational: true))
+            var saveT: [Double] = []
+            for _ in 0..<3 {
+                tv.setSelectedRange(NSRange(location: logLen0, length: 0))
+                tv.insertText("z", replacementRange: tv.selectedRange()); await nextTurn()
+                tv.insertText("", replacementRange: NSRange(location: logLen0, length: 1)); await nextTurn()
+                let t = now(); model.saveNow(); saveT.append(now() - t)
+                await wait(800)
+            }
+            add(Metric(id: "save.sync.log", name: "save(): main-thread part, log", samples: saveT, budget: 100, informational: true))
+            model.showBottomPanel = true; model.bottomTab = .findResults
+            await wait(500)
+            /// runSearch() → searchHits 발행(엔진 + 메인 액터 복귀)까지, 그리고 발행 뒤 첫 프레임까지
+            @MainActor func findRun(_ q: String) async -> (publish: Double, frame: Double, hits: Int) {
+                model.searchQuery = q
+                let gen = model.searchCompletionCount
+                let t = now()
+                model.runSearch()
+                while model.searchCompletionCount == gen && now() - t < 30_000 { await nextTurn() }
+                let publish = now() - t
+                let t2 = now()
+                await nextTurn(); await afterFrame()
+                return (publish, now() - t2, model.searchHits.count)
+            }
+            var pub: [String: [Double]] = [:], frm: [String: [Double]] = [:], counts: [String: Int] = [:]
+            let queries = [("common", "ERROR"), ("rare", "ttl=4321s")]   // 번갈아 돌려 매번 결과가 바뀐다 — 사용자 검색은 결과가 같아도 발행하지만 first-frame 은 바뀐 목록으로 잰다
+            for _ in 0..<3 {
+                for (tag, q) in queries {
+                    let r = await findRun(q)
+                    pub[tag, default: []].append(r.publish); frm[tag, default: []].append(r.frame); counts[tag] = r.hits
+                    await wait(300)
+                }
+            }
+            for (tag, q) in queries {
+                add(Metric(id: "find.publish.\(tag).log", name: "Find '\(q)' → results published, log (\(counts[tag] ?? 0) hits)", samples: pub[tag] ?? [], budget: 1500, informational: true))
+                add(Metric(id: "find.frame.\(tag).log", name: "Find '\(q)': first frame after publish, log", samples: frm[tag] ?? [], budget: 30))
+            }
+            // 결과 1만 건이 떠 있는 상태
+            _ = await findRun("ERROR"); await wait(500)
+            let logLen = model.document.textStorage.length
+            let logMiddle = model.document.textStorage.mutableString.lineRange(for: NSRange(location: logLen / 2, length: 0)).location
+            add(Metric(id: "typing.end.hits.log", name: "Typing at end with 10k find results, log", samples: await typeRun(at: logLen, count: 80, text: typingText), budget: 8, budgetP95: 16))
+            await wait(2500)   // 편집 뒤 1.2 s 디바운스 재검색이 지나가게
+            add(Metric(id: "typing.middle.hits.log", name: "Typing in middle with 10k find results, log", samples: await typeRun(at: logMiddle, count: 80, text: typingText), budget: 8, budgetP95: 16))
+            await wait(2500)
+            // 편집 → 디바운스 재검색 → 완료: 그때까지 런루프 턴 간격의 최댓값 (= 그 사이 무언가가 메인 스레드를 멈추는 시간). 20 ms 넘는 간격은 시점과 함께 기록.
+            // offset 0 에 넣으면 모든 결과의 범위가 밀려 1만 건이 다시 발행된다(목록 reload·마커·강조 재적용 포함), 문서 끝에 넣으면 결과가 같아 발행이 없다
+            @MainActor func researchGap(_ tag: String, at offset: Int) async -> Double {
+                let gen = model.searchCompletionCount, published = model.searchGeneration
+                tv.setSelectedRange(NSRange(location: offset, length: 0))
+                tv.insertText("q", replacementRange: tv.selectedRange())
+                let t0 = now()
+                var last = now()
+                var gaps: [(at: Double, gap: Double)] = []
+                while model.searchCompletionCount == gen && now() - t0 < 10_000 { await nextTurn(); let n = now(); gaps.append((n - t0, n - last)); last = n }
+                await nextTurn(); gaps.append((now() - t0, now() - last))
+                await afterFrame()
+                tv.insertText("", replacementRange: NSRange(location: offset, length: 1)); await wait(2500)
+                let big = gaps.filter { $0.gap > 20 }.map { String(format: "t=%.0f:%.0f", $0.at, $0.gap) }
+                log("research gaps \(tag) (>20 ms, at:gap): \(big.joined(separator: " ")) · \(model.searchGeneration != published ? "published" : "unchanged, not published") · hits \(model.searchHits.count)")
+                return gaps.map(\.gap).max() ?? 0
+            }
+            add(Metric(id: "find.research.maxgap.changed.log", name: "Re-search after an edit before all results (10k republished): longest gap, log", samples: [await researchGap("changed", at: 0)], budget: 50))
+            add(Metric(id: "find.research.maxgap.unchanged.log", name: "Re-search after an edit at the end (results unchanged, nothing published): longest gap, log", samples: [await researchGap("unchanged", at: logLen)], budget: 50))
+            model.showBottomPanel = false; await wait(300)
+            add(Metric(id: "find.research.maxgap.nopanel.log", name: "Re-search (10k republished), results panel hidden: longest gap, log", samples: [await researchGap("nopanel", at: 0)], budget: 50, informational: true))
+            model.showBottomPanel = true; model.showScrollMarkers = false; await wait(300)
+            add(Metric(id: "find.research.maxgap.nomarkers.log", name: "Re-search (10k republished), scroll markers off: longest gap, log", samples: [await researchGap("nomarkers", at: 0)], budget: 50, informational: true))
+            model.showScrollMarkers = true; await wait(300)
+            var steps: [Double] = []
+            for i in 1...40 {
+                let t = now()
+                tv.scrollRangeToVisible(NSRange(location: Swift.min(logLen * i / 40, logLen), length: 0))
+                await nextTurn()
+                steps.append(now() - t)
+            }
+            add(Metric(id: "scroll.step.hits.log", name: "Scroll step (1/40 of doc) with 10k find results, log", samples: steps, budget: 16, budgetP95: 33))
+            let logHits = model.searchHits
+            var jumps: [Double] = []
+            for i in 0..<10 where !logHits.isEmpty {
+                let t = now()
+                model.jump(to: logHits[(i * 997) % logHits.count])
+                await nextTurn(); await afterFrame()
+                jumps.append(now() - t)
+                await wait(100)
+            }
+            add(Metric(id: "find.jump.log", name: "Jump to a find result (click in the list), log", samples: jumps, budget: 50))
+            var moves: [Double] = []
+            if let mid = logHits.dropFirst(logHits.count / 2).first { model.jump(to: mid); await wait(300) }
+            for _ in 0..<40 { let t = now(); tv.moveDown(nil); await nextTurn(); moves.append(now() - t) }
+            add(Metric(id: "caret.down.hits.log", name: "Caret ↓ with 10k find results (list follows the caret), log", samples: moves, budget: 8, budgetP95: 16))
+            model.searchQuery = ""; model.runSearch(); await wait(500)
+            model.showBottomPanel = false
+            model.open(url: urls["small"]!); await wait(800)
         }
 
         // 9. 모두 바꾸기 5,000건 + ⌘Z 한 번 (large)

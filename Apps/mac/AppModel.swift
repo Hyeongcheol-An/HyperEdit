@@ -151,7 +151,8 @@ final class AppModel: ObservableObject {
     @Published var replaceText = ""
     @Published var fileSearchDirectory: URL
     @Published var fileMask = ""
-    @Published var fileHits: [FileSearchHit] = []
+    @Published var fileHits: [FileSearchHit] = [] { didSet { fileSearchGeneration &+= 1 } }
+    var fileSearchGeneration = 0   // 결과 목록(NSTableView)이 다시 읽을 시점
     @Published var fileSearchSummary = ""
     @Published var isFileSearching = false
 
@@ -178,9 +179,16 @@ final class AppModel: ObservableObject {
     // 검색
     @Published var searchQuery = ""
     @Published var searchOptions = SearchOptions()
-    @Published var searchHits: [SearchHit] = [] { didSet { searchGeneration &+= 1 } }
+    @Published var searchHits: [SearchHit] = [] { didSet { searchGeneration &+= 1; highlightGeneration &+= 1 } }
     /// 검색 결과가 바뀔 때마다 증가 — 편집기가 매치 강조 범위를 다시 받는 기준 (같은 결과라도 편집 뒤 재검색이면 범위가 달라졌을 수 있다)
     var searchGeneration = 0
+    /// 사용자가 시작한 검색(Enter·옵션 변경·F3)마다 1 — 결과 목록이 맨 위로 간다. 편집 뒤 지연 재검색은 올리지 않아 목록의 스크롤 위치가 유지된다
+    var searchRequestGeneration = 0
+    /// 검색이 끝날 때마다 1 (결과가 그대로라 발행하지 않은 재검색 포함) — 셀프테스트·벤치가 완료를 기다리는 기준
+    var searchCompletionCount = 0
+    /// 편집기가 매치 강조 범위를 다시 받는 기준 — 결과 발행마다, 그리고 결과가 그대로라 발행하지 않은 재검색의 완료마다 오른다
+    /// (편집이 매치를 걸치면 뷰는 그 강조를 지우고 재검색이 다시 채우기를 기대한다 — 오타를 바로 고치면 결과는 같아도 강조는 다시 넣어야 한다)
+    var highlightGeneration = 0
     @Published var searchError: String?
     @Published var isSearching = false
     @Published var searchFocusToken = 0
@@ -277,16 +285,18 @@ final class AppModel: ObservableObject {
             .debounce(for: .milliseconds(1200), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.rescanStructure()
-                // 편집으로 낡아진 검색 결과(범위·줄 번호)를 자동 갱신 — 결과가 떠 있을 때만
-                if self.findScope == .document, !self.searchQuery.isEmpty, !self.searchHits.isEmpty { self.runSearch() }
+                Perf.measure("lineIndex debounce: rescan + re-search (sync part)") {
+                    self.rescanStructure()
+                    // 편집으로 낡아진 검색 결과(범위·줄 번호)를 자동 갱신 — 결과가 떠 있을 때만
+                    if self.findScope == .document, !self.searchQuery.isEmpty, !self.searchHits.isEmpty { self.runSearch(keepScroll: true) }
+                }
             }.store(in: &cancellables)
     }
 
     /// 아웃라인·타임라인 재계산 (백그라운드, 텍스트 스냅샷 기준)
     func rescanStructure() {
         scanTask?.cancel()
-        let raw = document.textStorage.string
+        let raw = Perf.measure("rescanStructure: text snapshot") { document.textStorage.string }
         let isMD = document.url.pathExtension.lowercased() == "md"
         let maskSecrets = secrets.maskEnabled   // secrets: 비밀 줄은 마스크로 바꾼 텍스트에서 스캔 → 아웃라인·타임라인에 비밀 줄이 오르지 않는다 (줄 수는 같다)
         scanTask = Task { [weak self] in
@@ -296,8 +306,10 @@ final class AppModel: ObservableObject {
                 return (OutlineScanner.outline(text, index: idx, isMarkdown: isMD), OutlineScanner.timeline(text, index: idx))
             }.value
             guard let self, !Task.isCancelled else { return }
-            if o != self.outline { self.outline = o }
-            if t != self.timeline { self.timeline = t }
+            Perf.measure("rescanStructure: compare + publish (outline \(o.count), timeline \(t.count))") {
+                if o != self.outline { self.outline = o }
+                if t != self.timeline { self.timeline = t }
+            }
         }
     }
 
@@ -325,7 +337,7 @@ final class AppModel: ObservableObject {
             Perf.measure("MemoDocument.switchTo") { document.switchTo(url: url) }
             bookmarks.switchTo(fileURL: document.url)
             MemoLocation.remember(document.url)
-            searchTask?.cancel()   // 이전 문서의 검색이 뒤늦게 끝나 새 문서에 결과·강조를 얹지 않도록
+            cancelSearch()   // 이전 문서의 검색이 뒤늦게 끝나 새 문서에 결과·강조를 얹지 않도록
             if !searchHits.isEmpty { searchHits = [] }
             if searchError != nil { searchError = nil }
             rescanStructure()
@@ -378,28 +390,55 @@ final class AppModel: ObservableObject {
         searchFocusToken += 1
     }
 
-    func runSearch() {
+    /// 진행 중인 검색을 버린다 — 켜 두었던 스피너도 함께 끈다 (취소된 작업의 continuation 은 돌아오지 않는다)
+    private func cancelSearch() {
         searchTask?.cancel()
+        if isSearching { isSearching = false }
+    }
+
+    /// `keepScroll`: 편집 뒤 지연 재검색(조용한 갱신) — 스피너·출력 로그 없이, 결과 목록의 스크롤을 되돌리지 않고, 결과가 같으면 발행하지 않는다
+    /// (강조만 다시 넣는다). 28 MB 로그에서는 발행 하나가 SwiftUI 전체 재평가·목록 갱신·강조 재적용을 끌고 와 입력을 멈추게 했다 (perf).
+    /// 사용자가 시작한 검색이 아직 돌고 있을 때 들어온 재검색은 그 검색을 대신하므로 조용하지 않다 — 스피너를 끄고 로그·발행까지 물려받는다
+    func runSearch(keepScroll: Bool = false) {
+        let replacesUserSearch = isSearching
+        cancelSearch()
+        let silent = keepScroll && !replacesUserSearch
+        if !silent { searchRequestGeneration &+= 1 }
         let q = searchQuery, opts = searchOptions
         guard !q.isEmpty else { searchHits = []; searchError = nil; return }
-        let text = document.textStorage.string
+        let text = Perf.measure("runSearch: text snapshot") { document.textStorage.string }
         let maskSecrets = secrets.maskEnabled   // secrets: 비밀 줄의 결과 미리보기는 마스크로 (매치·줄 번호는 그대로)
-        isSearching = true
+        let previous = searchHits
+        if !silent { isSearching = true }
         searchTask = Task { [weak self] in
             // 줄 인덱스는 같은 스냅샷에서 새로 만든다 — 편집 직후 250ms 안에는 document.lineIndex 가 낡아 범위 밖 접근으로 크래시할 수 있다
-            let outcome: ([SearchHit], String?) = await Task.detached(priority: .userInitiated) {
+            let outcome: (hits: [SearchHit], error: String?, unchanged: Bool) = await Task.detached(priority: .userInitiated) {
                 do {
-                    let hits = try SearchEngine.search(q, in: text, index: LineIndex(text: text), options: opts)
-                    return (maskSecrets ? SecretScanner.redacting(hits: hits, in: text) : hits, nil)   // secrets
+                    var hits = try SearchEngine.search(q, in: text, index: LineIndex(text: text), options: opts)
+                    if maskSecrets { hits = SecretScanner.redacting(hits: hits, in: text) }   // secrets
+                    return (hits, nil, hits == previous)   // 비교도 여기서 — 메인 스레드에서 1만 건 비교는 48 ms 였다
                 }
-                catch SearchError.invalidRegex(let m) { return ([], String(localized: "Regex error: \(m)")) }
-                catch { return ([], error.localizedDescription) }
+                catch SearchError.invalidRegex(let m) { return ([], String(localized: "Regex error: \(m)"), false) }
+                catch { return ([], error.localizedDescription, false) }
             }.value
             guard let self, !Task.isCancelled else { return }
-            self.isSearching = false
-            self.searchHits = outcome.0
-            self.searchError = outcome.1
-            self.log(String(localized: "Find '\(q)' · \(outcome.0.count) hits") + (outcome.1.map { " · " + $0 } ?? ""))
+            let tCont = CFAbsoluteTimeGetCurrent()
+            defer { if Perf.enabled { Perf.log(String(format: "runSearch: continuation (sync) %.1f ms", (CFAbsoluteTimeGetCurrent() - tCont) * 1000)) } }
+            if !silent { self.isSearching = false }
+            if silent && outcome.unchanged {
+                // 결과가 그대로 — 발행하지 않는다. 편집이 매치를 걸쳐 뷰가 지운 강조(오타를 고친 경우 등)만 다시 넣는다 (SwiftUI 를 거치지 않고 편집기마다 직접)
+                self.highlightGeneration &+= 1
+                for c in self.session.coordinators { c.refreshMatchHighlights(self.searchHits, generation: self.highlightGeneration) }
+            } else {
+                Perf.measure("runSearch: publish \(outcome.hits.count) hits (sync)") { self.searchHits = outcome.hits }
+                if Perf.enabled {   // 발행 뒤 SwiftUI 커밋(결과 목록·마커·강조)이 메인 스레드를 잡는 시간 = 다음 턴까지
+                    let t = CFAbsoluteTimeGetCurrent()
+                    DispatchQueue.main.async { Perf.log(String(format: "runSearch: publish → next turn %.1f ms", (CFAbsoluteTimeGetCurrent() - t) * 1000)) }
+                }
+            }
+            if self.searchError != outcome.error { self.searchError = outcome.error }
+            self.searchCompletionCount &+= 1
+            if !silent { self.log(String(localized: "Find '\(q)' · \(outcome.hits.count) hits") + (outcome.error.map { " · " + $0 } ?? "")) }
         }
     }
 
@@ -487,7 +526,7 @@ final class AppModel: ObservableObject {
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: 350_000_000)
             guard let self else { return }
-            self.runSearch()
+            self.runSearch(keepScroll: true)   // 목록은 제자리에서 갱신되고(맨 위로 튀지 않음) 다음 매치로 간다
             try? await Task.sleep(nanoseconds: 300_000_000)
             self.findNext()
         }

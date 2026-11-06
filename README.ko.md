@@ -184,7 +184,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(652개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(660개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
@@ -200,7 +200,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
-| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~8 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing replace save`. `scripts/bench.sh` 가 감싸서 실행 |
+| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui replace save`. `scripts/bench.sh` 가 감싸서 실행 |
 | `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성
@@ -210,7 +210,7 @@ Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.sw
   Editor/            AppKit 편집기: HyperTextView(TextKit 2, 캐럿 스타일), GutterView, EditorSession(분할), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
-Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 253개
+Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 260개
 themes/              palettes.json(단일 소스), build_zed_theme.py, build_preview.py, validate.py, dist/
 docs/                guide/ (USER_GUIDE.md + 번역 10개) · features.md · performance.md · fonts.md · zed.md · design.ko.md · theme-preview.html · bench/(기준선 JSON) · release-notes/ · screenshots/ · sample/
 l10n/                ui.<언어>.json — 언어별 평면 사전(scripts/l10n-export.py 로 내보내고 scripts/l10n-add.py 로 카탈로그에 병합) · context.json
