@@ -95,7 +95,7 @@ The layout follows a classic ribbon editor, with a hidden title bar.
 
 ## 6. Find and replace
 
-- **Find (⌘F)** opens the Find bar. Type a query and press Enter: every match is listed in the bottom panel with its line number, and the matches are highlighted in the editor while the list is open. Toggles: regex `.*`, match case `Aa`, whole word `W`. **F3 / ⇧F3** step to the next / previous match. The list refreshes itself about a second after you edit.
+- **Find (⌘F)** opens the Find bar. As you type, the first match after the caret is selected and every match is highlighted in the editor and listed in the bottom panel with its line number (UltraEdit's Quick Find; on files over 64 MB the search waits for Enter). Enter jumps to the next match and ⇧Enter to the previous one while the field keeps focus; Esc closes the bar and clears the highlights. Toggles: regex `.*`, match case `Aa`, whole word `W`. **F3 / ⇧F3** step to the next / previous match from the caret. The list refreshes itself about a second after you edit.
 - **Replace (⌘R)** adds a replacement field: replace the current match and move on, or **Replace All**. With regex on, templates such as `$1` insert capture groups. Replace All is one undo step, even with thousands of matches.
 - **Find in Files (⇧⌘F)** searches a folder (subfolders included). Pick the folder, optionally limit by masks such as `*.md;*.txt`, and click a hit to open that file at that line. Hidden files, packages, binary files and files over 20 MB are skipped.
 - **Select All Matches (⌥⌘A)** turns every match into a caret — see multi-caret below.

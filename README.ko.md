@@ -75,7 +75,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - **하단 패널(⌘2)** — **찾기 결과**, **북마크**, **출력** 로그.
 
 ### 찾기·바꾸기·북마크
-- **찾기(⌘F):** 검색어를 입력하고 Enter를 누르면 모든 매치가 줄 번호와 함께 나열되고, 목록이 열려 있는 동안 편집기 안의 매치도 강조됩니다. 정규식 `.*`, 대소문자 `Aa`, 단어 단위 `W` 토글. F3 / ⇧F3으로 매치 이동, ⌥⌘A로 모든 매치를 멀티 커서로 전환.
+- **찾기(⌘F):** 글자를 치는 동안 캐럿 뒤의 첫 매치가 선택되고 모든 매치가 강조되며 줄 번호와 함께 나열됩니다(UltraEdit식 Quick Find, 64 MB가 넘는 파일은 Enter 때 검색). Enter / ⇧Enter는 포커스를 입력창에 둔 채 다음 / 이전 매치로, Esc는 바를 닫고 강조를 지웁니다. 정규식 `.*`, 대소문자 `Aa`, 단어 단위 `W` 토글, F3 / ⇧F3으로 캐럿에서 매치 이동, ⌥⌘A로 모든 매치를 멀티 커서로 전환.
 - **바꾸기(⌘R):** 현재 매치 바꾸기 / 모두 바꾸기, `$1` 같은 정규식 템플릿 지원. 모두 바꾸기는 ⌘Z 한 번으로 되돌립니다.
 - **파일에서 찾기(⇧⌘F):** 폴더를 고르고 `*.md;*.txt` 같은 마스크를 지정합니다. 바이너리 파일은 건너뛰고, 결과를 클릭하면 해당 줄로 엽니다.
 - **북마크:** ⌘F2 토글, F2 / ⌥F2 다음 / 이전, 이름은 선택. 북마크는 편집을 따라갑니다 — 위에 줄을 넣거나 지우면 함께 움직이고, 북마크한 줄을 지우면 사라지며, 실행 취소·다시 실행도 따라옵니다. `~/Library/Application Support/HyperEdit/bookmarks/`에 문서별로 저장되므로 문서 옆에는 아무 파일도 만들지 않습니다. 예전 버전이 문서 옆에 만든 `.<파일명>.bookmarks.json` 사이드카는 한 번 읽어 옮깁니다.
@@ -184,7 +184,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(660개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(672개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
@@ -200,7 +200,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법)을 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
-| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui replace save`. `scripts/bench.sh` 가 감싸서 실행 |
+| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui findquery replace save`. `scripts/bench.sh` 가 감싸서 실행 |
 | `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성

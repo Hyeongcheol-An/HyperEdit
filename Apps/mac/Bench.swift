@@ -16,7 +16,7 @@ enum Bench {
     static var enabled: Bool { CommandLine.arguments.contains("--bench") }
     static var strict: Bool { CommandLine.arguments.contains("--bench-strict") }
     static var outPath: String? { LaunchOptions.value("--bench-out") }
-    /// `--bench-only idle,open,memory,scroll,search,outline,theme,typing,findui,replace,save` — 프로파일링용으로 일부 단계만 실행
+    /// `--bench-only idle,open,memory,scroll,search,outline,theme,typing,findui,findquery,replace,save` — 프로파일링용으로 일부 단계만 실행
     static func phase(_ name: String) -> Bool {
         guard let only = LaunchOptions.value("--bench-only") else { return true }
         return only.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.contains(name)
@@ -628,8 +628,11 @@ enum Bench {
                 }
             }
             for (tag, q) in queries {
-                add(Metric(id: "find.publish.\(tag).log", name: "Find '\(q)' → results published, log (\(counts[tag] ?? 0) hits)", samples: pub[tag] ?? [], budget: 1500, informational: true))
-                add(Metric(id: "find.frame.\(tag).log", name: "Find '\(q)': first frame after publish, log", samples: frm[tag] ?? [], budget: 30))
+                // 발행의 SwiftUI 커밋(1만 행 reload 포함 ~30 ms)이 완료 카운터 앞뒤 어느 턴에 떨어지느냐에 따라 publish/frame 사이를 오가므로 합이 기준이다
+                let total = zip(pub[tag] ?? [], frm[tag] ?? []).map { $0 + $1 }
+                add(Metric(id: "find.e2e.\(tag).log", name: "Find '\(q)': Enter → results listed and drawn, log (\(counts[tag] ?? 0) hits)", samples: total, budget: tag == "common" ? 600 : 400))
+                add(Metric(id: "find.publish.\(tag).log", name: "Find '\(q)' → results published, log", samples: pub[tag] ?? [], budget: 1500, informational: true))
+                add(Metric(id: "find.frame.\(tag).log", name: "Find '\(q)': first frame after publish, log", samples: frm[tag] ?? [], budget: 50, informational: true))
             }
             // 결과 1만 건이 떠 있는 상태
             _ = await findRun("ERROR"); await wait(500)
@@ -687,6 +690,60 @@ enum Bench {
             add(Metric(id: "caret.down.hits.log", name: "Caret ↓ with 10k find results (list follows the caret), log", samples: moves, budget: 8, budgetP95: 16))
             model.searchQuery = ""; model.runSearch(); await wait(500)
             model.showBottomPanel = false
+            model.open(url: urls["small"]!); await wait(800)
+        }
+
+        // 8c. 찾기 입력창 타이핑 (log 28 MB, 결과 1만 건): 입력창은 `model.searchQuery` 바인딩이라 글자마다 AppModel 이 발행되고 창의 모든 SwiftUI 뷰가 다시 평가된다.
+        // 사용자 보고(2026-11-06): 결과가 떠 있는 28 MB 로그에서 찾기 입력창에 단어를 치는 것이 못 쓸 정도로 느렸다 (사이드바는 ~/Downloads 처럼 항목이 많은 폴더).
+        // 파일 보기가 큰 폴더 트리를 들고 있을 때를 흉내 내려고 말뭉치 폴더 아래에 40 폴더 × (30 파일 + 5 하위 폴더 × 40 파일) ≈ 9,200 항목을 만든다
+        if phase("findquery") {
+            let treeRoot = dir.appendingPathComponent("tree", isDirectory: true)
+            if !FileManager.default.fileExists(atPath: treeRoot.path) {
+                let t0 = now()
+                for i in 0..<40 {
+                    let d = treeRoot.appendingPathComponent(String(format: "folder-%02d", i), isDirectory: true)
+                    try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+                    for j in 0..<30 { FileManager.default.createFile(atPath: d.appendingPathComponent("note-\(j).md").path, contents: Data()) }
+                    for k in 0..<5 {
+                        let sub = d.appendingPathComponent("sub-\(k)", isDirectory: true)
+                        try? FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+                        for j in 0..<40 { FileManager.default.createFile(atPath: sub.appendingPathComponent("item-\(j).txt").path, contents: Data()) }
+                    }
+                }
+                log(String(format: "file tree for the sidebar created in %.0f ms", now() - t0))
+            }
+            model.showFileView = true; model.leftTab = .fileView
+            if model.document.url != urls["log"]! { model.open(url: urls["log"]!); await wait(3000) }
+            model.showFileView = false; await wait(200); model.showFileView = true; await wait(600)   // 파일 보기를 다시 만들어 트리를 읽게 (onAppear → reload)
+            model.showBottomPanel = true; model.bottomTab = .findResults; await wait(500)
+            model.searchQuery = "ERROR"; let g0 = model.searchCompletionCount; model.runSearch()
+            while model.searchCompletionCount == g0 { await nextTurn() }
+            await wait(500)
+            @MainActor func typeQuery(_ tag: String, chars: Int = 40) async -> [Double] {
+                // 결과 1만 건("ERROR")을 띄운 채로 — 글자를 뒤에 덧붙이므로 150 ms 디바운스 전까지 결과가 그대로다. 사용자가 치는 경로와 같이 quickFindTextChanged 까지 부른다
+                model.searchQuery = "ERROR"; let g = model.searchCompletionCount; model.runSearch()
+                while model.searchCompletionCount == g { await nextTurn() }
+                await nextTurn(); await afterFrame(); await wait(300)
+                let text = Array(" block_number TIMESTAMPTZ NOT NULL network")
+                var samples: [Double] = []
+                log("findquery typing start \(tag) (hits \(model.searchHits.count))")
+                for i in 0..<chars {
+                    let t = now()
+                    model.findFields.query.append(text[i % text.count]); model.quickFindTextChanged()
+                    await nextTurn(); await afterFrame()
+                    samples.append(now() - t)
+                }
+                log("findquery typing end \(tag) (hits \(model.searchHits.count))")
+                await wait(1500)   // 마지막 디바운스 검색이 끝나게
+                return samples
+            }
+            add(Metric(id: "find.query.typing.log", name: "Typing in the find field (FindFields), 10k results + big file view, log", samples: await typeQuery("default"), budget: 8, budgetP95: 16))
+            model.showFileView = false; await wait(300)
+            add(Metric(id: "find.query.typing.nofileview.log", name: "Typing in the find field, file view hidden, log", samples: await typeQuery("nofileview"), budget: 8, budgetP95: 16, informational: true))
+            model.showFileView = true; model.showBottomPanel = false; await wait(300)
+            add(Metric(id: "find.query.typing.nopanel.log", name: "Typing in the find field, results panel hidden, log", samples: await typeQuery("nopanel"), budget: 8, budgetP95: 16, informational: true))
+            model.showBottomPanel = true
+            model.searchQuery = ""; model.runSearch(); await wait(500)
             model.open(url: urls["small"]!); await wait(800)
         }
 
