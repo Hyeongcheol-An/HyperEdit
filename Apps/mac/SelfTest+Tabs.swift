@@ -85,6 +85,15 @@ extension SelfTest {
         // 파일에서 찾기 결과가 가리키는 파일이 그 사이 지워졌으면 열지 않는다 (빈 파일·빈 탭을 만들지 않는다)
         model.open(hit: FileSearchHit(url: a, line: 1, column: 1, lineText: "AAA", matchInLine: NSRange(location: 0, length: 3))); await wait(350)
         check(!model.tabs.contains(ra) && model.document.url == rb && !FileManager.default.fileExists(atPath: a.path), "tabs: a find-in-files hit in a deleted file opens nothing")
+        // 활성 탭을 닫을 때 옮겨 갈 왼쪽 이웃의 파일이 사라졌으면 그 탭도 함께 걷어내고 그다음 탭으로 간다
+        let g = dir.appendingPathComponent("gone.md")
+        try? "GONE\n".write(to: g, atomically: true, encoding: .utf8)
+        let rg = g.resolvingSymlinksInPath()
+        model.open(url: g); await wait(250); model.open(url: c); await wait(300)                // … b, gone, c (c 활성)
+        try? FileManager.default.removeItem(at: g)
+        model.closeTab(rc); await wait(400)
+        check(!model.tabs.contains(rg) && !model.tabs.contains(rc) && model.document.url == rb && !FileManager.default.fileExists(atPath: g.path),
+              "tabs: closing the active tab also drops a neighbour whose file is gone (\(names()))")
         // 편집 전 내용의 스냅샷은 파일마다 실행당 한 번 — 탭을 오갈 때마다 새로 찍으면 파일별 보관 칸이 금방 돈다. 편집 직후(자동 저장 전) 떠나도 찍힌다
         let fm = FileManager.default
         func snapshots(_ prefix: String, _ suffix: String) -> [URL] {
