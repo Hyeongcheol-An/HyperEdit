@@ -958,6 +958,324 @@ final class HyperTextView: NSTextView {
         return r
     }
 
+    // MARK: - 보던 곳 유지 (문서 전체의 레이아웃이 바뀌는 변화의 전후)
+    // 줄바꿈 폭(창 크기·사이드바·분할·줄 번호·미리보기)·글자 크기·테마(전체 속성 재적용)·줄바꿈 켬/끔은 문서 전체의 레이아웃을 무효화한다. TextKit 2 는 아직
+    // 배치하지 않은 문단의 높이를 추정하므로 스크롤 좌표를 그대로 두면 전혀 다른 줄이 보인다 (실측: 1.3 MB 메모 가운데에서 ⌘= 한 번에 1,000 줄, 줄바꿈을
+    // 끄면 9,500 줄 떨어진 곳 또는 빈 화면). 바꾸기 전에 뷰포트 맨 위 줄의 첫 글자를 잡아 두고, 바꾼 뒤 그 글자가 든 줄을 같은 높이에 되돌린다.
+
+    /// 뷰포트 맨 위에 걸친 줄의 첫 글자(`offset`)와, 그 줄 상자의 위 가장자리가 뷰포트 위 가장자리보다 얼마나 위에 있었는가(`delta`, 줄 높이 `lineHeight` 기준)
+    /// `fraction`: 그 줄이 문서 높이의 어디쯤이었는가(0…1) — 되돌릴 때의 첫 어림. 모르면 nil(글자 오프셋의 비율로 어림한다)
+    struct ReadingAnchor { var offset: Int; var delta: CGFloat; var lineHeight: CGFloat; var pinnedToEnd: Bool; var fraction: CGFloat? = nil }
+
+    /// 0 보다 크면 폭 변화에 따른 자동 유지(setFrameSize)를 쉰다 — 바깥에서 이미 닻을 잡고 있다
+    private var readingAnchorDepth = 0
+
+    /// 텍스트 뷰가 지금 배치해 그려 둔 조각들(뷰포트 범위) 가운데 `y`(텍스트 뷰 좌표) 아래로 처음 걸치는 것, 그리고 그 범위의 문서 오프셋과 위·아래 끝.
+    /// 점 질의(`textLayoutFragment(for: CGPoint)`)는 쓰지 않는다 — 전체 무효화나 먼 점프 직후에는 그 질의가 뷰포트 바로 위 문단을 새로 배치하며(추정 높이 →
+    /// 실측) 뷰포트 조각의 프레임을 통째로 옮겨(실측 −34…+10 pt), 그려진 화면과 다른 좌표를 돌려준다. 뷰포트 범위의 조각은 화면에 그려진 것 그대로다
+    private func laidOutViewport(firstBelow y: CGFloat) -> (fragment: NSTextLayoutFragment?, start: Int, end: Int, top: CGFloat, bottom: CGFloat)? {
+        guard let lm = textLayoutManager, let cs = textContentStorage, let vr = lm.textViewportLayoutController.viewportRange else { return nil }
+        let originY = textContainerOrigin.y
+        var found: NSTextLayoutFragment?
+        var top = CGFloat.greatestFiniteMagnitude, bottom = -CGFloat.greatestFiniteMagnitude
+        lm.enumerateTextLayoutFragments(from: vr.location, options: []) { f in
+            if f.rangeInElement.location.compare(vr.endLocation) != .orderedAscending { return false }
+            let fr = f.layoutFragmentFrame
+            guard fr.height > 0 else { return true }   // 접힌 문단
+            top = min(top, fr.minY + originY); bottom = max(bottom, fr.maxY + originY)
+            if found == nil, fr.maxY + originY > y + 0.5 { found = f }
+            return true
+        }
+        guard bottom > top else { return nil }
+        return (found, cs.offset(from: cs.documentRange.location, to: vr.location), cs.offset(from: cs.documentRange.location, to: vr.endLocation), top, bottom)
+    }
+
+    /// 그려 둔 뷰포트가 보이는 영역을 덮고 있는 보통의 경우(자동 줄바꿈)에만 그것을 돌려준다. 그렇지 않을 때 — 줄바꿈을 끈 문서(긴 줄이 섞이면 TextKit 이
+    /// 스크롤하다 엉뚱한 곳을 배치해 화면이 빈다 — 이 변경 전에도 같았다, 실측), 화면 일부가 비어 있을 때, 클립 뷰가 문서 끝 너머를 비출 때, 편집 직후 범위가
+    /// 끊겨 있을 때 — 는 nil: 그려 둔 범위를 믿을 수 없으니 부르는 쪽이 예전 경로(점 질의)를 그대로 쓴다
+    private func coveringViewport() -> (fragment: NSTextLayoutFragment, start: Int, end: Int)? {
+        guard textContainer?.widthTracksTextView == true, let clip = enclosingScrollView?.contentView, let length = textStorage?.length,
+              let v = laidOutViewport(firstBelow: clip.bounds.minY), let frag = v.fragment else { return nil }
+        let covers = (v.top <= clip.bounds.minY + 1 || v.start == 0) && (v.bottom >= clip.bounds.maxY - 1 || v.end >= length) && clip.bounds.maxY <= frame.height + 1
+        return covers ? (frag, v.start, v.end) : nil
+    }
+
+    /// 그려 둔 뷰포트의 범위 (보이는 영역을 덮고 있을 때만 — coveringViewport). 거터가 번호를 붙일 조각을 여기서 얻는다
+    func coveringViewportRange() -> NSTextRange? {
+        guard coveringViewport() != nil else { return nil }
+        return textLayoutManager?.textViewportLayoutController.viewportRange
+    }
+
+    /// 그려 둔 범위의 문서 오프셋 (coveringViewport 가 아니면 nil) — 레이아웃을 건드리지 않고 답한다
+    func laidOutViewportRange() -> NSRange? {
+        coveringViewport().map { NSRange(location: $0.start, length: max(0, $0.end - $0.start)) }
+    }
+
+    /// 화면 맨 위에 걸쳐 보이는 문단의 시작 오프셋 — 레이아웃을 건드리지 않고, 그려 둔 뷰포트에서 답한다 (자동 줄바꿈일 때만; 아니면 nil).
+    /// 스크롤 알림 안에서 불리므로(텍스트 뷰가 새 위치를 배치하기 전) 뷰포트가 화면 아래쪽을 아직 덮지 못해도 맨 위 문단만 있으면 된다 — 여기서 점 질의를
+    /// 하면 스크롤할 때마다 조각 프레임이 옮겨져, 전체 무효화 뒤의 첫 스크롤이 그만큼 튄다 (실측: 휠 90 pt 가 72.6 pt)
+    func firstVisibleParagraphOffset() -> Int? {
+        guard textContainer?.widthTracksTextView == true, let clip = enclosingScrollView?.contentView, let cs = textContentStorage,
+              let frag = laidOutViewport(firstBelow: clip.bounds.minY)?.fragment else { return nil }
+        return cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.location)
+    }
+
+    /// 화면 맨 위에 걸친 문단의 시작 오프셋과, 그 문단의 위 가장자리가 화면 위 가장자리보다 얼마나 위에 있는가(`inset`) — 레이아웃을 건드리지 않고 그려 둔
+    /// 뷰포트에서 답한다. 자동 줄바꿈이 아니거나 그려 둔 조각이 화면 위 가장자리에 닿지 않으면(위쪽이 빈 상태) nil — 부르는 쪽이 점 질의를 쓴다.
+    /// 보기 위치 저장(EditorView.topAnchor)이 쓴다: 그 저장은 캐럿이 움직인 0.8초 뒤에 돌므로 테마·글자 크기·폭을 바꾼 직후와 겹치기 쉽고, 그때의 점 질의는
+    /// 화면의 글자는 그대로 둔 채 조각 프레임만 옮겨(실측: 1.3 MB 메모에서 −102.7 pt, 여러 번 감기는 문서에서 +16.0 pt) 줄 번호·클릭 위치가 글자와 어긋났다
+    func firstVisibleParagraphAnchor() -> (offset: Int, inset: CGFloat)? {
+        guard textContainer?.widthTracksTextView == true, let cs = textContentStorage else { return nil }
+        let top = visibleRect.minY
+        guard let frag = laidOutViewport(firstBelow: top)?.fragment else { return nil }
+        let offset = cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.location)
+        let inset = top - textContainerOrigin.y - frag.layoutFragmentFrame.minY
+        guard inset > -0.5 || offset == 0 else { return nil }   // 문서 맨 위에서는 위쪽 여백 때문에 음수가 정상이다
+        return (offset, inset)
+    }
+
+    /// 캐럿(선택이 있으면 그 시작, 시작이 안 보이면 끝)이 놓인 줄이 화면에 보이고 있으면 그 글자 오프셋과 줄 상자(텍스트 뷰 좌표). 그려 둔 뷰포트에서만 찾는다 —
+    /// 화면 밖의 캐럿을 재면(caretRect) 그 문단이 새로 배치되며 뷰포트 조각의 프레임이 옮겨진다
+    private func caretLineOnScreen() -> (offset: Int, top: CGFloat, height: CGFloat)? {
+        guard let lm = textLayoutManager, let cs = textContentStorage, let clip = enclosingScrollView?.contentView, let length = textStorage?.length,
+              let vr = lm.textViewportLayoutController.viewportRange, !vr.isEmpty else { return nil }
+        let originY = textContainerOrigin.y, sel = selectedRange()
+        let start = cs.offset(from: cs.documentRange.location, to: vr.location), end = cs.offset(from: cs.documentRange.location, to: vr.endLocation)
+        for offset in sel.length > 0 ? [sel.location, NSMaxRange(sel)] : [sel.location] where offset >= start && offset <= end {
+            var hit: (offset: Int, top: CGFloat, height: CGFloat)?
+            lm.enumerateTextLayoutFragments(from: vr.location, options: []) { f in
+                let from = cs.offset(from: cs.documentRange.location, to: f.rangeInElement.location)
+                guard from <= offset, from < end else { return false }
+                let to = cs.offset(from: cs.documentRange.location, to: f.rangeInElement.endLocation)
+                guard offset < to || (offset == to && to >= length) else { return true }   // 캐럿은 뒤쪽 문단에 있다
+                let frame = f.layoutFragmentFrame
+                guard f.state == .layoutAvailable, frame.height > 0 else { return false }   // 접힌 문단
+                let lines = f.textLineFragments
+                guard let line = lines.first(where: { NSLocationInRange(offset - from, $0.characterRange) }) ?? lines.last else { return false }
+                hit = (offset, frame.minY + line.typographicBounds.minY + originY, line.typographicBounds.height)
+                return false
+            }
+            if let hit, hit.top < clip.bounds.maxY - 1, hit.top + hit.height > clip.bounds.minY + 1 { return hit }
+        }
+        return nil
+    }
+
+    /// `preferCaret`: 캐럿 줄이 화면에 보이고 있으면 맨 위 줄 대신 그 줄을 닻으로 삼는다. 캐럿 근처에서 일하던 중에 맨 위 줄을 지키면, 다시 감기며 그 사이의
+    /// 줄 수가 달라져 캐럿이 화면 밖으로 밀려난다 (실측: 긴 문단 문서에서 줄바꿈을 켜자 캐럿이 화면 아래 1,135 pt). 캐럿이 화면 밖이면(읽는 중) 맨 위 줄을 지킨다.
+    /// 접기·펴기는 맨 위(머리) 줄을 기준으로 하므로 끈다
+    func captureReadingAnchor(preferCaret: Bool = true) -> ReadingAnchor? {
+        guard window != nil, let clip = enclosingScrollView?.contentView, let cs = textContentStorage, let length = textStorage?.length, length > 0 else { return nil }
+        let top = clip.bounds.minY, originY = textContainerOrigin.y
+        var found = laidOutViewport(firstBelow: top)?.fragment
+        if found == nil {   // 편집 직후 등 뷰포트 범위가 비어 있을 수 있다 — 레이아웃이 아직 옛 것일 때(바꾸기 전) 한 번 배치해 채운다
+            textLayoutManager?.textViewportLayoutController.layoutViewport()
+            found = laidOutViewport(firstBelow: top)?.fragment
+        }
+        guard let frag = found else { return nil }
+        let fragFrame = frag.layoutFragmentFrame
+        var offset = cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.location)
+        var lineTop = fragFrame.minY, lineHeight = fragFrame.height
+        // 감긴 문단이면 위 가장자리에 걸친 줄 조각의 첫 글자를 잡는다 — 폭이 바뀌어 다시 감겨도 같은 글자가 맨 위에 온다
+        let yInFragment = top - originY - fragFrame.minY
+        if let line = frag.textLineFragments.last(where: { $0.typographicBounds.minY <= yInFragment + 0.5 }) {
+            offset += line.characterRange.location
+            lineTop = fragFrame.minY + line.typographicBounds.minY
+            lineHeight = line.typographicBounds.height
+        }
+        // 문서의 마지막 줄이 화면에 보이고 있었으면(끝에서 쓰는 중) 끝에 붙여 둔다 — 맨 위 줄을 지키면 글자가 커질 때 마지막 줄(캐럿)이 화면 아래로 밀려난다
+        let pinned = top > 1 && (clip.bounds.maxY >= frame.height - 1
+            || laidOutViewport(firstBelow: top).map { $0.end >= length && $0.bottom <= clip.bounds.maxY + 1 } ?? false)
+        if preferCaret, !pinned, let caret = caretLineOnScreen() {
+            return ReadingAnchor(offset: min(caret.offset, length), delta: top - caret.top, lineHeight: caret.height, pinnedToEnd: false, fraction: frame.height > 1 ? caret.top / frame.height : nil)
+        }
+        // 맨 위 조각이 뷰포트보다 아래에서 시작하면(배치가 어긋나 위쪽이 비어 있던 상태) 그 빈 틈까지 되살리지 않는다 — 그 줄을 맨 위에 둔다
+        let delta = max(top - (lineTop + originY), -clip.bounds.height / 2)
+        return ReadingAnchor(offset: min(offset, length), delta: delta, lineHeight: lineHeight, pinnedToEnd: pinned, fraction: frame.height > 1 ? (lineTop + originY) / frame.height : nil)
+    }
+
+    /// 닻 글자가 든 줄 상자의 (위 가장자리 y, 높이) — 텍스트 뷰 좌표
+    private func lineBox(atOffset offset: Int) -> (y: CGFloat, height: CGFloat)? {
+        guard let lm = textLayoutManager, let cs = textContentStorage, let length = textStorage?.length,
+              let loc = cs.location(cs.documentRange.location, offsetBy: min(offset, length)) else { return nil }
+        let originY = textContainerOrigin.y
+        if isInHugeParagraph(offset) {   // 거대 한 줄: 세그먼트 계산이 문단 전체 배치라 문단 프레임으로 대신한다
+            return lm.textLayoutFragment(for: loc).map { ($0.layoutFragmentFrame.minY + originY, $0.layoutFragmentFrame.height) }
+        }
+        // 한 글자 범위로 묻는다 — 길이 0 이면 감긴 줄의 경계에서 앞줄 끝이 나올 수 있다
+        let end = offset < length ? cs.location(loc, offsetBy: 1) : nil
+        var rect: CGRect?
+        lm.enumerateTextSegments(in: end.flatMap { NSTextRange(location: loc, end: $0) } ?? NSTextRange(location: loc), type: .standard, options: [.rangeNotRequired]) { _, f, _, _ in
+            rect = f; return false
+        }
+        if rect == nil, let frag = lm.textLayoutFragment(for: loc) { rect = frag.layoutFragmentFrame }
+        return rect.map { ($0.minY + originY, $0.height) }
+    }
+
+    /// 닻을 같은 높이로 되돌린다. 멀리 있는 문단의 좌표는 추정이고 추정끼리도 서로 맞지 않으므로(실측: 조각의 프레임이 가리키는 곳으로 가면 다른 문단이 배치된다),
+    /// 믿는 것은 **실제로 배치된 뷰포트**뿐이다: 뷰포트를 배치하고 → 닻이 그 범위 안에 있으면 정확히 맞추고, 밖이면 (처음엔 레이아웃 매니저의 추정으로,
+    /// 그다음엔 바꾸기 전의 상대 위치·뷰포트의 글자 밀도로 거리를 어림해) 다가간 뒤 다시 배치한다
+    func restoreReadingAnchor(_ a: ReadingAnchor) {
+        guard let sv = enclosingScrollView, let lm = textLayoutManager, let length = textStorage?.length, length > 0 else { return }
+        let clip = sv.contentView, vlc = lm.textViewportLayoutController
+        let offset = min(a.offset, length)
+        readingAnchorDepth += 1
+        // 여기서 맞춘 자리가 새 기준이다 — 스크롤 닻(layout)에 그 자리를 적어 주고, 편집 때문에 쉬고 있었으면 다시 지키게 한다.
+        //  · 적어 둔 자리가 이 함수가 스크롤하기 전의 것이면 다음 배치 패스가 그 사이에 옮겨진 좌표만큼을 '까닭 없이 움직인 것'으로 보고 되돌린다
+        //    (실측: 줄 이동이 화면 1/3 높이 127.3 pt 에 맞춘 줄을 다음 패스가 164.1 pt 로 옮겼다).
+        //  · 전체 속성 재적용(글자 크기·테마)·폭 변화는 저장소 편집으로 통지되므로 닻이 다음 패스를 쉰다. 그런데 그 패스가 위쪽 문단을 실측하며 좌표를 옮기면
+        //    방금 맞춘 줄이 화면에서 사라진다 (실측: 접힌 1.3 MB 메모에서 ⌘= 뒤의 패스가 좌표를 46,011 pt 옮겨 맨 위 줄이 12707 → 11595 번째 줄로 바뀌었다)
+        // 접힌 문서에서는 넘기지 않는다: 접힌 문단은 배치되기 전까지 보통 줄 높이로 어림되므로 패스마다 좌표가 수만 pt 씩 바뀌고, 닻이 그것을 따라 되돌리는 동안
+        // 뷰포트를 거듭 배치해 정지가 길어진다 (실측, 전체 묶음: 접힌 메모의 글자 크기·사이드바 걸음 네 개의 정지 행 44 → 106, 그러고도 캐럿 줄이 36.5 pt 어긋났다)
+        defer {
+            readingAnchorDepth -= 1
+            if hasFolds?() != true { layoutRecord = makeLayoutRecord(); layoutAnchorBlocked = false }
+        }
+        func scroll(to y: CGFloat) { clip.scroll(to: NSPoint(x: clip.bounds.minX, y: y)); sv.reflectScrolledClipView(clip) }
+        var usedEstimate = false, usedProportion = false, exactMoves = 0
+        var below: CGFloat = 0, above = CGFloat.greatestFiniteMagnitude   // 닻이 있는 구간: 스크롤 위치 below 보다는 아래, above 보다는 위 (뷰포트로 확인한 것)
+        var bracketReset = false
+        for pass in 0..<20 {
+            // 뷰포트 배치가 문서 높이를 줄여 클립 뷰가 스크롤 위치를 끌어당기면(줄바꿈 끄기·모두 접기) 방금 배치한 것은 옛 위치의 것이다 — 위치가 그대로일 때까지 다시
+            for _ in 0..<3 {
+                let before = clip.bounds.minY
+                vlc.layoutViewport()
+                if abs(clip.bounds.minY - before) < 0.5 { break }
+            }
+            let maxY = max(0, frame.height - clip.bounds.height)
+            if a.pinnedToEnd {
+                // 끝에 붙이는 동안에도 배치할 때마다 문서 높이 어림이 조금씩 바뀐다 — 몇 번만 따라가고 나머지는 keepPinnedToEnd 가 다음 턴들에 맞춘다
+                if abs(clip.bounds.minY - maxY) < 0.5 || pass >= 5 { keepPinnedToEnd(checks: 4); break }
+                scroll(to: maxY); continue
+            }
+            // 지금 보이는 곳을 덮고 있는 배치만 믿는다
+            let v = laidOutViewport(firstBelow: clip.bounds.minY).flatMap { $0.bottom > clip.bounds.minY && $0.top < clip.bounds.maxY ? $0 : nil }
+            var target: CGFloat
+            if let v, offset >= v.start && (offset < v.end || v.end >= length) {
+                // 닻이 배치된 범위 안 — 줄 상자의 위치가 정확하다. 글자 크기가 바뀌었으면 줄 안에서의 위치도 같은 비율로
+                guard let box = lineBox(atOffset: offset) else { return }
+                let delta = a.delta > 0 && a.lineHeight > 0 ? a.delta * box.height / a.lineHeight : a.delta
+                target = min(max(0, box.y + delta), maxY)
+                if abs(clip.bounds.minY - target) < 0.5 { break }
+                exactMoves += 1
+                if exactMoves > 3 { break }   // 맞춘 자리를 다시 배치하면 닻이 범위 밖으로 나가는 경우(추정이 계속 바뀜) — 오가지 말고 여기서 멈춘다
+            } else {
+                // 닻이 뷰포트 밖: 레이아웃 매니저의 추정 위치(문서 안을 가리킬 때만) → 바꾸기 전의 상대 위치(없으면 글자 오프셋의 비율) → 뷰포트의 글자 밀도로 거리를 어림
+                let chars = CGFloat(max(1, (v?.end ?? 1) - (v?.start ?? 0)))
+                // 닻이 그려 둔 범위 바로 곁이면 멀리 어림하지 않고 그 범위의 글자 밀도로 다가간다. 위 가장자리에 2 pt 쯤만 걸친 줄은 TextKit 의 뷰포트 범위에서 빠져
+                // 닻이 '범위 밖'이 되는데, 그때 레이아웃 매니저의 추정 위치를 쓰면(전체 무효화 직후에는 절반쯤 틀린다 — 실측: 209,977 pt 에 있는 줄을 105,000 pt 로 답했다)
+                // 먼 곳을 배치하는 동안 좌표가 다시 어림돼 아래의 구간이 낡는다
+                let near = v.map { CGFloat(offset < $0.start ? $0.start - offset : offset - $0.end) <= chars * 4 } ?? false
+                if !near, !usedEstimate, let box = lineBox(atOffset: offset), box.y >= 0, box.y <= frame.height {
+                    usedEstimate = true
+                    target = box.y + a.delta
+                } else if !near, !usedProportion, v == nil || CGFloat(abs(offset - v!.start)) > chars * 40 {
+                    usedProportion = true
+                    target = (a.fraction ?? CGFloat(offset) / CGFloat(length)) * frame.height
+                } else if let v {
+                    let height = max(1, v.bottom - v.top)
+                    target = (offset < v.start ? v.top - CGFloat(v.start - offset) * height / chars : v.bottom + CGFloat(offset - v.end) * height / chars) - clip.bounds.height / 3
+                } else { break }
+                // 뷰포트로 확인한 구간을 좁혀 간다 — 어림(글자 밀도)이 그 구간을 벗어나면 가운데로 (접힌 문서처럼 밀도가 고르지 않아도 반드시 줄어든다)
+                if let v { if offset < v.start { above = min(above, clip.bounds.minY) } else { below = max(below, clip.bounds.minY) } }
+                target = min(max(0, target), maxY)
+                let upper = min(above, maxY)
+                if upper > below, target <= below || target >= upper { target = (below + upper) / 2 }
+                if abs(clip.bounds.minY - target) < 0.5 {
+                    // 구간이 닫혔는데 닻은 여전히 범위 밖이고 문서 처음·끝에 막힌 것도 아니다: 구간을 적은 뒤의 배치가 좌표를 다시 어림해 닻이 구간 밖으로 나갔다
+                    // (실측: 위쪽 끝으로 적어 둔 210,000.1 pt 로 수렴했는데 그 자리에는 33줄 앞의 문단이 있었다). 한 번은 구간을 버리고 다시 찾는다
+                    if !bracketReset, v != nil, upper - below < 2, target > 0.5, target < maxY - 0.5 {
+                        bracketReset = true; below = 0; above = .greatestFiniteMagnitude
+                        continue
+                    }
+                    break   // 더 갈 곳이 없다 (문서 처음·끝에 막힘)
+                }
+            }
+            scroll(to: target)
+        }
+    }
+
+    /// 끝에 붙인 뒤에도 이어지는 배치가 문서 높이를 조금씩 늘린다(추정 → 실측, 거터 폭이 바뀌며 한 번 더 감김) — 잠깐 동안(다음 턴, 그리고 60 ms 간격으로
+    /// 몇 번) 끝에서 조금 떨어졌으면 다시 붙인다. 그사이 사용자가 멀리 스크롤했으면(반 화면 넘게) 그만둔다
+    private func keepPinnedToEnd(checks: Int) {
+        guard checks > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + (checks == 4 ? 0 : 0.06)) { [weak self] in
+            guard let self, let sv = self.enclosingScrollView else { return }
+            let clip = sv.contentView, gap = self.frame.height - clip.bounds.maxY
+            guard gap < clip.bounds.height / 2 else { return }
+            if gap > 0.5 { clip.scroll(to: NSPoint(x: clip.bounds.minX, y: max(0, self.frame.height - clip.bounds.height))); sv.reflectScrolledClipView(clip) }
+            self.keepPinnedToEnd(checks: checks - 1)
+        }
+    }
+
+    /// 문서 전체의 레이아웃을 무효화하는 변화의 앞뒤에 짝으로 부른다: 닻을 잡고(그 사이의 폭 변화는 따로 처리하지 않는다) → 되돌린다
+    func beginPreservingReadingPosition() -> ReadingAnchor? {
+        let anchor = captureReadingAnchor(preferCaret: false)   // 접기·펴기: 맨 위(머리) 줄 기준
+        readingAnchorDepth += 1
+        return anchor
+    }
+
+    func endPreservingReadingPosition(_ anchor: ReadingAnchor?) {
+        readingAnchorDepth -= 1
+        if let anchor { restoreReadingAnchor(anchor) }
+    }
+
+    func preservingReadingPosition(_ body: () -> Void) {
+        let anchor = beginPreservingReadingPosition()
+        body()
+        endPreservingReadingPosition(anchor)
+    }
+
+    // 줄바꿈 폭이 바뀌는 변화 (창·사이드바·분할·줄 번호·미리보기의 폭, 자동 줄바꿈 켬/끔). 보던 곳을 지키는 것에 더해 한 가지가 더 필요하다:
+    // TextKit 2 는 폭이 바뀐 뒤에도 다시 배치하지 않은 문단의 높이를 **옛 폭에서 잰 값**으로 어림한다. 폭이 크게 바뀌면(미리보기를 닫아 465 → 1010 pt) 그 어림이
+    // 두 배쯤 틀려, 문서 가운데가 전체 높이의 68% 지점에 놓인다. 그대로 두면 스크롤하는 동안 높이가 실측으로 줄어들다가 스크롤 위치가 문서 끝을 넘는 순간
+    // 화면이 문서 끝으로 날아간다(실측: 휠 두 번에 2,000 줄). `invalidateLayout(for:)` 로는 어림이 버려지지 않았고(실측), 저장소에 속성 편집을 알려 조각을
+    // 새로 만들게 하면 버려진다 — 구문 색 켬/끔이 쓰는 것과 같은 통지다. 그 통지는 같은 문서를 보여 주는 다른 편집기(분할)의 레이아웃도 무효화하므로
+    // 형제 뷰의 닻도 함께 잡았다가 되돌린다
+
+    /// 같은 문서를 보여 주는 다른 편집기 (분할 보기 — 콘텐츠 스토리지를 함께 쓴다)
+    private var siblingViews: [HyperTextView] {
+        (textContentStorage?.textLayoutManagers ?? []).compactMap { $0.textContainer?.textView as? HyperTextView }.filter { $0 !== self }
+    }
+
+    struct ReflowToken { fileprivate let views: [HyperTextView]; fileprivate let anchors: [ReadingAnchor?] }
+
+    func beginReflow() -> ReflowToken {
+        let views = [self] + siblingViews
+        let token = ReflowToken(views: views, anchors: views.map { $0.captureReadingAnchor() })
+        views.forEach { $0.readingAnchorDepth += 1 }
+        return token
+    }
+
+    func endReflow(_ token: ReflowToken) {
+        token.views.forEach { $0.readingAnchorDepth -= 1 }
+        settleReflow(token)
+    }
+
+    /// 옛 폭에서 잰 높이 어림을 버리게 하고 닻을 되돌린다. 같은 닻으로 다시 불러도 된다 (줄바꿈을 켠 다음 턴 — EditorView.setWordWrap)
+    func settleReflow(_ token: ReflowToken) {
+        if window != nil, let ts = textStorage, ts.length > 0 {
+            token.views.forEach { $0.readingAnchorDepth += 1 }   // 통지가 부르는 배치 중의 폭 변화는 따로 처리하지 않는다
+            ts.beginEditing()
+            ts.edited(.editedAttributes, range: NSRange(location: 0, length: ts.length), changeInLength: 0)
+            ts.endEditing()
+            token.views.forEach { $0.readingAnchorDepth -= 1 }
+        }
+        for (view, anchor) in zip(token.views, token.anchors) { if let anchor { view.restoreReadingAnchor(anchor) } }
+    }
+
+    /// 자동 줄바꿈 상태에서 폭이 바뀌면(창·사이드바·분할·줄 번호·미리보기) 모든 문단이 다시 감긴다 — 보던 곳을 지킨다 (위의 beginReflow/endReflow).
+    /// 줄바꿈이 꺼져 있으면 폭은 내용이 정하는 것이라(가장 긴 줄) 건드리지 않는다
+    override func setFrameSize(_ newSize: NSSize) {
+        guard readingAnchorDepth == 0, abs(newSize.width - frame.width) > 0.5, textContainer?.widthTracksTextView == true, window != nil else {
+            super.setFrameSize(newSize)   // 높이가 줄어 스크롤 위치가 문서 끝을 넘겼으면 layout() 의 constrainScrollToDocumentEnd 가 되돌린다
+            return
+        }
+        let token = beginReflow()
+        super.setFrameSize(newSize)
+        endReflow(token)
+    }
+
+
     // MARK: - 선택 변경 감시 (사용자 조작이면 멀티 해제)
 
     override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {

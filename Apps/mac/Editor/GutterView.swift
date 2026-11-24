@@ -140,25 +140,34 @@ final class GutterView: NSView {
         }
         let attrs: [NSAttributedString.Key: Any] = [.font: numberFont, .foregroundColor: numberColor]
         let curAttrs: [NSAttributedString.Key: Any] = [.font: numberFont, .foregroundColor: currentColor]
+        // 번호를 붙일 조각은 텍스트 뷰가 실제로 배치해 화면에 그려 둔 뷰포트 범위에서 얻는다. 아래의 점 질의(textLayoutFragment(for: CGPoint))로 시작·끝 문단을
+        // 구하면, 전체 무효화(테마·글자 크기·폭 변화)나 먼 점프 직후에는 그 질의가 뷰포트 바로 위 문단을 새로 배치하며(추정 높이 → 실측) 뷰포트 조각의 프레임을
+        // 통째로 옮긴다(실측 −34…+10 pt). 텍스트 뷰는 예전 자리에 그려져 있으므로 번호·찾기 강조가 글자와 어긋나고 다음 스크롤에서 화면이 그만큼 튄다.
+        // 그려 둔 뷰포트가 보이는 영역을 덮고 있는 보통의 경우(자동 줄바꿈)에만 그것을 쓰고, 믿을 수 없을 때(줄바꿈을 끈 문서·화면 일부가 빈 상태·편집 직후
+        // 범위가 끊긴 상태)는 예전 경로(점 질의) 그대로다 (HyperTextView.coveringViewportRange)
+        let viewport = (tv as? HyperTextView)?.coveringViewportRange()
         let startPoint = CGPoint(x: 0, y: max(0, visible.minY - origin.y))
-        let startLocation = lm.textLayoutFragment(for: startPoint)?.rangeInElement.location ?? lm.documentRange.location
+        let startLocation = viewport?.location ?? lm.textLayoutFragment(for: startPoint)?.rangeInElement.location ?? lm.documentRange.location
         // 보이는 영역의 끝 문단: 전체 속성 재적용 직후에는 프래그먼트 프레임이 추정값(높이 0·엉뚱한 y)이라 프레임만으로는 멈출 수 없다 —
         // 점 질의로 끝 위치를 구해 그 문단을 지나면 멈춘다 (안 그러면 문서 끝까지 배치하며 열거해 8 MB 문서의 테마 전환이 20 s 걸린다, 실측)
         let endPoint = CGPoint(x: 0, y: max(0, visible.maxY - origin.y))
-        let endLocation = lm.textLayoutFragment(for: endPoint)?.rangeInElement.endLocation
+        let endLocation = viewport?.endLocation ?? lm.textLayoutFragment(for: endPoint)?.rangeInElement.endLocation
         // 전체 속성 재적용 직후 프레임 y 는 추정값이라 '보이는 영역을 지났다' 판정이 안 걸릴 수 있다(실측: 5,000개까지 열거) →
         // 시작 문단부터 누적한 높이가 보이는 높이를 넘으면 멈춘다. 추정 프레임으로 그린 번호는 TextKit 이 배치를 마친 뒤의 다음 그리기가 바로잡는다.
         let maxAccumulatedHeight = visible.height + 4 * max(1, (tv.font?.pointSize ?? 14) * 2)
         var visited = 0, zeroHeight = 0
         var accumulated: CGFloat = 0
-        lm.enumerateTextLayoutFragments(from: startLocation, options: [.ensuresLayout]) { frag in
+        lm.enumerateTextLayoutFragments(from: startLocation, options: viewport == nil ? [.ensuresLayout] : []) { frag in
             visited += 1
             if visited > Self.maxFragmentsPerDraw { return false }   // 안전장치: 어떤 경우에도 한 번의 그리기가 문서 전체를 배치하지 않게
             if let end = endLocation, frag.rangeInElement.location.compare(end) != .orderedAscending { return false }
             let frame = frag.layoutFragmentFrame
             let yInTextView = frame.minY + origin.y
             if yInTextView > visible.maxY || accumulated > maxAccumulatedHeight { return false }
-            accumulated += frame.height
+            // 보이는 영역 위쪽에 걸친 문단은 보이는 부분만 센다 — 감긴 줄이 여럿인 긴 문단의 높이를 통째로 세면 큰 글자에서 상한을 넘겨 아래쪽 번호가 빠졌다.
+            // 통째로 위에 있는 문단은 추정 프레임으로 열거할 때만 센다(끝없이 열거하지 않게) — 그려 둔 뷰포트 범위는 보이는 영역 위쪽의 여유분을 포함할 수 있다
+            if yInTextView + frame.height < visible.minY { if viewport == nil { accumulated += frame.height } }
+            else { accumulated += yInTextView + frame.height - max(yInTextView, visible.minY) }
             if frame.height <= 0 { zeroHeight += 1; return true }   // fold: 접힌(높이 0) 문단은 번호를 건너뛴다
             if yInTextView + frame.height < visible.minY { return true }
             let offset = cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.location)
