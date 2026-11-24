@@ -76,7 +76,7 @@ extension RealUseContext {
     }
 
     /// 캐럿(선택)이 기대한 곳에 있는가
-    func expectSelection(_ expected: NSRange, _ why: String) {
+    fileprivate func expectSelection(_ expected: NSRange, _ why: String) {
         RealUse.typingChecks += 1
         let sel = tv.selectedRange()
         if sel != expected { issue("selection", "\(why): selection is \(sel), expected \(expected)") }

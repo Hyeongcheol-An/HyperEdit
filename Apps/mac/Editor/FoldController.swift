@@ -256,12 +256,21 @@ final class FoldController {
         if let i = candidateIndex(headerStart: paragraphStart) { fold(candidates[i]) }
     }
 
-    /// 선택이 바뀔 때 (Coordinator 가 부른다): 캐럿이 숨은 줄로 들어갔으면 그 접힘을 펼친다. 드래그 선택(길이 > 0)은 숨은 텍스트를 포함한 채 둔다
+    /// 선택이 바뀔 때 (Coordinator 가 부른다): 캐럿이 숨은 줄로 들어갔으면 그 접힘을 펼친다. 접힘을 통째로 가로지르는 선택(양 끝이 보이는 드래그·모두 선택)은
+    /// 숨은 텍스트를 포함한 채 둔다. 선택의 한쪽 끝이 숨은 줄 안에 놓이면(접힌 머리 줄에서 ⇧↓·⇧→ 로 넓힐 때) 그 접힘을 펼친다 — 그대로 두면 키를 눌러도
+    /// 화면에 변화가 없고, 보이지 않는 채로 늘어난 선택을 지우게 된다
     func selectionDidChange() {
         guard !folds.isEmpty, let tv = textView else { return }
         let sel = tv.selectedRange()
-        guard sel.length == 0, isOffsetHidden(sel.location) else { return }
-        unfoldAll(containing: sel.location, reason: String(localized: "caret"))
+        if sel.length == 0 {
+            guard isOffsetHidden(sel.location) else { return }
+            unfoldAll(containing: sel.location, reason: String(localized: "caret"))
+            return
+        }
+        if isOffsetHidden(sel.location) { unfoldAll(containing: sel.location, reason: String(localized: "caret")) }
+        // 끝 경계: 숨김 구간의 시작(머리 줄의 개행 바로 뒤)이나 끝에 딱 놓인 것은 보이는 글자만 고른 것이다 — 구간 안쪽일 때만 펼친다
+        let end = NSMaxRange(sel)
+        if let span = hiddenSpan(containing: end), end > span.location, end < NSMaxRange(span) { unfoldAll(containing: end, reason: String(localized: "caret")) }
     }
 
     /// 점프(검색 매치·줄 이동·북마크·문서 끝)로 선택이 놓이기 전에 그 자리를 숨기는 접힘을 펼친다 — 길이 있는 선택(검색 매치)은 selectionDidChange 가 건드리지 않는다
@@ -317,12 +326,42 @@ final class FoldController {
         }
     }
 
-    /// 접은 뒤 캐럿이 숨겨졌으면 가장 바깥 머리 줄 끝으로 옮긴다 (Xcode 와 같음)
+    /// 접은 뒤 캐럿이 숨겨졌으면 가장 바깥 머리 줄 끝으로 옮긴다 (Xcode 와 같음).
+    /// 길이 있는 선택은 숨은 줄에 걸린 끝을 보이는 자리로 당긴다: 숨은 줄에서 시작하면 접힘 뒤 첫 보이는 줄 머리로, 숨은 줄 안에서 끝나면 머리 줄의 개행 뒤로.
+    /// 그대로 두면 숨은 부분의 선택 띠가 접힌 자리의 다음 줄 위에 유령처럼 그려지고, 통째로 숨은 선택은 화면에 아무것도 남지 않은 채 다음 입력이 숨은 글자를
+    /// 지운다. 당기고 나서 남는 것이 없으면(통째로 숨음) 캐럿처럼 머리 줄 끝으로 옮긴다. 접힘을 가로지르되 양 끝이 보이는 선택은 건드리지 않는다
     private func moveCaretOutOfFolds() {
-        guard let tv = textView, tv.selectedRange().length == 0, let span = hiddenSpan(containing: tv.selectedRange().location) else { return }
+        guard let tv = textView else { return }
+        let sel = tv.selectedRange()
+        var start = sel.location, end = NSMaxRange(sel)
+        let startSpan = hiddenSpan(containing: start)
+        if sel.length > 0 {
+            if let s = startSpan { start = NSMaxRange(s) }
+            if let e = hiddenSpan(containing: end), end > e.location, end < NSMaxRange(e) { end = e.location }
+            if start < end {
+                if start != sel.location || end != NSMaxRange(sel) { tv.setSelectedRange(NSRange(location: start, length: end - start)) }
+                return
+            }
+        }
+        guard let span = startSpan else { return }
         let target = max(0, span.location - 1)
         tv.setSelectedRange(NSRange(location: target, length: 0))
+        scrollCaretIntoView(target, retries: 3)
+    }
+
+    /// 접은 직후의 scrollRangeToVisible 은 아직 배치되지 않은(추정 높이) 레이아웃 위에서 자리를 잡는다. 그 뒤 위쪽의 숨은 문단들이 실제로 배치되면(높이 0) 아래가
+    /// 통째로 올라가 캐럿 줄이 화면 밖으로 나갈 수 있다(실측: 300 pt 위) → 배치가 돈 뒤 캐럿이 그대로 그 자리인데 안 보이면 다시 스크롤한다
+    private func scrollCaretIntoView(_ target: Int, retries: Int) {
+        guard let tv = textView else { return }
         tv.scrollRangeToVisible(NSRange(location: target, length: 0))
+        guard retries > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak tv] in
+            guard let self, let tv, tv.selectedRange() == NSRange(location: target, length: 0) else { return }   // 그 사이 캐럿이 옮겨졌으면 그만
+            tv.layoutSubtreeIfNeeded()
+            guard let r = tv.caretRect(at: target) else { return }
+            let visible = tv.visibleRect
+            if r.maxY < visible.minY || r.minY > visible.maxY { self.scrollCaretIntoView(target, retries: retries - 1) }
+        }
     }
 
     private func changed() {

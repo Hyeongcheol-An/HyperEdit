@@ -113,21 +113,135 @@ final class HyperTextView: NSTextView {
     override func drawBackground(in rect: NSRect) {
         Perf.measure("HyperTextView.drawBackground", threshold: 2) {
             super.drawBackground(in: rect)
-            drawCurrentLineHighlight()
-            drawMatchHighlights(in: rect)   // search: 현재 줄 띠 위, 글자 아래
-            drawCarets()      // appearance: Block·Underline 머리 캐럿 + 보조 캐럿 (글자 아래 레이어)
-            drawFoldPills()   // fold
+            guardingViewport {
+                drawCurrentLineHighlight()
+                if Self.trackBandForRealUse { trackBandDraw() }
+                drawMatchHighlights(in: rect)   // search: 현재 줄 띠 위, 글자 아래
+                drawCarets()      // appearance: Block·Underline 머리 캐럿 + 보조 캐럿 (글자 아래 레이어)
+                drawFoldPills()   // fold
+            }
+        }
+    }
+
+    // MARK: 뷰포트 지킴이
+    // 그리는 동안의 레이아웃 질의(거터의 조각 열거, 접기 표식·캐럿 사각형)가 뷰포트 위쪽의 아직 배치되지 않은 문단을 배치하면 TextKit 2 는 그 아래 조각들의 프레임을
+    // 통째로 옮긴다. 그런데 이미 화면에 올린 조각 뷰는 다시 놓지 않는다(macOS 27 실측: 모두 접기 뒤 뷰포트 조각 20개가 +8.8 pt, 조각 뷰는 제자리) — 글자는 옛 자리에
+    // 보이고 줄 번호·접기 표식·클릭 위치는 새 자리를 따라 어긋난 채로 다음 스크롤까지 남는다. 질의 앞뒤로 뷰포트 마지막 조각의 y 를 견줘 움직였으면 다음 턴에
+    // needsLayout 을 건다 — NSTextView.layout() 이 뷰포트를 다시 배치해 조각 뷰를 새 프레임에 놓는다(실측). 평소에는 조각 하나를 두 번 읽는 비용뿐이다.
+    private var viewportRelayoutScheduled = false
+    private var viewportRelayoutBurst = 0   // 연달아 다시 배치한 횟수 (질의가 매번 프레임을 옮기는 경우에도 끝없이 돌지 않게)
+
+    /// 뷰포트에 배치된 마지막 조각의 (위치, y). 그 앞 어디서든 프레임이 바뀌면 이 값이 움직인다. 읽기만 한다 (배치를 강제하지 않는다)
+    private func viewportTail() -> (location: NSTextLocation, y: CGFloat)? {
+        guard let lm = textLayoutManager, let vr = lm.textViewportLayoutController.viewportRange, !vr.isEmpty else { return nil }
+        var out: (location: NSTextLocation, y: CGFloat)?
+        lm.enumerateTextLayoutFragments(from: vr.endLocation, options: [.reverse]) { f in
+            out = (f.rangeInElement.location, f.layoutFragmentFrame.minY)
+            return false
+        }
+        return out
+    }
+
+    /// `body` 의 레이아웃 질의가 뷰포트 조각의 자리를 옮겼으면 뷰포트를 다시 배치하게 한다. `onShift` 는 그 뒤 다시 그릴 것이 있는 쪽(거터)이 준다
+    func guardingViewport(onShift: (() -> Void)? = nil, _ body: () -> Void) {
+        let before = viewportTail()
+        body()
+        guard let b = before, !viewportRelayoutScheduled, viewportRelayoutBurst < 4,
+              let a = viewportTail(), a.location.compare(b.location) == .orderedSame, abs(a.y - b.y) > 0.5 else { return }
+        Perf.log("viewport guard: a draw-time layout query moved the viewport fragments by \(a.y - b.y) pt — laying the viewport out again")
+        viewportRelayoutScheduled = true
+        viewportRelayoutBurst += 1
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.viewportRelayoutScheduled = false
+            self.needsLayout = true
+            self.needsDisplay = true
+            onShift?()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.viewportRelayoutBurst = 0 }
         }
     }
 
     private func drawCurrentLineHighlight() {
-        guard multi == nil, let color = currentLineColor, selectedRange().length == 0,
-              let r = caretRect(at: selectedRange().location) else { return }
-        var line = r
-        line.origin.x = 0
-        line.size.width = bounds.width
+        let band = currentLineBandRect()
+        // 그리는 지금(배치가 끝난 뒤)의 띠 자리가 장부와 다르면, 이번에 다시 칠해지는 구역에 새 자리가 안 들어 있거나 옛 자리가 안 지워질 수 있다 → 다음 턴에 맞춘다
+        if !Self.sameRow(band, lineBandRect), !lineBandFixScheduled {
+            lineBandFixScheduled = true
+            DispatchQueue.main.async { [weak self] in self?.lineBandFixScheduled = false; self?.invalidateCurrentLineBand() }
+        }
+        guard let band, let color = currentLineColor else { return }
         color.setFill()
-        line.fill()
+        band.fill()
+    }
+
+    // 현재 줄 띠의 자리 장부. 띠는 이 뷰의 배경에 칠하므로(글자는 조각 뷰가 따로 그린다) 캐럿이 옮겨 가면 옛 자리와 새 자리를 직접 다시 그리게 해야 한다.
+    // 선택이 바뀌는 순간의 캐럿 사각형만 믿으면 안 된다 — 여러 문단이 바뀐 편집(되돌리기·줄 도구·날짜 삽입·여러 줄 붙여넣기) 직후 TextKit 2 는 아직 배치하지 않은
+    // 문단 아래의 조각 위치를 틀리게 답한다(실측: 줄 삭제를 되돌린 직후 7줄 어긋남). 그 값을 옛 자리로 적어 두면 다음에 캐럿이 옮겨 갈 때 엉뚱한 줄을 지워
+    // 옛 띠가 화면에 남는다(띠가 두 줄). 그래서 띠가 화면에 있다고 보는 자리를 여기 적어 두고, 그릴 때마다 실제 자리와 견줘 어긋났으면 다시 맞춘다.
+    private var lineBandRect: NSRect?
+    private var lineBandFixScheduled = false
+
+    private static func sameRow(_ a: NSRect?, _ b: NSRect?) -> Bool {
+        guard let a, let b else { return a == nil && b == nil }
+        return abs(a.minY - b.minY) < 0.5 && abs(a.height - b.height) < 0.5 && abs(a.width - b.width) < 0.5
+    }
+
+    /// 지금 현재 줄 띠가 있어야 할 자리 (멀티 캐럿·선택이 있으면 없음, 거대 문단은 캐럿 사각형을 구하지 않으므로 없음)
+    private func currentLineBandRect() -> NSRect? {
+        guard multi == nil, currentLineColor != nil, selectedRange().length == 0, let r = caretRect(at: selectedRange().location) else { return nil }
+        return NSRect(x: 0, y: r.minY, width: bounds.width, height: r.height)
+    }
+
+    /// 띠의 자리가 장부와 다르면 옛 자리와 새 자리를 다시 그리게 하고 장부를 고친다 (선택이 바뀔 때, 그리다가 어긋남을 발견했을 때)
+    private func invalidateCurrentLineBand() {
+        let want = currentLineBandRect()
+        guard !Self.sameRow(want, lineBandRect) else { return }
+        if let old = lineBandRect { setNeedsDisplay(old.insetBy(dx: 0, dy: -2)) }
+        if let new = want { setNeedsDisplay(new.insetBy(dx: 0, dy: -2)) }
+        lineBandRect = want
+    }
+
+    // 실사용 하네스(--realuse): 현재 줄 띠가 **화면의 뒷저장소** 어느 높이에 칠해져 있는지를 흉내 낸다. 하네스의 스냅샷은 cacheDisplay 로 새로 그린 그림이라
+    // 다시 그리기가 빠져 화면에 남은 낡은 띠(또는 안 칠해진 띠)를 보여 주지 못한다. 실제 그리기마다 "다시 칠해진 구역의 띠를 지우고, 지금 띠와 겹치는 만큼 더한다"
+    // 를 따라가면 뒷저장소의 띠 자리가 된다 (왼쪽 여백 x = 3 pt 열 기준, 텍스트 뷰 좌표의 y 구간). 화면 밖 비트맵으로 그리는 중(cacheDisplay)은 세지 않는다
+    nonisolated(unsafe) static var trackBandForRealUse = false
+    private(set) var debugBandOnScreen: [ClosedRange<CGFloat>] = []
+    /// 호출 경로(되돌아갈 주소들)별로 "cacheDisplay 안인가" 를 한 번만 기호로 풀어 적어 둔다 — callStackSymbols 는 한 번에 수 ms 라 그리기마다 부르면
+    /// 큰 문서의 줄바꿈 전환처럼 그리기가 몰릴 때 하네스가 스스로 수 초의 정지를 만든다
+    nonisolated(unsafe) private static var offscreenDrawPaths: [Int: Bool] = [:]
+    private static func drawingOffscreen() -> Bool {
+        var hasher = Hasher()
+        for a in Thread.callStackReturnAddresses.prefix(48) { hasher.combine(a) }
+        let key = hasher.finalize()
+        if let known = offscreenDrawPaths[key] { return known }
+        let offscreen = Thread.callStackSymbols.contains { $0.contains("cacheDisplayInRect") }
+        offscreenDrawPaths[key] = offscreen
+        return offscreen
+    }
+
+    private func trackBandDraw() {
+        if Self.drawingOffscreen() { return }
+        var rects: UnsafePointer<NSRect>?
+        var count = 0
+        getRectsBeingDrawn(&rects, count: &count)
+        let band = currentLineBandRect().map { $0.minY...$0.maxY }
+        var painted = debugBandOnScreen
+        for i in 0..<count {
+            guard let d = rects?[i], d.minX <= 3, d.maxX > 3, d.height > 0 else { continue }
+            var next: [ClosedRange<CGFloat>] = []
+            for p in painted {   // 다시 칠해진 구역은 배경으로 돌아간다
+                if p.upperBound <= d.minY || p.lowerBound >= d.maxY { next.append(p); continue }
+                if p.lowerBound < d.minY { next.append(p.lowerBound...d.minY) }
+                if p.upperBound > d.maxY { next.append(d.maxY...p.upperBound) }
+            }
+            if let b = band, b.upperBound > d.minY, b.lowerBound < d.maxY { next.append(max(b.lowerBound, d.minY)...min(b.upperBound, d.maxY)) }
+            painted = next
+        }
+        // 맞닿은 구간은 합친다
+        var merged: [ClosedRange<CGFloat>] = []
+        for p in painted.sorted(by: { $0.lowerBound < $1.lowerBound }) where p.upperBound - p.lowerBound > 0.25 {
+            if let last = merged.last, p.lowerBound <= last.upperBound + 0.25 { merged[merged.count - 1] = last.lowerBound...max(last.upperBound, p.upperBound) } else { merged.append(p) }
+        }
+        debugBandOnScreen = merged
     }
 
     /// 보이는 매치만 칠한다. 범위는 뷰포트 레이아웃 컨트롤러가 실제로 배치한 `viewportRange` 로 한정한다 — 점 질의 폴백으로 문서 전체를 훑으면
@@ -562,6 +676,7 @@ final class HyperTextView: NSTextView {
         super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
         if undoInProgress { selectionMovedByUndo = true }
         if !settingSelectionProgrammatically, multi != nil { multi = nil }
+        invalidateCurrentLineBand()   // 현재 줄 띠: 옛 자리(장부)와 새 자리를 다시 그린다
         restartBlink(); caretVisibilityChanged()   // appearance: 선택 유무에 따라 보이고 숨기며, 이전 자리를 지운다
         if cursorStyle != .bar { applyInsertionIndicatorMode() }   // appearance: 거대 문단 안팎을 오갈 때 시스템 캐럿 폴백을 켜고 끈다
     }
@@ -612,7 +727,9 @@ final class HyperTextView: NSTextView {
             // 길이 0 다중 캐럿은 네이티브가 하나로 합치므로 머리만 네이티브에 두고 나머지는 직접 그린다
             super.setSelectedRange(ranges[p])
         } else {
-            super.setSelectedRanges(ranges.map { NSValue(range: $0) }, affinity: .downstream, stillSelecting: false)
+            // 길이 0 범위는 빼고 넘긴다 (그 줄의 캐럿은 drawCarets 가 직접 그린다). 실측(macOS 27): 첫 범위가 길이 0 이면 — 열 블록의 맨 윗줄이 블록의 왼쪽 열보다
+            // 짧을 때 — NSTextView 가 selectedRanges 로는 전부 돌려주면서도 선택 강조를 한 줄도 그리지 않아, 고른 블록이 화면에 보이지 않는 채로 입력이 블록을 바꿨다
+            super.setSelectedRanges(ranges.filter { $0.length > 0 }.map { NSValue(range: $0) }, affinity: .downstream, stillSelecting: false)
         }
         scrollRangeToVisible(ranges[p])
         needsDisplay = true

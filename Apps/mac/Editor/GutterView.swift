@@ -93,16 +93,26 @@ final class GutterView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        Perf.measure("GutterView.draw", threshold: 2) { drawImpl(dirtyRect) }
+        Perf.measure("GutterView.draw", threshold: 2) {
+            // 아래의 조각 열거(.ensuresLayout)가 뷰포트 조각의 자리를 옮기면 본문의 조각 뷰가 옛 자리에 남는다 → 본문이 뷰포트를 다시 배치한 뒤 번호도 다시 그린다
+            if let htv = textView as? HyperTextView {
+                htv.guardingViewport(onShift: { [weak self] in self?.needsDisplay = true }) { drawImpl(dirtyRect) }
+            } else {
+                drawImpl(dirtyRect)
+            }
+        }
     }
 
     /// 실사용 하네스(--realuse): 마지막 그리기에서 번호를 그린 줄과 y (거터 좌표) — 본문 조각과 높이가 맞는지 비교한다
     static var captureRows = false
     private(set) var debugRows: [(line: Int, y: CGFloat)] = []
+    /// 실사용 하네스: 마지막 그리기에서 칠한 현재 줄 띠 (거터 좌표의 y 구간, 안 칠했으면 nil) — 다시 그리기가 빠져 낡은 띠가 남는지 본다
+    private(set) var debugBand: ClosedRange<CGFloat>?
 
     private func drawImpl(_ dirtyRect: NSRect) {
         var capturedRows: [(line: Int, y: CGFloat)] = []
-        defer { if Self.captureRows { debugRows = capturedRows } }
+        var capturedBand: ClosedRange<CGFloat>?
+        defer { if Self.captureRows { debugRows = capturedRows; debugBand = capturedBand } }
         if surfaceAlpha >= 1 {   // appearance: 반투명이면 컨테이너 레이어가 배경을 맡는다
             bgColor.setFill()
             bounds.fill()
@@ -120,6 +130,14 @@ final class GutterView: NSView {
         let visible = tv.visibleRect
         let origin = tv.textContainerOrigin
         let caretLine = index.lineNumber(forUTF16Offset: tv.selectedRange().location)
+        // 현재 줄 강조: 편집기가 칠하는 띠(HyperTextView.drawCurrentLineHighlight — 캐럿이 놓인 시각 줄 한 줄, 같은 조건)와 같은 높이에 칠해 한 줄로 이어지게 한다.
+        // 문단 조각 전체를 칠하면 감긴 문단에서 거터 띠만 여러 줄 높이가 되고, 개행으로 끝나는 문서의 마지막 빈 줄(제 조각이 없다)에서는 띠가 아예 빠진다
+        if let htv = tv as? HyperTextView, htv.multi == nil, htv.currentLineColor != nil, tv.selectedRange().length == 0,
+           let r = htv.caretRect(at: tv.selectedRange().location), r.maxY > visible.minY, r.minY < visible.maxY {
+            (self.surfaceAlpha < 1 ? self.lineHighlightColor.withAlphaComponent(self.surfaceAlpha) : self.lineHighlightColor).setFill()   // appearance
+            NSRect(x: 0, y: r.minY - visible.minY, width: self.bounds.width - 1, height: r.height).fill(using: .sourceOver)
+            if Self.captureRows { capturedBand = (r.minY - visible.minY)...(r.maxY - visible.minY) }
+        }
         let attrs: [NSAttributedString.Key: Any] = [.font: numberFont, .foregroundColor: numberColor]
         let curAttrs: [NSAttributedString.Key: Any] = [.font: numberFont, .foregroundColor: currentColor]
         let startPoint = CGPoint(x: 0, y: max(0, visible.minY - origin.y))
@@ -148,20 +166,33 @@ final class GutterView: NSView {
             let firstLineHeight = frag.textLineFragments.first?.typographicBounds.height ?? frame.height
             let y = yInTextView - visible.minY
             if Self.captureRows { capturedRows.append((line, y)) }
-            if line == caretLine, tv.selectedRange().length == 0 {
-                // 편집기의 현재 줄 강조가 거터까지 이어지도록 같은 색으로 행을 칠한다
-                (self.surfaceAlpha < 1 ? self.lineHighlightColor.withAlphaComponent(self.surfaceAlpha) : self.lineHighlightColor).setFill()   // appearance
-                NSRect(x: 0, y: y, width: self.bounds.width - 1, height: frame.height).fill(using: .sourceOver)
-            }
             let label = String(line) as NSString
             let size = label.size(withAttributes: attrs)
             let x = self.thickness - size.width - 10
             label.draw(at: NSPoint(x: x, y: y + (firstLineHeight - size.height) / 2), withAttributes: line == caretLine ? curAttrs : attrs)
+            // 문서가 개행으로 끝나면 마지막 빈 줄은 제 조각 없이 마지막 문단 조각의 덧줄(글자 없는 줄 조각)로 놓인다 — 그 줄의 번호도 그린다
+            if let extra = frag.textLineFragments.last, frag.textLineFragments.count > 1, extra.characterRange.length == 0,
+               frag.rangeInElement.endLocation.compare(lm.documentRange.endLocation) == .orderedSame {
+                let extraY = y + extra.typographicBounds.minY
+                let extraLabel = String(line + 1) as NSString
+                let extraSize = extraLabel.size(withAttributes: attrs)
+                extraLabel.draw(at: NSPoint(x: self.thickness - extraSize.width - 10, y: extraY + (extra.typographicBounds.height - extraSize.height) / 2),
+                                withAttributes: line + 1 == caretLine ? curAttrs : attrs)
+                if Self.captureRows { capturedRows.append((line + 1, extraY)) }
+            }
             // fold: 접기 화살표 (∨ 접을 수 있음 · › 접힘)
             if let marker = self.foldMarker?(offset, { cs.offset(from: cs.documentRange.location, to: frag.rangeInElement.endLocation) }) {
                 self.drawChevron(folded: marker == .folded, centerX: Self.foldColumnWidth / 2 + 2, centerY: y + firstLineHeight / 2)
             }
             return true
+        }
+        // 빈 문서는 조각이 하나도 없다 — 첫 줄 번호를 캐럿 높이에 그린다 (새 파일의 거터가 글자를 칠 때까지 비어 보였다)
+        if visited == 0, tv.textStorage?.length == 0, let r = (tv as? HyperTextView)?.caretRect(at: 0) {
+            let label = "1" as NSString
+            let size = label.size(withAttributes: curAttrs)
+            let y = r.minY - visible.minY
+            label.draw(at: NSPoint(x: thickness - size.width - 10, y: y + (r.height - size.height) / 2), withAttributes: curAttrs)
+            if Self.captureRows { capturedRows.append((1, y)) }
         }
         if Perf.enabled { Perf.log("GutterView.draw visited=\(visited) zeroHeight=\(zeroHeight)") }
     }
