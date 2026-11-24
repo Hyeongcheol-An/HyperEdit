@@ -55,7 +55,7 @@ HyperEdit ouvre `~/Documents/HyperEdit/notes.md`. Si ce fichier n'existe pas, il
 
 - **⌘N** crée un nouveau fichier texte vide (vous choisissez le nom et le dossier).
 - **⌘O** ouvre n'importe quel autre fichier texte. Le dernier fichier ouvert est mémorisé pour le prochain lancement.
-- **Onglets de fichiers.** Chaque fichier ouvert a son onglet au-dessus de l'éditeur, comme dans UltraEdit : un clic change d'onglet ; ⌘W, le ×, un double-clic ou un clic du milieu ferme l'onglet (les modifications non enregistrées sont d'abord enregistrées, et fermer l'onglet actif passe à l'onglet de gauche) ; glissez les onglets pour les réordonner ; un double-clic sur la barre vide crée un nouveau fichier ; un clic droit sur un onglet propose Fermer les autres / Fermer à gauche·à droite / Rouvrir le dernier onglet fermé (⌘⇧T) / Enregistrer et fermer / Revenir à la version enregistrée / Copier le chemin / Trier les onglets. ⌘⇧] / ⌘⇧[ parcourent les onglets, ⌃Tab revient à l'onglet consulté juste avant, et le ▾ à droite liste tous les onglets ouverts. Les onglets ouverts sont restaurés au lancement suivant ; l'info-bulle d'un onglet montre le chemin complet, la taille et la date de modification.
+- **Onglets de fichiers.** Chaque fichier ouvert a son onglet au-dessus de l'éditeur, comme dans UltraEdit : un clic change d'onglet ; ⌘W, le ×, un double-clic ou un clic du milieu ferme l'onglet (les modifications non enregistrées sont d'abord enregistrées). Fermer l'onglet que vous consultez passe à l'onglet situé à sa gauche ; un double-clic sur un onglet que vous ne consultez pas le ferme et vous laisse sur celui que vous lisiez. Glissez les onglets pour les réordonner ; un double-clic sur la barre vide crée un nouveau fichier ; un clic droit sur un onglet propose Fermer les autres onglets / Fermer les onglets à gauche / Fermer les onglets à droite / Rouvrir le dernier onglet fermé (⇧⌘T) / Enregistrer et fermer / Revenir à la version enregistrée / Copier le chemin / Trier les onglets. ⇧⌘] / ⇧⌘[ parcourent les onglets, ⌃Tab revient à l'onglet consulté juste avant, et le ▾ à droite liste tous les onglets ouverts ; l'infobulle d'un onglet montre le chemin complet, la taille et la date de modification. Chaque fichier garde son curseur, sa position de défilement et ses replis tant que l'app reste ouverte, mais son historique d'annulation est effacé quand vous quittez son onglet. Jusqu'à 30 onglets ouverts sont restaurés au lancement suivant. Fermer le dernier onglet ouvre le document par défaut, et un onglet dont le fichier a été supprimé est retiré quand vous cliquez dessus.
 - **Fichier › Ouvrir le document par défaut** vous ramène à `notes.md`.
 - Les fichiers binaires (images, PDF, archives…) ne sont jamais chargés dans l'éditeur ; ils s'ouvrent dans leur app par défaut.
 
@@ -80,7 +80,7 @@ Une langue absente de la liste retombe sur l'anglais (par exemple le chinois tra
 La disposition suit celle d'un éditeur à ruban classique, avec une barre de titre masquée.
 
 - **Onglets du ruban** — **Accueil** (Presse-papiers, Rechercher, Insérer, Mode, Fichier), **Édition** (Lignes, Casse, Tri, Espaces, Colonne et multi-curseur, Outils, Macro), **Disposition** (Thème, Volets, Repliage, Markdown, Taille du texte), **Avancé** (Réglages, dossier des instantanés, rechargement, document par défaut), **Fenêtre** (plein écran, volets). Quand la fenêtre est étroite, les groupes se replient en icônes à partir de la droite ; l'infobulle de l'icône affiche le libellé.
-- **Barre d'onglet du document** — le nom du fichier actuel avec les boutons Nouveau (⌘N) et Ouvrir (⌘O), plus les accès rapides Enregistrer / Annuler / Rétablir.
+- **Barre d'onglets de fichiers** — un onglet par fichier ouvert, puis les boutons Nouveau (+, ⌘N) et Ouvrir (dossier, ⌘O) ; à partir de deux onglets, le ▾ à l'extrémité droite en donne la liste. Les accès rapides Enregistrer / Annuler / Rétablir se trouvent à droite de la rangée d'onglets du ruban.
 - **Barre latérale (⌘1)** — **Fichiers** (le dossier du fichier actuel ; un clic ouvre un fichier), **Plan (⌘3)** (titres, lignes `[Titre]` et éléments numérotés, avec un champ de filtre ; l'élément actuel est mis en évidence), **Chronologie (⌘4)** (titres horodatés groupés par mois, les plus récents en premier).
 - **Volet inférieur (⌘2)** — **Résultats de recherche**, **Signets** et **Sortie**, un journal de ce que l'app a fait (enregistrements, remplacements, erreurs).
 - **Barre d'état** — ligne et colonne (plus la longueur de la sélection ; survolez pour le décalage en caractères), fin de ligne (UNIX / DOS / MAC), encodage du fichier, **COL** quand le mode colonne est actif, nombre de curseurs, nombre de lignes · taille du fichier, le dernier message d'état, le langage de coloration (estompé quand la coloration syntaxique est désactivée), un menu de thème (marqué « · Système » quand l'apparence du système est suivie) et le pourcentage de zoom. La plupart des éléments sont cliquables.
@@ -153,7 +153,7 @@ Le dernier enregistrement reste en mémoire seulement jusqu'à ce que vous quitt
 - en Markdown, tout ce qui suit un titre `#` jusqu'au titre suivant de même niveau ou de niveau supérieur (les blocs de code délimités se replient aussi),
 - dans le code, une ligne se terminant par `{`, `[` ou `(` jusqu'à la ligne du crochet fermant.
 
-Cliquez sur le chevron dans la gouttière ou sur la pastille `⋯ N lignes` après une ligne repliée pour basculer à la souris. Déplacer le curseur dans une ligne repliée (recherche, atteindre la ligne, signet, annulation) la déplie ; ↑ / ↓ sautent par-dessus les replis. Les replis suivent vos modifications et durent le temps de la session.
+Cliquez sur le chevron dans la gouttière ou sur la pastille `⋯ N lignes` après une ligne repliée pour basculer à la souris. Déplacer le curseur dans une ligne repliée (recherche, atteindre la ligne, signet, annulation) la déplie ; ↑ / ↓ sautent par-dessus les replis. Les replis suivent vos modifications et sont conservés pour chaque fichier tant que l'app reste ouverte (ils ne sont pas perdus quand vous changez d'onglet), mais ils ne sont pas enregistrés pour le lancement suivant.
 
 **Marqueurs de défilement** — une fine bande au bord droit de l'éditeur montre les occurrences de recherche (couleur d'accentuation), les signets (couleur d'avertissement), la ligne du curseur et les en-têtes repliés à leur position relative dans le fichier. Elle est masquée quand tout le document tient à l'écran. Désactivez-la dans **Présentation › Marqueurs de défilement** ou dans le groupe Repliage de l'onglet Disposition.
 
@@ -214,8 +214,8 @@ La visibilité des volets, le retour à la ligne, les numéros de ligne, la colo
 | Raccourci | Action | Raccourci | Action |
 |---|---|---|---|
 | ⌘N | Nouveau document | ⌘O | Ouvrir |
-| ⌘W / ⌘⇧W | Fermer l'onglet / tous les onglets | ⌘⇧] / ⌘⇧[ | Onglet suivant / précédent |
-| ⌃Tab | Dernier onglet actif | ⌘⇧T | Rouvrir le dernier onglet fermé |
+| ⌘W / ⇧⌘W | Fermer l'onglet / tous les onglets | ⇧⌘] / ⇧⌘[ | Onglet suivant / précédent |
+| ⌃Tab | Dernier onglet actif | ⇧⌘T | Rouvrir le dernier onglet fermé |
 | ⌘S | Enregistrer | ⌘F | Rechercher |
 | ⌘R | Remplacer | ⇧⌘F | Rechercher dans les fichiers |
 | F3 / ⇧F3 | Occurrence suivante / précédente | ⌘L | Atteindre la ligne |
@@ -274,7 +274,8 @@ Rien n'est écrit à côté de vos documents, et rien ne quitte votre Mac.
 - L'exportation écrit uniquement le document entier, sans exportation de la sélection ni de plusieurs fichiers, sans options de page ou de police, ni table des matières PDF.
 - Les blocs secrets ne sont masqués qu'à l'écran : le fichier, les enregistrements automatiques et les instantanés sont en texte brut, la barre de masquage indique la longueur de chaque ligne, et VoiceOver lit toujours le texte. Un délimiteur secret doit commencer à la marge gauche (indenté de moins de quatre espaces, ni dans un élément de liste ni dans une citation), et un bloc délimité imbriqué dans un bloc secret nécessite quatre accents graves sur le délimiteur extérieur. Le verrouillage de l'app masque la fenêtre et son contenu à VoiceOver ; il ne chiffre rien.
 - Les commentaires de bloc ne s'imbriquent pas, et les fichiers avec des fins de ligne Mac classiques (CR seul) sont colorés ligne par ligne. Dans un paragraphe unique de plus de 20 000 caractères, les curseurs Bloc et Souligné reviennent au curseur barre standard.
-- Les replis durent le temps de la session et ne sont pas enregistrés par fichier ; un glisser de souris à travers une ligne repliée sélectionne quand même le texte masqué.
+- Les replis sont conservés pour chaque fichier uniquement tant que l'app reste ouverte et ne sont pas enregistrés pour le lancement suivant ; un glisser de souris à travers une ligne repliée sélectionne quand même le texte masqué.
+- Seul l'onglet que vous consultez est gardé en mémoire : quitter un onglet efface l'historique d'annulation de ce fichier, et pas plus de 30 onglets ouverts ne sont restaurés au lancement suivant.
 - Les documents constitués d'une seule ligne d'un mégaoctet ou plus sont lents à ouvrir et à parcourir ; Compacter JSON avertit avant d'en produire un.
 - Fichiers locaux uniquement ; pas de synchronisation cloud ni d'app iOS pour l'instant.
 - Les langues autres que les onze listées retombent sur l'anglais.

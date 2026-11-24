@@ -11,8 +11,8 @@
 | 새 탭 위치 | 맨 끝 (`Sort tabs on file open` 이 켜져 있으면 정렬) |
 | 새 문서 | Ctrl+N / ⌘N → "Edit1", "Edit2"… 이름 없는 문서. 탭 바 빈 곳 더블클릭도 새 파일. 별도 "+" 버튼 없음 |
 | 열기 | 이미 열린 파일을 다시 열면 기존 탭 활성화(Mac 2025.0 개선). Finder 드래그 앤 드롭 |
-| 닫기 | Windows Ctrl+F4 · Mac ⌘W, 모두 닫기 ⌘⇧W. 탭의 ×, **더블클릭**, **가운데 클릭**(둘 다 기본 켜짐). 닫은 뒤 포커스는 설정(`After current tab is closed, move to`, 기본 왼쪽 이웃 — 추정). File 메뉴 Close all / Close all except, 탭 메뉴 Close all to left/right(v24), Open last-closed tab(v28), Save and Close(v28). 미저장이면 저장 여부를 묻는다. 마지막 탭을 닫으면 빈 편집 영역(추정) |
-| 전환 | Windows Ctrl+F6 / Ctrl+Shift+F6 = 최근 활성 순서(MRU), Alt+↓ / Alt+↑ = 탭 순서, v26 부터 Ctrl+Tab 재매핑 가능. Mac: Alt+↓ 다음 창, Alt+↑ / ⌘⇧[ 이전 창, ⌘⌃Tab 이전 활성 문서, ⌃⇧Tab 다음 활성 문서. Window 목록 대화상자 |
+| 닫기 | Windows Ctrl+F4 · Mac ⌘W, 모두 닫기 ⇧⌘W. 탭의 ×, **더블클릭**, **가운데 클릭**(둘 다 기본 켜짐). 닫은 뒤 포커스는 설정(`After current tab is closed, move to`, 기본 왼쪽 이웃 — 추정). File 메뉴 Close all / Close all except, 탭 메뉴 Close all to left/right(v24), Open last-closed tab(v28), Save and Close(v28). 미저장이면 저장 여부를 묻는다. 마지막 탭을 닫으면 빈 편집 영역(추정) |
+| 전환 | Windows Ctrl+F6 / Ctrl+Shift+F6 = 최근 활성 순서(MRU), Alt+↓ / Alt+↑ = 탭 순서, v26 부터 Ctrl+Tab 재매핑 가능. Mac: Alt+↓ 다음 창, Alt+↑ / ⇧⌘[ 이전 창, ⌘⌃Tab 이전 활성 문서, ⌃⇧Tab 다음 활성 문서. Window 목록 대화상자 |
 | 순서 | 드래그로 이동. 메뉴 Sort tabs by Name / Extension / Path / Modification date(v27), Mac 2025.0 Sort File Tabs |
 | 우클릭 | Close all to left/right · Open last-closed tab · Save and Close · Rename(이름 없는 탭) · Compare · Add to Favorite/Project · Revert to saved · File tabs ▸ (Dockable / 한 줄·▾·여러 줄 / Sort / Show tooltips / Tabs at bottom) · Customize |
 | 세션 | `Reload files previously open on startup`: 종료 때 경로 저장 → 재시작 때 다시 연다. `Remember and reload unsaved changes` 는 미저장 내용까지 복원. 커서 위치는 종료 때 열려 있던 파일만 복원. 2026.1 탭 순서 유지 |
@@ -28,11 +28,11 @@
 | 넘칠 때 | 탭이 다 들어가면 + · 폴더 버튼이 마지막 탭 바로 뒤에 붙는다. 넘치면 가로 스크롤(전환·정렬·이동·닫기 뒤에도 활성 탭이 보이게 따라감) + 오른쪽 끝 ▾ 열린 탭 목록(탭이 둘 이상일 때) | 여러 줄 모드 없음 |
 | 새 탭 | 맨 끝. `open(url:)` 이 이미 열린 파일이면 그 탭 활성화 | |
 | 새 문서 | ⌘N · 탭 줄 + · 빈 탭 줄 더블클릭 → 저장 패널에서 이름·위치를 고르면 빈 파일을 만들어 탭으로 | 자동 저장 문서라 이름 없는 "Edit1" 대신 파일 |
-| 닫기 | ⌘W · × · 더블클릭 · 가운데 클릭. 더블클릭은 첫 클릭에 그 탭으로 전환한 뒤 두 번째 클릭에 닫는다(한 번 클릭이 더블클릭 판정을 기다리지 않게 — UltraEdit 도 누른 탭이 먼저 활성화된다). 보고 있지 않던 탭을 더블클릭해 닫으면 왼쪽 이웃이 아니라 **보고 있던 탭**으로 돌아온다(`AppModel.tabDoubleClicked`). 미저장 편집은 동기로 저장하고 닫는다(묻지 않음 — 자동 저장 문서). 활성 탭을 닫으면 **왼쪽 이웃**. ⌘⇧W 모두 닫기. 마지막 탭을 닫으면 기본 문서(`~/Documents/HyperEdit/notes.md`)가 대신 열린다; 마지막 탭이 기본 문서면 ⌘W 는 창을 닫는다. 파일이 밖에서 지워진 탭은 누르면 걷어낸다(빈 파일을 만들지 않는다) | 편집기는 항상 문서를 하나 든다 |
-| 전환 | ⌘⇧] / ⌘⇧[ 탭 순서(끝에서 순환), ⌃Tab 직전에 보던 탭(최근 활성 순서 — 두 탭 사이를 오간다), ⌃⇧Tab 이전 탭, 클릭, ▾ 목록 | ⌘1·⌘2 는 사이드바·패널이라 번호 단축키 없음 |
+| 닫기 | ⌘W · × · 더블클릭 · 가운데 클릭. 더블클릭은 첫 클릭에 그 탭으로 전환한 뒤 두 번째 클릭에 닫는다(한 번 클릭이 더블클릭 판정을 기다리지 않게 — UltraEdit 도 누른 탭이 먼저 활성화된다). 보고 있지 않던 탭을 더블클릭해 닫으면 왼쪽 이웃이 아니라 **보고 있던 탭**으로 돌아온다(`AppModel.tabDoubleClicked` — 그 탭으로 전환한 클릭과 닫는 클릭의 이벤트 시각이 더블클릭 간격 안일 때만; 한참 보던 탭을 더블클릭하면 평소대로 왼쪽 이웃). 미저장 편집은 동기로 저장하고 닫는다(묻지 않음 — 자동 저장 문서). 저장이 실패하면(쓰기 불가 폴더·가득 찬 디스크) 메모리의 내용을 스냅샷 폴더에 비상 사본으로 남기고 출력 패널에 경로를 적은 뒤 떠나고, 비상 사본도 못 쓰면 **전환·닫기를 거절**해 그 탭에 머문다(`MemoDocument.lastLeaveOutcome`). 활성 탭을 닫으면 **왼쪽 이웃**. ⇧⌘W 모두 닫기. 마지막 탭을 닫으면 기본 문서(`~/Documents/HyperEdit/notes.md`)가 대신 열린다; 마지막 탭이 기본 문서면 ⌘W 는 창을 닫는다. 파일이 밖에서 지워진 탭은 누르면 걷어낸다(빈 파일을 만들지 않는다) | 편집기는 항상 문서를 하나 든다 |
+| 전환 | ⇧⌘] / ⇧⌘[ 탭 순서(끝에서 순환), ⌃Tab 직전에 보던 탭(최근 활성 순서 — 두 탭 사이를 오간다), ⌃⇧Tab 이전 탭, 클릭, ▾ 목록 | ⌘1·⌘2 는 사이드바·패널이라 번호 단축키 없음 |
 | 순서 | 드래그로 이동(놓은 탭 자리로). 우클릭 Sort Tabs ▸ 이름 / 경로 / 확장자 / 수정일 | |
-| 우클릭 | Close Tab · Close Other Tabs · Close Tabs to the Left/Right · Close All Tabs · Reopen Last Closed Tab(⌘⇧T, 최근 10개) · Save · Save and Close · Revert to Saved · Copy Path · Reveal in Finder · Sort Tabs | |
-| 세션 | 열린 탭 경로 목록(`ui.openDocuments`, 최대 30개)과 마지막 파일을 저장. 다음 실행 때 탭을 만들어 두고 내용은 탭을 누를 때 읽는다. 캐럿·스크롤은 파일별 보기 상태로 복원 — 떠날 때 화면 맨 위에 있던 문단이 같은 높이에 오게(캐럿이 화면 밖이었으면 밖에 둔 채) | 미저장 내용 복원은 필요 없다(자동 저장) |
+| 우클릭 | Close Tab · Close Other Tabs · Close Tabs to the Left/Right · Close All Tabs · Reopen Last Closed Tab(⇧⌘T, 최근 10개) · Save · Save and Close · Revert to Saved · Copy Path · Reveal in Finder · Sort Tabs | |
+| 세션 | 열린 탭 경로 목록(`ui.openDocuments`)과 마지막 파일을 저장. 복원은 앞에서 30개까지(`maxRestoredDocuments`; 마지막에 보던 파일이 그 밖이면 덧붙인다), 없어진 파일·텍스트가 아닌 파일은 건너뛴다. 다음 실행 때 탭을 만들어 두고 내용은 탭을 누를 때 읽는다. 캐럿·스크롤은 파일별 보기 상태로 복원 — 떠날 때 화면 맨 위에 있던 문단이 같은 높이에 오게(캐럿이 화면 밖이었으면 밖에 둔 채) | 미저장 내용 복원은 필요 없다(자동 저장) |
 | 접기 | 탭을 오가도 파일별 접힘이 유지된다(실행 중에만 — 떠날 때 적어 두고 돌아와 영역 스캔 뒤 같은 자리를 다시 접는다). 북마크는 파일별 JSON(기존) | 세션에는 저장하지 않는다 |
 | 분할 | 기존 분할 편집(⌘\\)은 같은 문서의 두 뷰 — 탭을 바꾸면 둘 다 따라간다 | Duplicate window 없음 |
 

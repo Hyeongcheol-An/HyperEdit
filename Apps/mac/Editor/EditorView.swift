@@ -487,7 +487,8 @@ struct EditorView: NSViewRepresentable {
             lastReloadGeneration = generation
             session.clearUndo()
             // 디스크에서 다시 읽은 내용은 shouldChangeText 를 거치지 않으므로 줄 수만 맞춘다
-            model.bookmarks.clamp(toLineCount: document.lineIndex.lineCount)
+            // 읽지 못한 파일(권한·인코딩)은 버퍼가 비어 줄 수가 1 이다 — 그 값으로 맞추면 그 파일의 북마크가 1번 줄 하나로 뭉개져 저장된다
+            if document.isLoaded { model.bookmarks.clamp(toLineCount: document.lineIndex.lineCount) }
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) }
             // 외부 변경 반영 뒤 캐럿이 문서 끝으로 튀지 않도록 직전 위치(클램프)를 복원 — 같은 파일을 다른 도구로 덧붙여 쓰는 흐름에서 읽던 자리를 잃지 않는다
             if restored, let tv = textView, let keep = lastSelection {

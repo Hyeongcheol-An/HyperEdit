@@ -57,7 +57,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private var indexTask: Task<Void, Never>?
     nonisolated(unsafe) private var watchSource: DispatchSourceFileSystemObject?
     private var ourLastWrite: Date?
-    private var snapshotTaken = false
+    /// 이번 실행에서 `before-first-save` 스냅샷을 이미 찍은 파일. 전환할 때마다 초기화하면 두 탭을 오가며 편집하는 것만으로 파일별 보관 칸(20개)이
+    /// 몇 분 만에 돌아 오래된 스냅샷이 밀려난다 — 파일마다 실행당 한 번만 찍는다
+    private var snapshotted: Set<URL> = []
     private var loadedLength = 0
     /// 파일 전환 세대. 전환 전에 시작된 저장 완료 콜백이 새 파일 상태를 덮어쓰지 않도록.
     private var fileGeneration = 0
@@ -83,16 +85,19 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     /// 다른 파일로 전환. 새 MemoDocument 를 만들지 않고 같은 NSTextStorage 의 내용만 바꾼다.
     /// NSTextContentStorage.textStorage 를 갈아끼우는 방식은 반복할수록 TextKit 2 레이아웃 질의가
     /// 2KB 문서에서도 50ms 대로 퇴화하는 것이 실측됐다. 전체 범위 replaceCharacters 는 정상 편집 경로라 수 ms.
-    public func switchTo(url newURL: URL) {
+    /// 반환 false: 떠나는 파일의 편집을 저장하지도, 비상 사본으로 남기지도 못해 **전환하지 않았다** (`lastLeaveOutcome` 이 `.failed`).
+    @discardableResult
+    public func switchTo(url newURL: URL) -> Bool {
         let resolved = newURL.resolvingSymlinksInPath()
         // 진행 중/예약된 저장이 있으면 동기로 마무리 — 전환 뒤에 끝나는 비동기 저장이 최신 편집을 버리지 않도록
-        if isLoaded && (isDirty || saveRequestedWhileSaving) { saveSynchronously() }
+        lastLeaveOutcome = saveBeforeLeaving()
+        if case .failed = lastLeaveOutcome { return false }
         fileGeneration += 1
         autosaveTask?.cancel(); autosaveTask = nil
         indexTask?.cancel(); indexTask = nil
         watchSource?.cancel(); watchSource = nil
         isSaving = false; saveRequestedWhileSaving = false
-        snapshotTaken = false; ourLastWrite = nil
+        ourLastWrite = nil
         externalChange = nil; lastSaved = nil
         url = resolved
         grammar = GrammarRegistry.grammar(for: resolved)   // grammar: 내용 교체 전에 바꿔 둔다 — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
@@ -106,6 +111,43 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             replaceAll(with: "")
             isDirty = false
         }
+        return true
+    }
+
+    /// 파일을 떠날 때(전환·탭 닫기) 미저장 편집이 어떻게 됐는가
+    public enum LeaveOutcome: Equatable {
+        /// 저장할 것이 없었다
+        case nothingToSave
+        /// 동기로 저장했다
+        case saved
+        /// 내용이 통째로 비어 저장을 막았다 (빈 내용 저장 차단) — 디스크의 원본이 그대로 남는다
+        case keptOnDisk
+        /// 저장은 실패했고(이유) 메모리의 내용을 스냅샷 폴더에 비상 사본으로 남겼다
+        case rescued(copy: URL, reason: String)
+        /// 저장도 비상 사본도 실패 — 떠나면 편집을 잃으므로 전환하지 않는다
+        case failed(reason: String)
+    }
+
+    /// 가장 최근 `switchTo` 가 떠나는 파일을 어떻게 처리했는가 (앱이 출력 패널에 알린다)
+    public private(set) var lastLeaveOutcome: LeaveOutcome = .nothingToSave
+
+    /// 떠나기 전 저장. 탭은 경로일 뿐이고 살아 있는 문서는 하나라, 떠나는 순간 디스크에 없는 편집은 사라진다 — 쓰기 불가 폴더·읽기 전용 볼륨·가득 찬 디스크에서
+    /// 저장이 실패하면 종료 때와 같이 비상 사본을 남기고, 그것도 안 되면 떠나지 않는다. 진행 중인 비동기 저장(`isSaving`)도 여기서 동기로 마무리한다
+    /// (같은 직렬 큐라 순서가 보장된다 — 그 쓰기가 실패했더라도 이 쓰기의 성패로 판단한다)
+    private func saveBeforeLeaving() -> LeaveOutcome {
+        guard isLoaded, isDirty || saveRequestedWhileSaving || isSaving else { return .nothingToSave }
+        if textStorage.length == 0 && loadedLength > 0 { return .keptOnDisk }
+        if saveSynchronously() { return .saved }
+        let reason = errorMessage ?? ""
+        if let copy = writeEmergencyCopy() { return .rescued(copy: copy, reason: reason) }
+        return .failed(reason: reason)
+    }
+
+    /// 이번 실행에서 이 파일을 처음 저장하기 직전에 디스크의 내용을 스냅샷으로 남긴다 (비동기·동기 저장 공통)
+    private func snapshotBeforeFirstSave() {
+        guard !snapshotted.contains(url) else { return }
+        _ = try? snapshot(tag: "before-first-save")
+        snapshotted.insert(url)
     }
 
     // MARK: - Load / Save
@@ -288,10 +330,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             errorMessage = String(localized: "Blocked saving empty content (original had \(loadedLength) characters). Undo (⌘Z) and save again.", bundle: .module)
             return
         }
-        if !snapshotTaken {
-            _ = try? snapshot(tag: "before-first-save")
-            snapshotTaken = true
-        }
+        snapshotBeforeFirstSave()
         isSaving = true
         isDirty = false
         ourLastWrite = Date()
@@ -338,6 +377,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         guard isLoaded, isDirty || saveRequestedWhileSaving || isSaving else { return false }
         let s = textStorage.string
         if s.isEmpty && loadedLength > 0 { return false }
+        snapshotBeforeFirstSave()   // 편집하고 2초 안에 탭을 바꾸거나 종료하면 이 경로만 탄다 — 여기서도 편집 전 내용을 남긴다
         let built = Self.encode(s, encoding: encoding, bom: hasBOM)
         let url = self.url
         var err: Error?
@@ -434,10 +474,12 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         }
         if structural {
             // 다른 앱의 원자적 저장: 잠시 뒤 새 inode 를 다시 감시
+            let watched = url
             Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: 300_000_000)
-                self?.startWatching()
-                self?.applyExternalChange()
+                guard let self, self.url == watched else { return }   // 그 사이 다른 파일로 전환했다 — 새 파일에 외부 변경을 찍지 않는다
+                self.startWatching()
+                self.applyExternalChange()
             }
         } else {
             applyExternalChange()

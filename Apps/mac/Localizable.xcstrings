@@ -193,6 +193,198 @@
         }
       }
     },
+    "%@: %@ — staying on this tab so the unsaved text is not lost": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — البقاء في علامة التبويب هذه كي لا يضيع النص غير المحفوظ"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ – dieser Tab bleibt aktiv, damit der ungesicherte Text nicht verloren geht"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — sigues en esta pestaña para que no se pierda el texto sin guardar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ : %@ — vous restez sur cet onglet pour ne pas perdre le texte non enregistré"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — इसी टैब पर बने हुए हैं ताकि सहेजा न गया टेक्स्ट खो न जाए"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — 未保存のテキストを失わないよう、このタブにとどまります"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — 저장되지 않은 내용을 잃지 않도록 이 탭에 그대로 머뭅니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — você continua nesta aba para não perder o texto não salvo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — vẫn ở lại tab này để không mất văn bản chưa lưu"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：%@ — 为避免丢失未存储的文本，仍停留在此标签页"
+          }
+        }
+      }
+    },
+    "%@: %@ — the unsaved text was written to %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — تمت كتابة النص غير المحفوظ في %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ – der ungesicherte Text wurde unter %@ abgelegt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — el texto sin guardar se escribió en %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ : %@ — le texte non enregistré a été écrit dans %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — सहेजा न गया टेक्स्ट %@ पर लिखा गया"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — 未保存のテキストを %@ に書き出しました"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — 저장되지 않은 내용을 %@ 에 남겼습니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — o texto não salvo foi gravado em %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ — văn bản chưa lưu đã được ghi vào %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：%@ — 未存储的文本已写入 %@"
+          }
+        }
+      }
+    },
+    "%@: empty content was not saved — the file on disk is unchanged": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: لم يُحفظ المحتوى الفارغ — الملف على القرص لم يتغير"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: Leerer Inhalt wurde nicht gesichert – die Datei auf der Festplatte ist unverändert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: no se guardó el contenido vacío — el archivo del disco no ha cambiado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ : le contenu vide n'a pas été enregistré — le fichier sur le disque est inchangé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: खाली सामग्री सहेजी नहीं गई — डिस्क पर फ़ाइल नहीं बदली"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: 空の内容は保存しませんでした — ディスク上のファイルは変更されていません"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: 빈 내용은 저장하지 않았습니다 — 디스크의 파일은 그대로입니다"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: o conteúdo vazio não foi salvo — o arquivo no disco não foi alterado"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: nội dung trống đã không được lưu — tệp trên đĩa vẫn giữ nguyên"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：空内容未存储 — 磁盘上的文件保持不变"
+          }
+        }
+      }
+    },
     "%lld bookmarks": {
       "localizations": {
         "ar": {
@@ -3056,7 +3248,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por extensão"
+            "value": "Por Extensão"
           }
         },
         "vi": {
@@ -3108,19 +3300,19 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "更新日時順"
+            "value": "変更日順"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "수정 시각순"
+            "value": "수정일순"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por data de modificação"
+            "value": "Por Data de Modificação"
           }
         },
         "vi": {
@@ -3184,7 +3376,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por nome"
+            "value": "Por Nome"
           }
         },
         "vi": {
@@ -3248,7 +3440,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por caminho"
+            "value": "Por Caminho"
           }
         },
         "vi": {
@@ -4336,13 +4528,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fechar todas as abas"
+            "value": "Fechar Todas as Abas"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đóng tất cả thẻ"
+            "value": "Đóng tất cả tab"
           }
         },
         "zh-Hans": {
@@ -4370,7 +4562,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cerrar las otras pestañas"
+            "value": "Cerrar las demás pestañas"
           }
         },
         "fr": {
@@ -4400,13 +4592,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fechar as outras abas"
+            "value": "Fechar as Outras Abas"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đóng các thẻ khác"
+            "value": "Đóng các tab khác"
           }
         },
         "zh-Hans": {
@@ -4464,13 +4656,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fechar aba"
+            "value": "Fechar Aba"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đóng thẻ"
+            "value": "Đóng tab"
           }
         },
         "zh-Hans": {
@@ -4528,13 +4720,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fechar aba (⌘W)"
+            "value": "Fechar Aba (⌘W)"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đóng thẻ (⌘W)"
+            "value": "Đóng tab (⌘W)"
           }
         },
         "zh-Hans": {
@@ -4592,13 +4784,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fechar abas à esquerda"
+            "value": "Fechar Abas à Esquerda"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đóng các thẻ bên trái"
+            "value": "Đóng các tab bên trái"
           }
         },
         "zh-Hans": {
@@ -4656,13 +4848,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fechar abas à direita"
+            "value": "Fechar Abas à Direita"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đóng các thẻ bên phải"
+            "value": "Đóng các tab bên phải"
           }
         },
         "zh-Hans": {
@@ -5488,7 +5680,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copiar caminho"
+            "value": "Copiar Caminho"
           }
         },
         "vi": {
@@ -5500,7 +5692,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "复制路径"
+            "value": "拷贝路径"
           }
         }
       }
@@ -13982,7 +14174,7 @@
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "पिछला सक्रिय टैब"
+            "value": "अंतिम सक्रिय टैब"
           }
         },
         "ja": {
@@ -13994,25 +14186,25 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "직전 탭"
+            "value": "직전에 본 탭"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Última aba ativa"
+            "value": "Última Aba Ativa"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thẻ hoạt động gần nhất"
+            "value": "Tab hoạt động gần nhất"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "上次活动的标签页"
+            "value": "上一个活动标签页"
           }
         }
       }
@@ -18032,13 +18224,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Próxima aba"
+            "value": "Próxima Aba"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thẻ kế tiếp"
+            "value": "Tab kế tiếp"
           }
         },
         "zh-Hans": {
@@ -19504,13 +19696,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abas abertas"
+            "value": "Abas Abertas"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các thẻ đang mở"
+            "value": "Các tab đang mở"
           }
         },
         "zh-Hans": {
@@ -21488,13 +21680,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aba anterior"
+            "value": "Aba Anterior"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thẻ trước"
+            "value": "Tab trước"
           }
         },
         "zh-Hans": {
@@ -23198,31 +23390,31 @@
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "आखिरी बंद टैब फिर खोलें"
+            "value": "अंतिम बंद टैब फिर से खोलें"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "最後に閉じたタブを再び開く"
+            "value": "最後に閉じたタブを開く"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "마지막 닫은 탭 다시 열기"
+            "value": "마지막으로 닫은 탭 다시 열기"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reabrir a última aba fechada"
+            "value": "Reabrir a Última Aba Fechada"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở lại thẻ vừa đóng"
+            "value": "Mở lại tab vừa đóng"
           }
         },
         "zh-Hans": {
@@ -24396,7 +24588,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auf gespeicherte Version zurücksetzen"
+            "value": "Auf gesicherte Version zurücksetzen"
           }
         },
         "es": {
@@ -24432,7 +24624,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reverter para a versão salva"
+            "value": "Reverter para a Versão Salva"
           }
         },
         "vi": {
@@ -24444,7 +24636,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "恢复为已保存版本"
+            "value": "复原到已存储版本"
           }
         }
       }
@@ -25100,7 +25292,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Speichern und schließen"
+            "value": "Sichern und schließen"
           }
         },
         "es": {
@@ -25136,7 +25328,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Salvar e fechar"
+            "value": "Salvar e Fechar"
           }
         },
         "vi": {
@@ -25148,7 +25340,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "保存并关闭"
+            "value": "存储并关闭"
           }
         }
       }
@@ -28272,13 +28464,13 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ordenar abas"
+            "value": "Ordenar Abas"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sắp xếp thẻ"
+            "value": "Sắp xếp tab"
           }
         },
         "zh-Hans": {

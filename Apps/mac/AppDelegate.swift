@@ -21,8 +21,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do { try task.run() } catch { NSLog("relaunch failed: \(error)") }
     }
 
+    /// 셀프테스트를 뒤에서 돌리는가. 터미널·IDE 가 앞에 있을 때 앱을 띄우면 macOS 가 새 앱을 활성화한다 — 검사가 도는 몇 분 동안 창이 앞에 나오고
+    /// 사용자가 다른 앱에 치던 키 입력을 받는다 (2026-11-24 실측: 10번 중 9번이 활성 상태로 돌았다). `--selftest-foreground` 를 주면 예전처럼 앞에서 돈다
+    static var selfTestStaysInBackground: Bool { (SelfTest.enabled || SelfTest.openEnabled) && !LaunchOptions.has("--selftest-foreground") }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        guard Self.selfTestStaysInBackground else { return }
+        NSApp.deactivate()
+        for w in NSApp.windows where w.isVisible { w.orderBack(nil) }
+    }
+
+    /// 뒤에서 도는 셀프테스트가 App Nap 에 걸리지 않게 실행 내내 잡아 두는 활동 토큰. 비활성 + 가려진 창이면 2~3분 뒤 타이머가 늦게 깨고 CPU 우선순위가
+    /// 깎여, 시간을 재는 검사(매크로 100회·타이핑 지연·유휴 잠금)가 몇 배 느리게 재진다 (2026-11-24 실측: 막지 않은 실행에서 8건 실패)
+    private var backgroundActivity: NSObjectProtocol?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
+        if Self.selfTestStaysInBackground {
+            backgroundActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical], reason: "background self-test")
+        }
         Bench.launchMilestone("didFinishLaunching")   // perf bench (계측이 꺼져 있으면 비용 0)
         if Perf.enabled { PerfProbe.log = { Perf.log($0) } }
         Perf.startWatchdog()
@@ -30,7 +47,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard event.keyCode == 48, event.modifierFlags.intersection(.deviceIndependentFlagsMask).isSuperset(of: [.control]),
                   !event.modifierFlags.contains(.command), !event.modifierFlags.contains(.option),
-                  let model = AppModel.current, !model.appLock.isLocked else { return event }
+                  let model = AppModel.current, model.tabKeysApply, model.tabs.count > 1 else { return event }
+            // 편집기 창이 앞에 있고 옮겨 갈 탭이 있을 때만 가로챈다 — 설정 창·Quick Append 패널·저장/내보내기 패널·매크로 재생 중에는 뒤의 문서를 바꾸지 않고,
+            // 탭이 하나뿐이면 ⌃Tab 의 원래 뜻(다음 키 뷰)을 삼키지 않는다
             if event.modifierFlags.contains(.shift) { model.previousTab() } else { model.activateLastActiveTab() }
             return nil
         }

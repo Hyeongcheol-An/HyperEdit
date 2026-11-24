@@ -70,9 +70,9 @@ extension SelfTest {
         // 보고 있지 않던 탭을 더블클릭해 닫으면 (첫 클릭이 그 탭으로 전환했더라도) 보던 탭으로 돌아간다. 보던 탭을 더블클릭하면 왼쪽 이웃
         model.open(url: c); await wait(300)                                                   // … a, b, c
         model.activateTab(ra); await wait(250)
-        model.tabClicked(rc); await wait(250)
+        model.tabClicked(rc)                                                                  // 더블클릭의 첫 클릭: 바로 전환한다 (동기)
         let switchedByClick = model.document.url == rc
-        model.tabDoubleClicked(rc); await wait(400)
+        model.tabDoubleClicked(rc); await wait(400)                                           // 두 번째 클릭 (같은 이벤트 시각 안)
         check(switchedByClick && !model.tabs.contains(rc) && model.document.url == ra,
               "tabs: double-clicking a background tab closes it and returns to the tab being viewed (\(model.document.url.lastPathComponent))")
         model.open(url: c); await wait(300)                                                   // … a, b, c (c 를 보고 있다 — 클릭으로 온 것이 아니다)
@@ -85,10 +85,59 @@ extension SelfTest {
         // 파일에서 찾기 결과가 가리키는 파일이 그 사이 지워졌으면 열지 않는다 (빈 파일·빈 탭을 만들지 않는다)
         model.open(hit: FileSearchHit(url: a, line: 1, column: 1, lineText: "AAA", matchInLine: NSRange(location: 0, length: 3))); await wait(350)
         check(!model.tabs.contains(ra) && model.document.url == rb && !FileManager.default.fileExists(atPath: a.path), "tabs: a find-in-files hit in a deleted file opens nothing")
-        // 다른 탭 모두 닫기 · 정리
+        // 편집 전 내용의 스냅샷은 파일마다 실행당 한 번 — 탭을 오갈 때마다 새로 찍으면 파일별 보관 칸이 금방 돈다. 편집 직후(자동 저장 전) 떠나도 찍힌다
+        let fm = FileManager.default
+        func snapshots(_ prefix: String, _ suffix: String) -> [URL] {
+            ((try? fm.contentsOfDirectory(at: MemoDocument.snapshotDirectory, includingPropertiesForKeys: nil)) ?? [])
+                .filter { $0.lastPathComponent.hasPrefix(prefix) && $0.lastPathComponent.hasSuffix(suffix) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        }
+        for round in 1...2 {
+            model.send(.perform { tv in tv.insertText("\(round)", replacementRange: NSRange(location: 0, length: 0)) }); await wait(120)
+            model.activateTab(base); await wait(250)
+            model.activateTab(rb); await wait(250)
+        }
+        check(text().hasPrefix("21BBB") && snapshots("b.md-", "-before-first-save.txt").count == 1,
+              "tabs: leaving right after an edit snapshots the file once per run (\(snapshots("b.md-", "-before-first-save.txt").count), '\(text().prefix(6))')")
+        // 떠나는 파일의 저장이 실패하면(쓰기 불가 폴더) 메모리의 내용을 비상 사본으로 남기고 전환한다 — 편집이 조용히 사라지지 않는다
+        let roDir = dir.appendingPathComponent("ro", isDirectory: true), ro = roDir.appendingPathComponent("locked.md")
+        try? fm.createDirectory(at: roDir, withIntermediateDirectories: true)
+        try? "LOCKED\n".write(to: ro, atomically: true, encoding: .utf8)
+        let rro = ro.resolvingSymlinksInPath()
+        model.open(url: ro); await wait(400)
+        try? fm.setAttributes([.posixPermissions: 0o555], ofItemAtPath: roDir.path)
+        model.send(.perform { tv in tv.insertText("EDIT ", replacementRange: NSRange(location: 0, length: 0)) }); await wait(150)
+        let copiesBefore = snapshots("locked.md-", "-unsaved.txt").count
+        model.activateTab(rb); await wait(400)
+        let copies = snapshots("locked.md-", "-unsaved.txt")
+        check(model.document.url == rb && copies.count == copiesBefore + 1 && (copies.last.flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "").hasPrefix("EDIT LOCKED"),
+              "tabs: leaving a file that cannot be saved writes an emergency copy of the unsaved text (\(copies.count - copiesBefore))")
+        check((try? String(contentsOf: ro, encoding: .utf8)) == "LOCKED\n", "tabs: the unwritable file on disk is unchanged")
+        // 비상 사본도 쓸 수 없으면 떠나지 않는다 — 전환도 닫기도 거절하고 글은 그대로 남는다
+        model.activateTab(rro); await wait(400)
+        model.send(.perform { tv in tv.insertText("AGAIN ", replacementRange: NSRange(location: 0, length: 0)) }); await wait(150)
+        let keepOverride = AppDefaults.snapshotDirectoryOverride
+        AppDefaults.snapshotDirectoryOverride = URL(fileURLWithPath: "/dev/null/hyperedit-no-snapshots")
+        model.activateTab(rb); await wait(300)
+        let stayedOnSwitch = model.document.url == rro && model.document.isDirty
+        model.closeTab(rro); await wait(300)
+        check(stayedOnSwitch && model.document.url == rro && model.tabs.contains(rro) && text().hasPrefix("AGAIN LOCKED"),
+              "tabs: when neither the save nor an emergency copy works, switching and closing are refused and the text stays (\(model.document.url.lastPathComponent))")
+        AppDefaults.snapshotDirectoryOverride = keepOverride
+        try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: roDir.path)
+        model.closeTab(rro); await wait(400)
+        check(!model.tabs.contains(rro) && (try? String(contentsOf: ro, encoding: .utf8)) == "AGAIN LOCKED\n", "tabs: once the folder is writable again, closing saves the text")
+        // 다른 탭 모두 닫기 · 왼쪽 탭 닫기 · 모두 닫기 · 정리
         model.activateTab(base); await wait(300)
         model.closeOtherTabs(); await wait(150)
         check(model.tabs == [base] && model.document.url == base, "tabs: close other tabs leaves only the active one (\(names()))")
+        model.open(url: b); await wait(250); model.open(url: c); await wait(300)                // base, b, c (c 활성)
+        model.closeTabs(toLeftOf: rc); await wait(300)
+        check(model.tabs == [rc] && model.document.url == rc, "tabs: close tabs to the left keeps the clicked tab (\(names()))")
+        model.closeAllTabs(); await wait(400)
+        check(model.tabs == [model.defaultDocumentURL] && model.document.url == model.defaultDocumentURL, "tabs: close all tabs leaves the default document (\(names()))")
+        model.open(url: base); await wait(400)
+        model.closeTab(model.defaultDocumentURL); await wait(150)
+        check(model.tabs == [base] && model.document.url == base, "tabs: the default document's tab can be closed once another file is open")
         model.closeTabs(in: dir)
         try? FileManager.default.removeItem(at: dir)
         check(model.document.url == base, "tabs: back on \(base.lastPathComponent)")

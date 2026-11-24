@@ -4,9 +4,15 @@ import HyperCore
 import UniformTypeIdentifiers
 
 /// UltraEdit 식 파일 탭 바 (docs/tabs-model.ko.md): 열린 파일마다 탭 하나. 클릭 전환, × · 더블클릭 · 가운데 클릭으로 닫기, 드래그로 순서 바꾸기,
-/// 우클릭 메뉴, 툴팁은 전체 경로·크기·수정 시각, 빈 곳 더블클릭은 새 문서, 오른쪽 끝 ▾ 는 열린 탭 목록(탭이 넘칠 때).
+/// 우클릭 메뉴, 툴팁은 전체 경로·크기·수정 시각, 빈 곳 더블클릭은 새 문서, 오른쪽 끝 ▾ 는 열린 탭 목록(탭이 둘 이상일 때).
 /// 탭은 파일 경로(`AppModel.tabs`)이고 살아 있는 문서는 하나다 — 탭을 바꾸면 그 문서가 파일을 갈아탄다(`MemoDocument.switchTo`).
 /// 그래서 수정됨 표시는 활성 탭에만 있다 (다른 탭은 떠날 때 저장됐다)
+extension UTType {
+    /// 탭 순서 바꾸기 드래그 전용 타입 (project.yml 의 UTExportedTypeDeclarations). 경로를 일반 텍스트로 실으면 탭을 편집기 위에 놓았을 때 그 경로가
+    /// 문서에 삽입되고, 편집기에서 끌어온 글이 탭 위에서 '이동'으로 받아들여진다 — 이 앱의 탭 줄만 알아보는 타입으로 싣는다
+    static let hyperEditTab = UTType(exportedAs: "io.github.hyeongcheol-an.hyperedit.tab")
+}
+
 struct DocumentTabBar: View {
     @EnvironmentObject var model: AppModel
     @ObservedObject var doc: MemoDocument   // 활성 파일(url)·수정됨이 바뀌면 탭 줄을 다시 그린다
@@ -15,13 +21,20 @@ struct DocumentTabBar: View {
     /// (가로 ScrollView 는 주는 폭을 다 받으므로 그대로 두면 탭이 두세 개여도 버튼이 오른쪽 끝으로 밀린다)
     @State private var tabsWidth: CGFloat = .infinity
 
+    /// 탭에 적을 이름. 같은 이름의 파일이 둘 이상 열려 있으면 상위 폴더를 붙여 구별한다 (`notes.md — work`)
+    private func title(_ url: URL, among duplicated: Set<String>) -> String {
+        let name = url.lastPathComponent
+        return duplicated.contains(name) ? name + " — " + url.deletingLastPathComponent().lastPathComponent : name
+    }
+
     var body: some View {
+        let duplicated = Set(Dictionary(grouping: model.tabs, by: \.lastPathComponent).filter { $0.value.count > 1 }.keys)
         HStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 0) {
                         ForEach(model.tabs, id: \.self) { url in
-                            DocumentTab(url: url, isActive: url == doc.url, isDirty: url == doc.url && doc.isDirty, theme: theme).id(url)
+                            DocumentTab(url: url, title: title(url, among: duplicated), isActive: url == doc.url, isDirty: url == doc.url && doc.isDirty, theme: theme).id(url)
                         }
                     }
                     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { tabsWidth = $0.rounded(.up) }
@@ -41,11 +54,11 @@ struct DocumentTabBar: View {
             if model.tabs.count > 1 {
                 Menu {
                     ForEach(model.tabs, id: \.self) { url in
-                        Button { model.activateTab(url) } label: { Text((url == doc.url ? "• " : "") + url.lastPathComponent) }
+                        Button { model.activateTab(url) } label: { Text(verbatim: (url == doc.url ? "• " : "") + title(url, among: duplicated)) }
                     }
                 } label: { Image(systemName: "chevron.down").font(.system(size: 10)) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                .foregroundStyle(theme.foregroundMuted.color).padding(.horizontal, 8).help("Open Tabs")
+                .foregroundStyle(theme.foregroundMuted.color).padding(.horizontal, 8).help("Open Tabs").accessibilityLabel(Text("Open Tabs"))
             }
         }
         .frame(height: 26)
@@ -58,10 +71,13 @@ struct DocumentTabBar: View {
 struct DocumentTab: View {
     @EnvironmentObject var model: AppModel
     let url: URL
+    let title: String
     let isActive: Bool
     let isDirty: Bool
     let theme: Theme
     @State private var hovering = false
+    /// 툴팁(경로·크기·수정 시각). 파일 속성을 읽으므로 마우스가 올라올 때만 만든다 — body 는 모델이 발행할 때마다 모든 탭에서 다시 돈다
+    @State private var tip = ""
 
     private static let dateFormat: DateFormatter = { let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .short; return f }()
     private var tooltip: String {
@@ -74,13 +90,15 @@ struct DocumentTab: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "doc.text").font(.system(size: 11))
-            Text(url.lastPathComponent).font(.system(size: 12, weight: isActive ? .semibold : .regular)).lineLimit(1)
+            Text(verbatim: title).font(.system(size: 12, weight: isActive ? .semibold : .regular)).lineLimit(1)
                 .truncationMode(.middle).frame(maxWidth: 240)   // 아주 긴 이름 하나가 탭 줄을 다 차지하지 않게 (가운데를 줄여 확장자는 남긴다; 전체 경로는 툴팁)
+                .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAction { model.activateTab(url) }
             ZStack {
                 if isDirty && !hovering { Circle().fill(theme.accent.color).frame(width: 7, height: 7) }
                 if hovering || (isActive && !isDirty) {
                     Button { model.closeTab(url) } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).frame(width: 12, height: 12) }
-                        .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).help("Close Tab (⌘W)")
+                        .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).help("Close Tab (⌘W)").accessibilityLabel(Text("Close Tab"))
                 }
             }
             .frame(width: 12, height: 12)
@@ -98,8 +116,8 @@ struct DocumentTab: View {
         .onTapGesture { model.tabClicked(url) }
         .simultaneousGesture(TapGesture(count: 2).onEnded { model.tabDoubleClicked(url) })
         .overlay { MiddleClickCatcher { model.closeTab(url) } }   // 가운데 클릭 닫기
-        .onHover { hovering = $0 }
-        .help(tooltip)
+        .onHover { hovering = $0; if $0 { tip = tooltip } }
+        .help(tip)
         .contextMenu {
             Button("Close Tab") { model.closeTab(url) }
             Button("Close Other Tabs") { model.closeOtherTabs(except: url) }
@@ -122,8 +140,13 @@ struct DocumentTab: View {
                 Button("By Modification Date") { model.sortTabs(by: .modified) }
             }
         }
-        .onDrag { NSItemProvider(object: url.path as NSString) }
-        .onDrop(of: [.text], delegate: DocumentTabDrop(model: model, target: url))
+        .onDrag {
+            let provider = NSItemProvider()
+            let path = Data(url.path.utf8)
+            provider.registerDataRepresentation(forTypeIdentifier: UTType.hyperEditTab.identifier, visibility: .ownProcess) { done in done(path, nil); return nil }
+            return provider
+        }
+        .onDrop(of: [.hyperEditTab], delegate: DocumentTabDrop(model: model, target: url))
     }
 }
 
@@ -135,9 +158,9 @@ struct DocumentTabDrop: DropDelegate {
     func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
 
     func performDrop(info: DropInfo) -> Bool {
-        guard let item = info.itemProviders(for: [.text]).first else { return false }
-        item.loadObject(ofClass: NSString.self) { obj, _ in
-            guard let path = obj as? String else { return }
+        guard let item = info.itemProviders(for: [.hyperEditTab]).first else { return false }
+        _ = item.loadDataRepresentation(forTypeIdentifier: UTType.hyperEditTab.identifier) { data, _ in
+            guard let data, let path = String(data: data, encoding: .utf8) else { return }
             DispatchQueue.main.async {
                 guard let src = model.tabs.first(where: { $0.path == path }), src != target, let to = model.tabs.firstIndex(of: target) else { return }
                 model.moveTab(src, to: to)

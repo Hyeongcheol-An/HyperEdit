@@ -55,7 +55,7 @@ HyperEdit abre `~/Documents/HyperEdit/notes.md`. Si ese archivo no existe, se cr
 
 - **⌘N** crea un archivo de texto vacío nuevo (tú eliges el nombre y la carpeta).
 - **⌘O** abre cualquier otro archivo de texto. El último archivo abierto se recuerda para el próximo inicio.
-- **Pestañas de archivos.** Cada archivo abierto tiene una pestaña sobre el editor, como en UltraEdit: un clic cambia de pestaña; ⌘W, la ×, un doble clic o un clic central la cierran (los cambios sin guardar se guardan antes, y al cerrar la pestaña activa se pasa a la de su izquierda); arrastra las pestañas para reordenarlas; un doble clic en la barra vacía crea un archivo nuevo; con clic derecho en una pestaña tienes Cerrar las otras / Cerrar a la izquierda·derecha / Reabrir la última pestaña cerrada (⌘⇧T) / Guardar y cerrar / Volver a la versión guardada / Copiar ruta / Ordenar pestañas. ⌘⇧] / ⌘⇧[ recorren las pestañas, ⌃Tab vuelve a la pestaña que veías antes y el ▾ de la derecha lista todas las pestañas abiertas. Las pestañas abiertas se restauran en el siguiente inicio; la descripción emergente de una pestaña muestra la ruta completa, el tamaño y la fecha de modificación.
+- **Pestañas de archivos.** Cada archivo abierto tiene una pestaña sobre el editor, como en UltraEdit: un clic cambia de pestaña; ⌘W, la ×, un doble clic o un clic central la cierran (los cambios sin guardar se guardan antes). Al cerrar la pestaña que estás viendo se pasa a la de su izquierda; un doble clic en una pestaña que no estás viendo la cierra y te deja en la que estabas leyendo. Arrastra las pestañas para reordenarlas; un doble clic en la barra vacía crea un archivo nuevo; con clic derecho en una pestaña tienes Cerrar las demás pestañas / Cerrar pestañas a la izquierda / Cerrar pestañas a la derecha / Reabrir la última pestaña cerrada (⇧⌘T) / Guardar y cerrar / Volver a la versión guardada / Copiar ruta / Ordenar pestañas. ⇧⌘] / ⇧⌘[ recorren las pestañas, ⌃Tab vuelve a la pestaña que veías antes y el ▾ de la derecha lista todas las pestañas abiertas; la descripción emergente de una pestaña muestra la ruta completa, el tamaño y la fecha de modificación. Cada archivo conserva su cursor, su posición de desplazamiento y sus pliegues mientras la app está en ejecución, pero su historial de deshacer se borra cuando sales de su pestaña. En el siguiente inicio se restauran hasta 30 pestañas abiertas. Al cerrar la última pestaña se abre el documento predeterminado, y una pestaña cuyo archivo se ha eliminado se quita al hacer clic en ella.
 - **Archivo › Abrir documento predeterminado** te devuelve a `notes.md`.
 - Los archivos binarios (imágenes, PDF, archivos comprimidos…) nunca se cargan en el editor; se abren en su app predeterminada.
 
@@ -80,7 +80,7 @@ Un idioma que no esté en la lista recurre al inglés (por ejemplo, el chino tra
 La disposición sigue la de un editor clásico con cinta de opciones, con la barra de título oculta.
 
 - **Pestañas de la cinta** — **Inicio** (Portapapeles, Buscar, Insertar, Modo, Archivo), **Edición** (Líneas, Mayúsculas y minúsculas, Ordenar, Espacios en blanco, Columna y multicursor, Herramientas, Macro), **Disposición** (Tema, Paneles, Plegado, Markdown, Tamaño de letra), **Avanzado** (Ajustes, carpeta de instantáneas, recarga, documento predeterminado), **Ventana** (pantalla completa, paneles). Cuando la ventana es estrecha, los grupos se repliegan en iconos desde la derecha; la descripción emergente del icono muestra la etiqueta.
-- **Barra de pestañas del documento** — el nombre del archivo actual con los botones Nuevo (⌘N) y Abrir (⌘O), además de acceso rápido a Guardar / Deshacer / Rehacer.
+- **Barra de pestañas de archivos** — una pestaña por cada archivo abierto y, a continuación, los botones Nuevo (+, ⌘N) y Abrir (carpeta, ⌘O); con dos o más pestañas, el ▾ del extremo derecho las lista. Los accesos rápidos Guardar / Deshacer / Rehacer están a la derecha de la fila de pestañas de la cinta.
 - **Barra lateral (⌘1)** — **Archivos** (la carpeta del archivo actual; un clic abre un archivo), **Esquema (⌘3)** (encabezados, líneas `[Título]` y elementos numerados, con un cuadro de filtro; el elemento actual se resalta), **Cronología (⌘4)** (encabezados con marca de tiempo agrupados por mes, los más recientes primero).
 - **Panel inferior (⌘2)** — **Resultados de búsqueda**, **Marcadores** y **Salida**, un registro de lo que hizo la app (guardados, reemplazos, errores).
 - **Barra de estado** — línea y columna (más la longitud de la selección; pasa el puntero para ver el desplazamiento en caracteres), fin de línea (UNIX / DOS / MAC), codificación del archivo, **COL** mientras el modo columna está activo, número de cursores, número de líneas · tamaño del archivo, el último mensaje de estado, el lenguaje de sintaxis (atenuado mientras los colores de sintaxis están desactivados), un menú de temas (marcado con “· Sistema” mientras se sigue la apariencia del sistema) y el porcentaje de zoom. La mayoría de los elementos se pueden pulsar.
@@ -153,7 +153,7 @@ La última grabación permanece solo en memoria hasta que sales, así que nada s
 - en Markdown, todo lo que hay bajo un encabezado `#` hasta el siguiente encabezado del mismo nivel o superior (los bloques de código delimitados también se pliegan),
 - en código, una línea que termina en `{`, `[` o `(` hasta la línea de su cierre.
 
-Haz clic en el chevrón del margen o en la píldora `⋯ N líneas` tras una línea plegada para alternarla con el ratón. Mover el cursor a una línea plegada (buscar, ir a la línea, marcador, deshacer) la despliega; ↑ / ↓ saltan por encima de los pliegues. Los pliegues siguen tus ediciones y duran la sesión.
+Haz clic en el chevrón del margen o en la píldora `⋯ N líneas` tras una línea plegada para alternarla con el ratón. Mover el cursor a una línea plegada (buscar, ir a la línea, marcador, deshacer) la despliega; ↑ / ↓ saltan por encima de los pliegues. Los pliegues siguen tus ediciones y se conservan por archivo mientras la app está en ejecución (no se pierden al cambiar de pestaña), pero no se guardan para el siguiente inicio.
 
 **Marcas de desplazamiento** — una franja fina en el borde derecho del editor muestra las coincidencias de búsqueda (color de acento), los marcadores (color de aviso), la línea del cursor y los encabezados plegados en sus posiciones relativas dentro del archivo. Se oculta cuando todo el documento cabe en pantalla. Desactívala en **Visualización › Marcas de desplazamiento** o en el grupo Plegado de la pestaña Disposición.
 
@@ -214,8 +214,8 @@ La visibilidad de los paneles, el ajuste de línea, los números de línea, los 
 | Atajo | Acción | Atajo | Acción |
 |---|---|---|---|
 | ⌘N | Nuevo documento | ⌘O | Abrir |
-| ⌘W / ⌘⇧W | Cerrar pestaña / todas | ⌘⇧] / ⌘⇧[ | Pestaña siguiente / anterior |
-| ⌃Tab | Última pestaña activa | ⌘⇧T | Reabrir la última pestaña cerrada |
+| ⌘W / ⇧⌘W | Cerrar pestaña / todas | ⇧⌘] / ⇧⌘[ | Pestaña siguiente / anterior |
+| ⌃Tab | Última pestaña activa | ⇧⌘T | Reabrir la última pestaña cerrada |
 | ⌘S | Guardar | ⌘F | Buscar |
 | ⌘R | Reemplazar | ⇧⌘F | Buscar en archivos |
 | F3 / ⇧F3 | Coincidencia siguiente / anterior | ⌘L | Ir a la línea |
@@ -274,7 +274,8 @@ No se escribe nada junto a tus documentos, y nada sale de tu Mac.
 - La exportación escribe solo el documento completo, sin exportar la selección ni varios archivos, sin opciones de página o de tipo de letra y sin índice en el PDF.
 - Los bloques secretos se ocultan solo en pantalla: el archivo, los guardados automáticos y las instantáneas son texto sin formato, la barra de ocultación muestra la longitud de cada línea y VoiceOver sigue leyendo el texto. Un delimitador secreto debe empezar en el margen izquierdo (con menos de cuatro espacios de sangría, no dentro de un elemento de lista ni de una cita), y un bloque delimitado anidado dentro de un bloque secreto necesita cuatro acentos graves en el delimitador exterior. El bloqueo de la app oculta la ventana y su contenido a VoiceOver; no cifra nada.
 - Los comentarios de bloque no se anidan, y los archivos con finales de línea del Mac clásico (solo CR) se colorean línea por línea. Dentro de un único párrafo de más de 20.000 caracteres, los cursores Bloque y Subrayado vuelven al cursor de barra estándar.
-- Los pliegues duran la sesión y no se guardan por archivo; arrastrar con el ratón sobre una línea plegada sigue seleccionando el texto oculto.
+- Los pliegues se conservan por archivo solo mientras la app está en ejecución y no se guardan para el siguiente inicio; arrastrar con el ratón sobre una línea plegada sigue seleccionando el texto oculto.
+- Solo la pestaña que estás viendo se mantiene en memoria: al salir de una pestaña se borra el historial de deshacer de ese archivo, y en el siguiente inicio no se restauran más de 30 pestañas abiertas.
 - Los documentos que son una sola línea de un megabyte o más tardan en abrirse y en moverse por ellos; Compactar JSON avisa antes de producir uno.
 - Solo archivos locales; sin sincronización en la nube y sin app para iOS por ahora.
 - Los idiomas distintos de los once indicados recurren al inglés.
