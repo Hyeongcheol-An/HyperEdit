@@ -80,12 +80,19 @@ struct FileViewPanel: View {
                 guard let id, let node = nodes.lazy.compactMap({ $0.find(id) }).first, !node.isDirectory else { return }
                 if id != currentID { model.open(url: node.url) }
             }
-            .onChange(of: currentID) { _, id in if selected != id { selected = id } }
+            .onChange(of: currentID) { _, id in
+                // 같은 폴더에 새로 만든 파일(⌘N)이나 목록을 읽은 뒤에 생긴 파일을 탭으로 열면 목록에 없다 → 다시 읽어 현재 파일이 보이게 한다
+                // (폴더가 바뀐 경우는 아래 rootDirectory 쪽이 읽는다 — 두 번 읽지 않는다)
+                if loadedRoot == model.rootDirectory, nodes.lazy.compactMap({ $0.find(id) }).first == nil { reload() }
+                if selected != id { selected = id }
+            }
         }
         .onAppear { reload(); selected = currentID }
         .onChange(of: model.rootDirectory) { _, _ in reload() }
     }
 
     private var currentID: String { model.document.url.path }
-    private func reload() { nodes = FileTree.load(model.rootDirectory) }
+    /// `nodes` 를 읽어 온 폴더
+    @State private var loadedRoot: URL?
+    private func reload() { nodes = FileTree.load(model.rootDirectory); loadedRoot = model.rootDirectory }
 }
