@@ -334,6 +334,7 @@ struct EditorView: NSViewRepresentable {
             container.markerView = markers                                                                                  // markers
             markerView = markers                                                                                            // markers
             fold.onChange = { [weak markers] in markers?.needsDisplay = true }                                              // markers
+            fold.onRestore = { [weak self] in self?.reanchorAfterFoldRestore() }                                           // 탭으로 돌아와 접힘을 되살린 뒤 보기 위치 다시 맞춤
         }
 
         private func bindDocument() {
@@ -575,11 +576,13 @@ struct EditorView: NSViewRepresentable {
                     tv.window?.makeFirstResponder(tv)
                     let inset = CGFloat(st.topInset ?? 0)
                     scrollToTop(offset: top, inset: inset)
+                    restoredAnchor = (top, inset, document.reloadGeneration, sv.contentView.bounds.origin.y)
                     // 스크롤 뒤 TextKit 2 가 위쪽 문단의 추정 높이를 실측으로 바꾸며 좌표를 옮길 수 있다 → 다음 턴에 한 번 더 맞춘다 (centerCaret 과 같은 이유)
                     let generation = document.reloadGeneration   // 그 사이 다른 파일로 또 넘어갔으면 이 오프셋은 그 파일의 것이 아니다
                     DispatchQueue.main.async { [weak self] in
                         guard let self, self.document.reloadGeneration == generation else { return }
                         self.scrollToTop(offset: top, inset: inset)
+                        self.restoredAnchor?.y = self.scrollView?.contentView.bounds.origin.y ?? 0
                     }
                 } else {
                     select(caret, center: true, indicator: false)
@@ -587,6 +590,16 @@ struct EditorView: NSViewRepresentable {
             } else {
                 select(NSRange(location: len, length: 0), center: false, indicator: false)
             }
+        }
+
+        /// 방금 되살린 보기 위치 (닻·그때의 문서 세대·맞춘 뒤의 스크롤 위치) — 접힘이 뒤늦게 되살아나면 같은 닻으로 한 번 더 맞춘다
+        private var restoredAnchor: (offset: Int, inset: CGFloat, generation: Int, y: CGFloat)?
+
+        /// 돌아온 탭의 접힘이 (영역 스캔 뒤에) 되살아났다: 화면보다 위가 접히면 글이 올라오므로 닻을 다시 맞춘다. 그 사이 사용자가 스크롤했으면 건드리지 않는다
+        private func reanchorAfterFoldRestore() {
+            guard let a = restoredAnchor, a.generation == document.reloadGeneration, let sv = scrollView,
+                  abs(sv.contentView.bounds.origin.y - a.y) < 1 else { return }
+            scrollToTop(offset: a.offset, inset: a.inset)
         }
 
         /// 화면 맨 위에 걸친 문단(시작 오프셋)과, 그 문단의 위 가장자리가 화면 위 가장자리보다 얼마나 위에 있는가 — 보기 위치의 닻

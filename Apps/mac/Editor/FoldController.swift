@@ -58,6 +58,12 @@ final class FoldController {
     private(set) var folds: [FoldSpan] = []              // hiddenStart 오름차순
     private(set) var candidates: [FoldCandidate] = []    // headerStart 오름차순
     private var merged: [NSRange] = []                   // folds 의 숨김 구간 합집합 (정렬, 겹침 없음)
+    // 탭을 오갈 때의 접힘: 탭 전환은 같은 저장소에 다른 파일을 다시 읽어 넣으므로(MemoDocument.switchTo) 접힘이 사라진다. 떠날 때 파일별로 적어 두고,
+    // 돌아와 첫 영역 스캔이 끝나면 같은 자리의 영역을 다시 접는다 (실행 중에만 — 세션에는 저장하지 않는다)
+    private var remembered: [URL: [FoldSpan]] = [:]
+    private var pendingRestore: [FoldSpan] = []
+    /// 돌아온 탭의 접힘을 되살린 직후 — 화면보다 위가 접히면 글이 올라오므로 편집기가 보기 위치를 다시 맞춘다
+    var onRestore: (() -> Void)?
     private weak var document: MemoDocument?
     private var cancellables = Set<AnyCancellable>()
     private var scanTask: Task<Void, Never>?
@@ -103,7 +109,13 @@ final class FoldController {
             .store(in: &cancellables)
         // @Published 는 willSet 에 발행 — 내용 교체 전에 접힘을 비운다 (새 파일의 영역은 lineIndex 발행으로 다시 계산)
         doc.$url.removeDuplicates().dropFirst()
-            .sink { [weak self] _ in self?.reset() }
+            .sink { [weak self] newURL in
+                guard let self else { return }
+                // 아직 떠나는 파일(willSet). 그 파일의 접힘을 되살리기도 전에 다시 떠나는 길이면(빠르게 지나친 탭) 적어 둔 것을 그대로 둔다
+                if let old = self.document?.url, self.pendingRestore.isEmpty { self.remembered[old] = self.folds.isEmpty ? nil : self.folds }
+                self.reset()
+                self.pendingRestore = self.remembered[newURL] ?? []
+            }
             .store(in: &cancellables)
         doc.$reloadGeneration.dropFirst()
             .sink { [weak self] _ in self?.reset() }
@@ -461,6 +473,27 @@ final class FoldController {
             }
         }
         if before != candidates { gutter?.needsDisplay = true }
+        if !pendingRestore.isEmpty {
+            let want = pendingRestore
+            pendingRestore = []
+            restoreFolds(want)
+        }
+    }
+
+    /// 떠날 때 접혀 있던 영역 중 지금도 같은 자리에 같은 크기로 있는 것만 다시 접는다 (그 사이 파일이 밖에서 바뀌어 어긋난 것은 버린다)
+    private func restoreFolds(_ want: [FoldSpan]) {
+        guard folds.isEmpty else { return }
+        let ends = Dictionary(candidates.map { ($0.hiddenStart, $0.hiddenEnd) }, uniquingKeysWith: { a, _ in a })
+        let again = want.filter { ends[$0.hiddenStart] == $0.hiddenEnd }.sorted { $0.hiddenStart < $1.hiddenStart }
+        guard let first = again.first, let hi = again.map(\.hiddenEnd).max() else { return }
+        folds = again
+        rebuildMerged()
+        invalidateLayout(from: max(0, first.hiddenStart - 1), to: hi)
+        if let tv = textView, tv.selectedRange().length == 0, isOffsetHidden(tv.selectedRange().location) {
+            unfoldAll(containing: tv.selectedRange().location, reason: nil)
+        }
+        changed()
+        onRestore?()
     }
 
     // MARK: 내부
