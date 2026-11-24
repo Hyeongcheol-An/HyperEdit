@@ -558,8 +558,11 @@ struct EditorView: NSViewRepresentable {
             restored = true
             let len = document.textStorage.length
             if role == .secondary {
-                // split: 보조 편집기는 저장된 위치를 쓰지 않고 주 편집기의 캐럿 줄에서 시작한다 (가운데, 포커스는 주 편집기에 둔다)
-                let loc = session.primary?.textView?.selectedRange().location ?? len
+                // split: 보조 편집기는 저장된 위치를 쓰지 않고 주 편집기의 캐럿 줄에서 시작한다 (가운데, 포커스는 주 편집기에 둔다).
+                // 탭을 바꾼 직후에는 주 편집기가 아직 제 캐럿을 되살리기 전일 수 있다 — 그때의 선택은 내용 교체가 밀어 둔 문서 끝이라 보조 편집기만 문서 끝을
+                // 보여 주게 된다. 그때는 주 편집기가 되살릴 캐럿(저장된 보기 상태)을 쓴다
+                let primary = session.primary
+                let loc = (primary?.restored == true ? primary?.textView?.selectedRange().location : ViewStateStore.load(for: document.url)?.cursor) ?? len
                 select(NSRange(location: min(loc, len), length: 0), center: true, indicator: false, focus: false)
                 return
             }
