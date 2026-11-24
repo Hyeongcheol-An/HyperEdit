@@ -119,11 +119,17 @@ struct SearchResultsTable<Item: SearchResultRow>: NSViewRepresentable {
             if v.generation != generation { generation = v.generation; items = v.items; reload = true }
             if theme != v.theme { theme = v.theme; reload = true }
             guard let table else { return }
+            var follow: Int?
             if reload {
+                let previous = currentIndex
                 setCurrent(indexUnderCaret())   // 셀을 만들기 전에 — reloadData 가 현재 행을 바로 강조한다
                 Perf.measure("findResults.reload rows=\(items.count)") { table.reloadData() }
+                if currentIndex != previous { follow = currentIndex }
             }
-            if reset, !items.isEmpty { table.scrollRowToVisible(0) }
+            // 새 결과에서 캐럿이 올라 있는 매치의 행이 바뀌었으면 그 행을 보이게 한다 (빠른 찾기·Enter 검색이 고른 첫 매치). 선택은 결과 발행과 같은 턴에 옮겨지므로
+            // 캐럿 알림(applyCurrent)이 올 때는 현재 행이 이미 이 값이라 스크롤 없이 끝난다 — 목록은 맨 위에 머물고 현재 행은 화면 밖에 있었다
+            if let row = follow ?? (reset ? currentIndex : nil), row < table.numberOfRows { table.scrollRowToVisible(row) }
+            else if reset, !items.isEmpty { table.scrollRowToVisible(0) }
         }
 
         func tearDown() {

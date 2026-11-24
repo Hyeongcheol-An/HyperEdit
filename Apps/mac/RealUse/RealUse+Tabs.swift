@@ -548,6 +548,48 @@ extension RealUse {
             ctx.tallyNote()
         },
 
+        // 열어 둔 파일에 다른 프로그램이 덧붙인다(로그·동기화 폴더·다른 도구의 메모 추가): 다시 읽은 뒤에도 읽던 줄이 화면의 같은 높이에 있어야 한다.
+        // 위쪽을 많이 읽어 내려온 뒤일수록 어긋나기 쉽다 — 다시 읽으면 위쪽 문단이 전부 '아직 배치하지 않은' 상태로 돌아가 TextKit 2 가 높이를 다시 어림한다
+        Scenario(name: "tabs-reload-view") { ctx in
+            let url = await ctx.openNumbered("reload-view.md", lines: 1500)
+            await ctx.key(.up, [.command]); await ctx.settle(200)
+            for _ in 0..<30 { await ctx.scrollBy(300); await ctx.settle(0) }   // 처음부터 9,000 pt 를 읽어 내려왔다 (위쪽 문단이 모두 배치돼 있다)
+            await ctx.settle(1700)   // 연 직후 1.5 s 는 파일 감시가 무시한다
+            var body = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            @MainActor func appendOutside(_ label: String) async {
+                ctx.at(label)
+                let before = ctx.mark()
+                body += "APPENDED \(label)\n"
+                try? body.write(to: url, atomically: true, encoding: .utf8)
+                await ctx.settle(1200)
+                if !ctx.text.hasSuffix("APPENDED \(label)\n") { ctx.issue("text", "\(label): the file changed on disk (not dirty) but the editor was not reloaded within 1.2 s"); return }
+                if ctx.caret != before.caret { ctx.issue("caret", "\(label): another program appended to the open file and the caret went from offset \(before.caret) to \(ctx.caret)") }
+                if let a = before.anchor {
+                    if let y = ctx.screenY(ofFragmentAt: a.offset) {
+                        if abs(y - a.y) > 2 { ctx.issue("viewport-jump", "\(label): another program appended to the open file and the paragraph at offset \(a.offset) moved from \(Int(a.y)) pt to \(Int(y)) pt on screen (top line \(before.top) → \(ctx.topLine()))") }
+                    } else { ctx.issue("viewport-jump", "\(label): another program appended to the open file and the view jumped from line \(before.top) to line \(ctx.topLine())") }
+                } else { ctx.issue("other", "\(label): nothing laid out before the outside change") }
+                ctx.checkAll(label); ctx.checkInk(label)
+            }
+            // 보이는 줄을 클릭해 캐럿이 화면 안에 있는 상태 (쓰는 중)
+            if let a = ctx.anchor() { await ctx.click(offset: a.offset); await ctx.settle(100) }
+            await appendOutside("caret on screen")
+            ctx.snap("caret-on-screen")
+            // 바로 이어서 한 번 더 (방금 다시 읽어 위쪽이 전부 어림인 상태에서)
+            await appendOutside("appended again")
+            // 캐럿을 두고 휠로 세 화면 더 내려가 읽는 중 (캐럿은 화면 밖): 캐럿으로 끌려가지 않고 읽던 곳에 있어야 한다
+            for _ in 0..<4 { await ctx.scrollBy(300); await ctx.settle(0) }
+            await ctx.settle(100)
+            await appendOutside("reading below the caret")
+            ctx.snap("reading")
+            // 다시 읽은 직후의 첫 휠이 그만큼만 움직이는가
+            let a = ctx.anchor()
+            await ctx.scrollBy(90); await ctx.settle(60)
+            ctx.checkContentMoved(anchor: a, expected: 90, tolerance: 3, "first wheel after the reload")
+            ctx.checkAll("first wheel after the reload")
+            ctx.snap("end")
+        },
+
         // 닫기 규칙·다시 열기·순환·직전 탭·이동·정렬·사라진 파일·마지막 탭 → 기본 문서. 메뉴 단축키(⌘W ⌘⇧T ⌘⇧] ⌘⇧[)와 ⌃Tab 은 실제 키 경로로
         Scenario(name: "tabs-close-rules") { ctx in
             let m = ctx.model

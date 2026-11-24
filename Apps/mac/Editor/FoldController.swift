@@ -227,16 +227,25 @@ final class FoldController {
             let before = folds.count
             folds = candidates.map { FoldSpan(hiddenStart: $0.hiddenStart, hiddenEnd: $0.hiddenEnd, lines: $0.lines) }
             folds.sort { $0.hiddenStart < $1.hiddenStart }
+            // 문서 전체가 다시 배치된다 — 보던 곳을 지킨다. 보던 줄이 접혀 사라지면 그 줄을 품은 머리 줄을 맨 위에 둔다
+            var anchor = tv.beginPreservingReadingPosition()
             rebuildMerged()
             invalidateLayout(from: 0, to: Int.max)
+            if let a = anchor, let span = hiddenSpan(containing: a.offset) {
+                let header = tv.textStorage?.mutableString.paragraphRange(for: NSRange(location: max(0, span.location - 1), length: 0)).location ?? 0
+                anchor = .init(offset: header, delta: 0, lineHeight: 0, pinnedToEnd: false)
+            }
+            tv.endPreservingReadingPosition(anchor)
             moveCaretOutOfFolds()
             log?(String(localized: "Folded \(folds.count - before) regions"))
             changed()
         case .unfoldAll:
             let n = folds.count
             folds = []
-            rebuildMerged()
-            invalidateLayout(from: 0, to: Int.max)
+            tv.preservingReadingPosition {
+                rebuildMerged()
+                invalidateLayout(from: 0, to: Int.max)
+            }
             log?(String(localized: "Unfolded \(n) regions"))
             changed()
         case .toggleFold(let line):
@@ -649,8 +658,10 @@ extension HyperTextView {
         let origin = textContainerOrigin
         let length = textStorage?.length ?? 0
         func fragment(atY y: CGFloat) -> NSTextLayoutFragment? { lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, y - origin.y))) }
-        let start = fragment(atY: visible.minY).map { cs.offset(from: cs.documentRange.location, to: $0.rangeInElement.location) } ?? 0
-        let end = fragment(atY: visible.maxY).map { cs.offset(from: cs.documentRange.location, to: $0.rangeInElement.endLocation) } ?? length
+        // 그려 둔 뷰포트 범위를 쓴다 — 점 질의는 전체 무효화(모두 접기·펴기) 직후 조각 프레임을 옮길 수 있다 (HyperTextView.coveringViewport 주석). 그것을 쓸 수 없을 때만 점 질의로
+        let laidOut = laidOutViewportRange()
+        let start = laidOut?.location ?? fragment(atY: visible.minY).map { cs.offset(from: cs.documentRange.location, to: $0.rangeInElement.location) } ?? 0
+        let end = laidOut.map { NSMaxRange($0) } ?? fragment(atY: visible.maxY).map { cs.offset(from: cs.documentRange.location, to: $0.rangeInElement.endLocation) } ?? length
         guard end >= start else { return }
         let pills = provider(NSRange(location: start, length: end - start))
         guard !pills.isEmpty else { return }

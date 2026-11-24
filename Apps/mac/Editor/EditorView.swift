@@ -218,12 +218,23 @@ struct EditorView: NSViewRepresentable {
         private func invalidateHighlight() {
             guard let tv = textView, let lm = tv.textLayoutManager, let ts = tv.textStorage else { return }
             Perf.measure("highlight.invalidate len=\(ts.length)", threshold: 1) {
-                if !highlightEnabled { lm.removeRenderingAttribute(.foregroundColor, for: lm.documentRange) }
-                ts.beginEditing()
-                ts.edited(.editedAttributes, range: NSRange(location: 0, length: ts.length), changeInLength: 0)
-                ts.endEditing()
+                preservingReadingPositions {
+                    if !highlightEnabled { lm.removeRenderingAttribute(.foregroundColor, for: lm.documentRange) }
+                    ts.beginEditing()
+                    ts.edited(.editedAttributes, range: NSRange(location: 0, length: ts.length), changeInLength: 0)
+                    ts.endEditing()
+                }
             }
             tv.needsDisplay = true
+        }
+
+        /// 스토리지 전체의 속성 편집은 모든 편집기(분할 포함)의 레이아웃을 무효화해 화면이 다른 줄로 튄다 — 편집기마다 보던 곳을 잡았다가 되돌린다
+        /// (HyperTextView.ReadingAnchor). 창에 붙지 않은 뷰는 닻이 없어 건너뛴다
+        private func preservingReadingPositions(_ body: () -> Void) {
+            let views = session.coordinators.compactMap(\.textView)
+            let anchors = views.map { $0.captureReadingAnchor() }
+            body()
+            for (view, anchor) in zip(views, anchors) { if let anchor { view.restoreReadingAnchor(anchor) } }
         }
 
         func setSyntaxHighlighting(_ on: Bool) {
@@ -389,6 +400,7 @@ struct EditorView: NSViewRepresentable {
                     self.session.clearUndo()
                     self.textView?.endSnippetSession()
                     self.restored = false
+                    self.lastTopAnchor = nil
                     self.lastCaretRect = nil
                     // grammar: 문법은 문서가 내용 교체(switchTo → load) 전에 바꿔 둔다 (MemoDocument.grammar) — 교체로 재생성되는 프래그먼트가 새 문법으로 칠해진다
                 }
@@ -416,6 +428,7 @@ struct EditorView: NSViewRepresentable {
             session.clearUndo()
             lastReloadGeneration = newDoc.reloadGeneration
             restored = false
+            lastTopAnchor = nil
             appliedThemeID = nil
             appliedHighlightGeneration = -1; textView?.matchHighlights = []   // search: 새 문서의 결과는 다음 update 가 다시 넘긴다
             bindDocument()
@@ -435,6 +448,10 @@ struct EditorView: NSViewRepresentable {
             appliedFont = font
             lastTheme = theme
             lastFont = font
+            // 사용자가 테마·글자 크기를 바꾼 경우(force 가 아닌 경우): 전체 속성 재적용 전후로 편집기마다 보던 곳을 지킨다. 파일 열기·다시 읽기(force)는 위치 복원이 따로 있다
+            let readingViews = force ? [] : session.coordinators.compactMap(\.textView)
+            let readingAnchors = readingViews.map { $0.captureReadingAnchor() }
+            defer { for (view, anchor) in zip(readingViews, readingAnchors) { if let anchor { view.restoreReadingAnchor(anchor) } } }
 
             let base = FontCascade.baseFont(font)
             let hangul = FontCascade.hangulFont(font)
@@ -516,6 +533,7 @@ struct EditorView: NSViewRepresentable {
         func handleReload(generation: Int) {
             guard generation != lastReloadGeneration else { return }
             lastReloadGeneration = generation
+            let top = lastTopAnchor   // 다시 읽기 전에 보던 곳
             session.clearUndo()
             // 디스크에서 다시 읽은 내용은 shouldChangeText 를 거치지 않으므로 줄 수만 맞춘다
             // 읽지 못한 파일(권한·인코딩)은 버퍼가 비어 줄 수가 1 이다 — 그 값으로 맞추면 그 파일의 북마크가 1번 줄 하나로 뭉개져 저장된다
@@ -526,7 +544,13 @@ struct EditorView: NSViewRepresentable {
                 let len = document.textStorage.length
                 let loc = min(keep.location, len)
                 tv.setSelectedRange(NSRange(location: loc, length: 0))
-                tv.scrollRangeToVisible(NSRange(location: loc, length: 0))
+                // 화면도 읽던 그대로: 맨 위에 걸쳐 있던 문단을 같은 높이에 (캐럿이 화면 밖이었으면 밖에 둔다). 클립 원점만 그대로 두면 위쪽 문단의 높이가 전부 어림으로
+                // 돌아가 그만큼 밀리고(실측: 줄당 어림 25.15 pt, 실제 24 pt), 캐럿을 보이게 스크롤하면 읽던 곳을 떠나 캐럿으로 끌려간다 (실측: 50 줄)
+                if let top, top.offset <= len, !tv.isInHugeParagraph(top.offset) {
+                    tv.restoreReadingAnchor(.init(offset: top.offset, delta: top.inset, lineHeight: 0, pinnedToEnd: false))
+                } else {
+                    tv.scrollRangeToVisible(NSRange(location: loc, length: 0))
+                }
             }
         }
 
@@ -565,18 +589,22 @@ struct EditorView: NSViewRepresentable {
 
         /// 보이는 영역의 첫 레이아웃 조각이 속한 줄(1-based)을 EditorCaret 에 발행한다 — 거터와 같은 TextKit 2 질의
         func publishFirstVisibleLine() {
-            guard session.isActive(self) else { return }   // split: 미리보기는 활성 편집기를 따라간다
             guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
             // 스크롤 직후(클립 뷰 bounds 가 바뀌고 텍스트 뷰의 layout() 은 아직인 때)에는 새 화면 위쪽의 문단이 추정 높이다. 그때 아래의 점 질의를 하면 TextKit 2 가
             // 그 문단을 먼저 배치해 버려, 뒤이은 뷰포트 배치가 "추정 → 실측" 차이를 스크롤 위치로 보정하지 못한다 — 쉬었다가 위로 스크롤하는 첫 걸음마다 화면이
             // 수십 pt(여러 번 감긴 문단은 100 pt 이상) 덜 가거나 거꾸로 튀었다(실사용 하네스 scroll-rested-wheel, 2026-11-24). 밀린 배치를 먼저 끝낸다 —
             // 이 턴의 표시 주기가 어차피 할 일이라 추가 비용은 없다
             if tv.needsLayout { tv.layoutSubtreeIfNeeded() }
+            // 보던 곳을 적어 둔다 (분할의 비활성 편집기도). 다시 읽은 내용이 아직 이 편집기에 반영되기 전(handleReload 전)의 화면은 적지 않는다
+            let top = tv.firstVisibleParagraphAnchor()
+            if restored, document.reloadGeneration == lastReloadGeneration { lastTopAnchor = top }
+            guard session.isActive(self) else { return }   // split: 미리보기는 활성 편집기를 따라간다
             let visible = tv.visibleRect
             let origin = tv.textContainerOrigin
             let point = CGPoint(x: 0, y: max(0, visible.minY - origin.y))
-            let location = lm.textLayoutFragment(for: point)?.rangeInElement.location ?? lm.documentRange.location
-            let offset = cs.offset(from: cs.documentRange.location, to: location)
+            // 그려 둔 뷰포트에서 답을 얻는다 — 점 질의는 전체 무효화·먼 점프 직후 조각 프레임을 옮긴다 (HyperTextView.coveringViewport 주석). 그것을 쓸 수 없을 때만 점 질의로
+            let offset = top?.offset ?? tv.firstVisibleParagraphOffset()
+                ?? cs.offset(from: cs.documentRange.location, to: lm.textLayoutFragment(for: point)?.rangeInElement.location ?? lm.documentRange.location)
             let line = document.liveLineIndex.lineNumber(forUTF16Offset: offset)
             if model.caret.firstVisibleLine != line { model.caret.firstVisibleLine = line }
         }
@@ -635,6 +663,10 @@ struct EditorView: NSViewRepresentable {
         /// 방금 되살린 보기 위치 (닻·그때의 문서 세대·맞춘 뒤의 스크롤 위치) — 접힘이 뒤늦게 되살아나면 같은 닻으로 한 번 더 맞춘다
         private var restoredAnchor: (offset: Int, inset: CGFloat, generation: Int, y: CGFloat)?
 
+        /// 화면 맨 위에 걸친 문단과 그 문단이 위 가장자리보다 얼마나 위에 있는가 — 스크롤·편집 때마다 `publishFirstVisibleLine` 이 적어 둔다.
+        /// 밖에서 바뀐 파일을 다시 읽으면(handleReload) 이 자리로 되돌린다: 다시 읽기는 내용을 통째로 바꾸므로 그 뒤에는 보던 곳을 물어볼 수 없다
+        private var lastTopAnchor: (offset: Int, inset: CGFloat)?
+
         /// 돌아온 탭의 접힘이 (영역 스캔 뒤에) 되살아났다: 화면보다 위가 접히면 글이 올라오므로 닻을 다시 맞춘다. 그 사이 사용자가 스크롤했으면 건드리지 않는다
         private func reanchorAfterFoldRestore() {
             guard let a = restoredAnchor, a.generation == document.reloadGeneration, let sv = scrollView,
@@ -647,8 +679,15 @@ struct EditorView: NSViewRepresentable {
             guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return nil }
             // 문서 맨 위에서는 화면 위 가장자리가 첫 문단보다 위(위쪽 여백)에 있다 → inset 은 음수가 될 수 있다
             let y = tv.visibleRect.minY - tv.textContainerOrigin.y
-            guard let f = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, y))) else { return nil }
-            return (cs.offset(from: cs.documentRange.location, to: f.rangeInElement.location), y - f.layoutFragmentFrame.minY)
+            // 그려 둔 뷰포트에서 답을 얻는다 (HyperTextView.firstVisibleParagraphAnchor). 그것을 쓸 수 없을 때(줄바꿈 끔·위쪽이 빈 화면)만 점 질의로 — 그 질의가
+            // 조각 프레임을 옮겼으면 뷰포트를 다시 배치하게 한다 (뷰포트 지킴이)
+            if let a = tv.firstVisibleParagraphAnchor() { return a }
+            var anchor: (offset: Int, inset: CGFloat)?
+            tv.guardingViewport {
+                guard let f = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, y))) else { return }
+                anchor = (cs.offset(from: cs.documentRange.location, to: f.rangeInElement.location), y - f.layoutFragmentFrame.minY)
+            }
+            return anchor
         }
 
         /// `offset` 에서 시작하는 문단의 위 가장자리가 화면 위 가장자리보다 `inset` 만큼 위에 오게 스크롤한다 (이미 그 자리면 아무것도 하지 않는다)
@@ -755,6 +794,7 @@ struct EditorView: NSViewRepresentable {
 
         func setWordWrap(_ on: Bool) {
             guard let tv = textView, let sv = scrollView, let container = tv.textContainer else { return }
+            let reflow = tv.beginReflow()   // 모든 문단이 다시 감긴다 — 보던 줄을 그대로 두고, 옛 폭의 높이 어림을 버린다 (HyperTextView.beginReflow)
             if on {
                 container.widthTracksTextView = true
                 container.size = NSSize(width: sv.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
@@ -767,6 +807,10 @@ struct EditorView: NSViewRepresentable {
                 tv.isHorizontallyResizable = true
                 sv.hasHorizontalScroller = true
             }
+            tv.endReflow(reflow)
+            // 줄바꿈을 켠 직후에는 한 턴 뒤에 한 번 더 (같은 닻으로): 가로 스크롤 막대가 사라지며 스크롤 뷰가 다시 배치된 뒤에도 줄바꿈이 꺼져 있던 때의 높이
+            // 어림이 남아, 첫 스크롤에서 화면이 수십 줄 튀었다(실측: 1.3 MB 메모에서 휠 90 pt 에 42 줄). 다시 버리게 하면 사라진다
+            if on, tv.window != nil { DispatchQueue.main.async { [weak tv] in tv?.settleReflow(reflow) } }
             tv.needsLayout = true
             tv.needsDisplay = true
             gutter?.needsDisplay = true
@@ -957,21 +1001,12 @@ struct EditorView: NSViewRepresentable {
         }
 
         private func centerCaretImpl() {
-            guard let tv = textView, let sv = scrollView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
+            guard let tv = textView, let sv = scrollView else { return }
             let loc = tv.selectedRange().location
             guard !tv.isInHugeParagraph(loc) else { return }   // 거대 한 줄: 세그먼트 계산이 문단 전체 배치라 건너뛴다 (scrollRangeToVisible 만으로 충분)
-            guard let tl = cs.location(cs.documentRange.location, offsetBy: loc) else { return }
-            var rect: CGRect?
-            lm.enumerateTextSegments(in: NSTextRange(location: tl), type: .standard, options: [.rangeNotRequired]) { _, f, _, _ in
-                rect = f
-                return false
-            }
-            guard let r = rect else { return }
-            let visibleH = sv.contentView.bounds.height
-            let targetY = r.minY + tv.textContainerOrigin.y - visibleH / 3
-            let maxY = max(0, tv.bounds.height - visibleH)
-            sv.contentView.scroll(to: NSPoint(x: 0, y: min(max(0, targetY), maxY)))
-            sv.reflectScrolledClipView(sv.contentView)
+            // 캐럿 줄을 화면 위에서 1/3 높이에. 멀리 있는 줄의 좌표는 추정이라 그 y 로 스크롤만 하면 다른 줄이 배치된다(실측: 문서 끝쪽 매치로 뛰면 300 줄 앞이
+            // 보였다) — 실제로 배치된 뷰포트에서 캐럿 줄을 확인하며 맞추는 방법을 쓴다 (HyperTextView.restoreReadingAnchor)
+            tv.restoreReadingAnchor(.init(offset: loc, delta: -sv.contentView.bounds.height / 3, lineHeight: 0, pinnedToEnd: false))
         }
 
         private func insertTimestamp(in tv: HyperTextView) {
