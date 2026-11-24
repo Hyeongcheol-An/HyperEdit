@@ -982,6 +982,7 @@ struct EditorView: NSViewRepresentable {
         }
 
         private var lastCaretLine = 0
+        private var lastGutterBandY: CGFloat?
         private var lastCaretRect: NSRect?
         private var lastSelection: NSRange?
 
@@ -1001,7 +1002,9 @@ struct EditorView: NSViewRepresentable {
             if let old = lastCaretRect { tv.setNeedsDisplay(NSRect(x: 0, y: old.minY - 2, width: tv.bounds.width, height: old.height + 4)) }
             lastCaretRect = newRect
             let line = isActive ? model.caretLine : document.liveLineIndex.lineNumber(forUTF16Offset: sel.location)
-            if line != lastCaretLine { lastCaretLine = line; gutter?.needsDisplay = true }
+            // 거터의 현재 줄 띠는 캐럿이 놓인 시각 줄과 선택 유무를 따른다 — 감긴 문단 안에서 줄만 바뀌어도, 선택이 생기거나 없어져도 다시 그린다
+            let bandY = sel.length == 0 ? newRect?.minY : nil
+            if line != lastCaretLine || bandY != lastGutterBandY { lastCaretLine = line; lastGutterBandY = bandY; gutter?.needsDisplay = true }
             if isActive { scheduleSaveViewState() }
             foldController?.selectionDidChange()   // fold: 캐럿이 숨은 줄로 들어가면 펼친다 (뷰마다)
             secretController?.selectionDidChange()   // secrets: 캐럿이 든 비밀 블록을 드러내고, 떠난 블록을 다시 가린다 (뷰마다)
