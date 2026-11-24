@@ -142,6 +142,8 @@ final class AppModel: ObservableObject {
     static let maxRestoredDocuments = 30
     /// 최근 활성 순서 (앞이 가장 최근) — ⌃Tab 의 "마지막 파일" 전환 (UltraEdit Ctrl+F6 / Last file)
     private(set) var recentTabs: [URL] = []
+    /// 탭을 눌러 전환한 직전 기록 — 그 클릭이 더블클릭(닫기)의 첫 클릭이었을 때 보던 탭으로 돌아가는 데 쓴다
+    private var tabClickOrigin: (from: URL, to: URL, at: Date)?
     /// 닫은 탭의 경로 (최근 것이 뒤) — "마지막 닫은 탭 다시 열기" (UltraEdit v28 Open last-closed tab)
     private(set) var closedTabs: [URL] = []
     enum TabSort { case name, path, ext, modified }
@@ -297,7 +299,7 @@ final class AppModel: ObservableObject {
         let doc = MemoDocument(url: url)
         document = doc
         tabs = [doc.url]
-        bookmarks = BookmarkStore(fileURL: doc.url)
+        bookmarks = BookmarkStore(fileURL: doc.url, storeDirectory: BookmarkStore.launchDirectory)
         fileSearchDirectory = doc.url.deletingLastPathComponent()
         doc.load()
         bind()
@@ -427,12 +429,36 @@ final class AppModel: ObservableObject {
     /// 탭 닫기 (⌘W·탭의 ×·더블클릭·가운데 클릭·우클릭). 활성 탭이면 왼쪽 이웃(UltraEdit "nearest left", 맨 왼쪽이었으면 새 첫 탭)으로 전환하며,
     /// 그 전환이 미저장 편집을 동기로 저장한다 (자동 저장 문서라 묻지 않는다). 마지막 탭을 닫으면 기본 문서가 대신 열린다 — 편집기는 항상 문서를
     /// 하나 든다(UltraEdit 의 빈 편집 영역과 다른 점). 마지막 탭이 기본 문서면 그대로 둔다
-    func closeTab(_ url: URL) {
+    func closeTab(_ url: URL, returningTo back: URL? = nil) {
         guard let i = tabs.firstIndex(of: url) else { return }
         if tabs.count == 1 && url == defaultDocumentURL { return }
         tabs.remove(at: i)
         rememberClosed(url)
-        if url == document.url { switchAfterClosing(near: i) } else { persistSession() }
+        guard url == document.url else { persistSession(); return }
+        if let back, back != url, tabs.contains(back), FileManager.default.fileExists(atPath: back.path) {
+            switchDocument(to: back)
+            noteActiveTab()
+        } else {
+            switchAfterClosing(near: i)
+        }
+    }
+
+    /// 탭 줄 클릭: 바로 전환한다. 더블클릭의 첫 클릭일 수 있으므로 보고 있던 탭을 잠깐 기억해 둔다 (`tabDoubleClicked`)
+    func tabClicked(_ url: URL) {
+        if url != document.url { tabClickOrigin = (from: document.url, to: url, at: Date()) }
+        activateTab(url)
+    }
+
+    /// 탭 줄 더블클릭: 닫기 (UltraEdit 기본). 보고 있지 않던 탭을 더블클릭하면 첫 클릭이 이미 그 탭으로 전환해 버렸으므로, 닫은 뒤에는 왼쪽 이웃이
+    /// 아니라 **보고 있던 탭**으로 돌아간다 — "저 탭만 치우기"가 보던 문서를 바꾸지 않게. 이미 보고 있던 탭이면 평소대로 왼쪽 이웃
+    func tabDoubleClicked(_ url: URL) {
+        let origin = tabClickOrigin
+        tabClickOrigin = nil
+        if let o = origin, o.to == url, Date().timeIntervalSince(o.at) < NSEvent.doubleClickInterval + 1 {
+            closeTab(url, returningTo: o.from)
+        } else {
+            closeTab(url)
+        }
     }
 
     /// ⌘W: 활성 탭을 닫는다. 유일한 탭이 기본 문서면 창을 닫는다 (macOS 관례 유지); 잠겨 있으면 탭은 건드리지 않고 창만 닫는다
@@ -582,7 +608,14 @@ final class AppModel: ObservableObject {
 
     /// 파일 검색 결과에서 열기: 로드 후 해당 줄로 (에디터 재바인딩 뒤에 점프)
     func open(hit: FileSearchHit) {
-        if hit.url.standardizedFileURL != document.url.standardizedFileURL { open(url: hit.url) }
+        if hit.url.standardizedFileURL != document.url.standardizedFileURL {
+            // 검색 뒤에 지워지거나 옮겨진 파일의 결과 — `open(url:)` 은 없는 경로에 빈 파일을 만들므로 여기서 막는다
+            guard FileManager.default.fileExists(atPath: hit.url.path) else {
+                log(String(localized: "Error: \(hit.url.lastPathComponent + " — " + CocoaError(.fileNoSuchFile).localizedDescription)"), isError: true)
+                return
+            }
+            open(url: hit.url)
+        }
         let line = hit.line
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.jump(toLine: line) }
     }
@@ -1054,5 +1087,15 @@ enum LaunchOptions {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: flag), i + 1 < a.count else { return nil }
         return a[i + 1]
+    }
+}
+
+extension BookmarkStore {
+    /// 자동화 실행(`--selftest` `--snapshot` `--ephemeral`)은 임시 폴더를 써 사용자의 북마크 폴더를 건드리지 않는다 (SnippetStore.launchDirectory 와 같은 규칙)
+    static var launchDirectory: URL {
+        if LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--snapshot") || LaunchOptions.has("--ephemeral") {
+            return FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-ephemeral-\(ProcessInfo.processInfo.processIdentifier)/bookmarks", isDirectory: true)
+        }
+        return storeDirectory
     }
 }

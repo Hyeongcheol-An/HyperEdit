@@ -6,6 +6,9 @@ public struct FileSearchHit: Identifiable, Hashable, Sendable {
     public let column: Int
     public let lineText: String
     public let matchInLine: NSRange
+    public init(url: URL, line: Int, column: Int, lineText: String, matchInLine: NSRange) {
+        self.url = url; self.line = line; self.column = column; self.lineText = lineText; self.matchInLine = matchInLine
+    }
     public var id: String { "\(url.path):\(line):\(column)" }
     public var fileName: String { url.lastPathComponent }
 }

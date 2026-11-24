@@ -67,10 +67,24 @@ extension SelfTest {
         // 비활성 탭 닫기는 활성 탭을 바꾸지 않는다
         model.closeTab(rc); await wait(150)
         check(model.document.url == rb && !model.tabs.contains(rc), "tabs: closing an inactive tab keeps the active one")
+        // 보고 있지 않던 탭을 더블클릭해 닫으면 (첫 클릭이 그 탭으로 전환했더라도) 보던 탭으로 돌아간다. 보던 탭을 더블클릭하면 왼쪽 이웃
+        model.open(url: c); await wait(300)                                                   // … a, b, c
+        model.activateTab(ra); await wait(250)
+        model.tabClicked(rc); await wait(250)
+        let switchedByClick = model.document.url == rc
+        model.tabDoubleClicked(rc); await wait(400)
+        check(switchedByClick && !model.tabs.contains(rc) && model.document.url == ra,
+              "tabs: double-clicking a background tab closes it and returns to the tab being viewed (\(model.document.url.lastPathComponent))")
+        model.open(url: c); await wait(300)                                                   // … a, b, c (c 를 보고 있다 — 클릭으로 온 것이 아니다)
+        model.tabClicked(rc); model.tabDoubleClicked(rc); await wait(400)
+        check(!model.tabs.contains(rc) && model.document.url == rb, "tabs: double-clicking the viewed tab closes it and goes to the left neighbour (\(model.document.url.lastPathComponent))")
         // 사라진 파일의 탭을 누르면 탭만 걷어낸다 (빈 파일을 새로 만들지 않는다)
         try? FileManager.default.removeItem(at: a)
         model.activateTab(ra); await wait(250)
         check(!model.tabs.contains(ra) && model.document.url == rb && !FileManager.default.fileExists(atPath: a.path), "tabs: a tab whose file is gone is dropped instead of creating an empty file")
+        // 파일에서 찾기 결과가 가리키는 파일이 그 사이 지워졌으면 열지 않는다 (빈 파일·빈 탭을 만들지 않는다)
+        model.open(hit: FileSearchHit(url: a, line: 1, column: 1, lineText: "AAA", matchInLine: NSRange(location: 0, length: 3))); await wait(350)
+        check(!model.tabs.contains(ra) && model.document.url == rb && !FileManager.default.fileExists(atPath: a.path), "tabs: a find-in-files hit in a deleted file opens nothing")
         // 다른 탭 모두 닫기 · 정리
         model.activateTab(base); await wait(300)
         model.closeOtherTabs(); await wait(150)
