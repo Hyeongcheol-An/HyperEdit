@@ -442,14 +442,18 @@ final class AppModel: ObservableObject {
     }
 
     /// 활성 탭을 닫을 때 대신 보여 줄 파일: `preferred`(남는 탭이고 파일이 있으면) → `index` 왼쪽에서 가장 가까운(없으면 오른쪽) 남는 탭 → 기본 문서.
-    /// 파일이 사라진 탭은 건너뛴다
-    private func tabToShow(afterClosing closing: Set<URL>, near index: Int, preferred: URL? = nil) -> URL {
-        func usable(_ u: URL) -> Bool { !closing.contains(u) && FileManager.default.fileExists(atPath: u.path) }
-        if let p = preferred, tabs.contains(p), usable(p) { return p }
+    /// 그 탭을 찾다가 지나친 **파일이 사라진 탭**은 `gone` 으로 돌려준다 — 옮겨 갈 수 없는 탭이라 함께 걷어낸다
+    private func tabToShow(afterClosing closing: Set<URL>, near index: Int, preferred: URL? = nil) -> (target: URL, gone: [URL]) {
+        func exists(_ u: URL) -> Bool { FileManager.default.fileExists(atPath: u.path) }
+        if let p = preferred, tabs.contains(p), !closing.contains(p), exists(p) { return (p, []) }
         let i = min(max(index, 0), tabs.count)
-        if let u = (Array(tabs[..<i].reversed()) + Array(tabs[i...])).first(where: usable) { return u }
+        var gone: [URL] = []
+        for u in Array(tabs[..<i].reversed()) + Array(tabs[i...]) where !closing.contains(u) {
+            if exists(u) { return (u, gone) }
+            gone.append(u)
+        }
         MemoLocation.ensureDefaultDocument()
-        return defaultDocumentURL
+        return (defaultDocumentURL, gone)
     }
 
     /// 탭 닫기의 공통 경로. 활성 탭이 닫힐 탭에 들어 있으면 **먼저** 남는 탭(없으면 기본 문서)으로 옮겨 가고 — 그 전환이 미저장 편집을 저장한다 — 그다음에
@@ -458,8 +462,11 @@ final class AppModel: ObservableObject {
     private func closeTabs(_ closing: Set<URL>, returningTo preferred: URL? = nil, remember: Bool = true) -> Bool {
         guard !closing.isEmpty else { return true }
         if closing.contains(document.url) {
-            let target = tabToShow(afterClosing: closing, near: tabs.firstIndex(of: document.url) ?? 0, preferred: preferred)
-            if target != document.url, !switchDocument(to: target) { return false }
+            let next = tabToShow(afterClosing: closing, near: tabs.firstIndex(of: document.url) ?? 0, preferred: preferred)
+            if next.target != document.url, !switchDocument(to: next.target) { return false }
+            // 옮겨 갈 탭을 찾다가 지나친, 파일이 사라진 탭 (눌러도 열 수 없다 — activateTab 이 걷어내는 것과 같은 탭)
+            tabs.removeAll { next.gone.contains($0) && $0 != document.url }
+            recentTabs.removeAll { next.gone.contains($0) }
         }
         for u in tabs where closing.contains(u) && u != document.url {
             if remember { rememberClosed(u) } else { recentTabs.removeAll { $0 == u } }
