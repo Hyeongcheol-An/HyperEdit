@@ -92,8 +92,11 @@ struct DocumentTab: View {
         .overlay(alignment: .trailing) { theme.border.color.frame(width: 1) }
         .foregroundStyle(isActive ? theme.foreground.color : theme.foregroundMuted.color)
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { model.closeTab(url) }   // 더블클릭 닫기 (UltraEdit 기본)
+        // 클릭은 바로 전환, 더블클릭은 닫기(UltraEdit 기본). 더블클릭을 먼저 건 `.onTapGesture(count: 2)` + `.onTapGesture` 조합은 한 번 클릭이 더블클릭
+        // 판정(시스템 더블클릭 간격, 보통 0.5 s)을 기다린 뒤에야 온다 — 탭 전환도 × 버튼도 0.4 s 늦었다(실사용 하네스 실측). 동시 인식으로 두면 첫 클릭에
+        // 바로 전환하고 두 번째 클릭에 닫는다 (UltraEdit 처럼 누른 탭이 먼저 활성화된 뒤 닫히고, 왼쪽 이웃으로 간다)
         .onTapGesture { model.activateTab(url) }
+        .simultaneousGesture(TapGesture(count: 2).onEnded { model.closeTab(url) })
         .overlay { MiddleClickCatcher { model.closeTab(url) } }   // 가운데 클릭 닫기
         .onHover { hovering = $0 }
         .help(tooltip)
