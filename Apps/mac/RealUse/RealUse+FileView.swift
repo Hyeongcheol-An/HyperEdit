@@ -454,13 +454,21 @@ extension RealUseContext {
         FileViewTally.clicks += 1
         // 누르고 40 ms 뒤에 뗀다. 목록의 행은 mouseDown 안에서 추적 루프를 돌며 mouseUp 을 기다리므로(큐에 없으면 영영 돌아오지 않는다) 다른 스레드가 40 ms 뒤에
         // 큐에 넣어 준다. 펼침 화살표는 추적 루프 없이 바로 돌아오고 mouseUp 이 와야 펼친다(실측) — 그때는 여기서 직접 보낸다
+        // 화살표는 추적 루프가 없으니 다른 스레드의 mouseUp 은 mouseDown 이 돌아오지 않을 때의 안전망일 뿐이다 — 0.4 s 뒤로 미룬다 (40 ms 로 두면 mouseDown 이
+        // 그보다 오래 걸린 날 안전망이 먼저 떼어 그 mouseUp 이 이벤트 큐에서 기다린다). 다만 전체 묶음의 끝에서만 나오는 '첫 화살표 클릭 무시'의 원인은 이것이
+        // 아니었다 (실측: 안전망을 미룬 뒤에도 재현, mouseDown 은 30 ms 안에 돌아왔다) — mouseDown 이 걸린 시간은 계속 기록해 둔다
         let release = ClickRelease(up)
-        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(40)) { if release.claim() { NSApp.postEvent(release.up, atStart: false) } }
+        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(spot == .disclosure ? 400 : 40)) { if release.claim() { NSApp.postEvent(release.up, atStart: false) } }
+        let t0 = CFAbsoluteTimeGetCurrent()
         panel.sendEvent(down)
+        let downMs = elapsedMs(since: t0)
         if release.claim() {
             try? await Task.sleep(nanoseconds: 30_000_000)
             panel.sendEvent(up)
+        } else if spot == .disclosure {
+            try? await Task.sleep(nanoseconds: 200_000_000)   // 안전망이 큐에 넣은 mouseUp 이 처리될 시간
         }
+        if spot == .disclosure, downMs > 30 { note(String(format: "the mouseDown on the arrow of '%@' took %.0f ms to return", item.entry.name, downMs)) }
         await settleProbe(20)
         noteIfActivated()
         return true
@@ -640,12 +648,21 @@ extension RealUse {
             ctx.at("expand and collapse with the arrow")
             for round in 1...4 {
                 // 같은 화살표를 다시 누르기까지 사람은 수백 ms 가 걸린다. 0.1 s 안에 다시 누르면 NSOutlineView 가 펼치는 애니메이션 중이라 두 번째 클릭을 받지 않는다
-                // (실측 2026-11-24: 0.3 s 간격은 매번 반응, 바로 이어 누르면 무시) — 그것은 AppKit 의 동작이라 여기서는 사람의 간격으로 누른다
+                // (실측 2026-11-24: 0.3 s 간격은 매번 반응, 바로 이어 누르면 무시) — 그것은 AppKit 의 동작이라 여기서는 사람의 간격으로 누른다.
+                // 미해결: 전체 묶음의 끝에서는 첫 번째 화살표 클릭(바로 앞 걸음이 같은 행의 이름을 눌렀다)이 통째로 무시되는 일이 있다 (다섯 번 중 세 번. 1초를 기다려도
+                // 반영되지 않고 다음 클릭부터는 정상, 단독 실행에서는 안 나온다). 원인을 모르는 채 기다림을 넣어 가리지 않는다 — 아래의 진단 기록을 볼 것
                 if round > 1 { try? await Task.sleep(nanoseconds: 400_000_000) }
                 guard await ctx.clickFileRow("src", level: 0, spot: .disclosure) else { ctx.issue("fileview", "could not click the disclosure arrow of src"); break }
                 await ctx.waitFileView()
                 let want = round % 2 == 1
-                if ctx.isExpanded("src", level: 0, in: po) != want { ctx.issue("fileview", "clicked the arrow of src (\(want ? "to expand" : "to collapse")) but it is \(want ? "collapsed" : "expanded")") }
+                if ctx.isExpanded("src", level: 0, in: po) != want {
+                    ctx.issue("fileview", "clicked the arrow of src (\(want ? "to expand" : "to collapse")) but it is \(want ? "collapsed" : "expanded")")
+                    // 진단: 클릭이 무시된 것인가, 늦게 반영되는 것인가
+                    let t = CFAbsoluteTimeGetCurrent()
+                    var late: Double?
+                    for _ in 0..<20 { try? await Task.sleep(nanoseconds: 50_000_000); if ctx.isExpanded("src", level: 0, in: po) == want { late = ctx.elapsedMs(since: t); break } }
+                    ctx.note(late.map { String(format: "the arrow click took effect %.0f ms after the check", $0) } ?? "the arrow click had no effect within 1 s of the check")
+                }
                 if (ctx.fileRow("main.swift", level: 1, in: po) != nil) != want { ctx.issue("fileview", "src is \(want ? "expanded but its files are not listed" : "collapsed but its files are still listed")") }
                 if m.document.url.lastPathComponent != "alpha.md" { ctx.issue("fileview", "clicking a disclosure arrow changed the document") }
                 await ctx.checkFileViews("src arrow #\(round)", selectionFollowsDocument: false)

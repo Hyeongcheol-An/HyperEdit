@@ -81,11 +81,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if args.contains("--snapshot-activate") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.activate(ignoringOtherApps: true) }
         }
+        // 개발용: `--window-height <pt>` 는 첫 창 높이도 고정한다 (왼쪽 위 모서리는 그대로). 창의 기본 높이는 화면의 쓸 수 있는 높이를 따르므로, 실사용 하네스의
+        // 결과가 모니터·Dock 배치에 따라 달라지지 않게 한다 (scripts/realuse.sh)
         let requested = LaunchOptions.value("--window-width").flatMap(Double.init) ?? (args.contains("--snapshot") ? 1280 : nil)
-        if let width = requested {
+        let requestedHeight = LaunchOptions.value("--window-height").flatMap(Double.init)
+        if requested != nil || requestedHeight != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 guard let win = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil }) else { return }
-                var f = win.frame; f.size.width = max(900, CGFloat(width)); win.setFrame(f, display: true)
+                var f = win.frame
+                if let width = requested { f.size.width = max(900, CGFloat(width)) }
+                if let height = requestedHeight { let top = f.maxY; f.size.height = max(480, CGFloat(height)); f.origin.y = top - f.size.height }
+                win.setFrame(f, display: true)
             }
         }
         guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }

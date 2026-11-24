@@ -62,6 +62,20 @@ extension RealUseContext {
         return (f.offset, f.minY - v.minY)
     }
 
+    /// 화면 높이 `target` 에 가장 가까운 문단 가운데, `d` 만큼 스크롤한 뒤에도 화면에 걸쳐 있을 것 — 그래야 걸음 뒤에도 뷰포트 범위에 남아 잴 수 있다.
+    /// 가까운 것만 고르면 문단이 긴 문서(여러 번 감겨 96~192 pt)에서는 목표보다 한참 아래의 문단이 뽑혀 걸음 뒤 화면 밖으로 나간다 (실측: 편집기 높이 382 pt 에서
+    /// 걸음마다 정확히 움직였는데도 닻이 아래 가장자리를 0.3~5.4 pt 넘어 '화면이 튀었다'로 세 번 기록됐다). 온전히 보이는 문단을 먼저, 없으면 걸쳐 보이는 문단으로
+    func anchor(nearScreenY target: CGFloat, survivingScroll d: CGFloat) -> (offset: Int, y: CGFloat)? {
+        let v = visible
+        let margin: CGFloat = 12   // 걸음 뒤에 이만큼은 화면 안에 남는다
+        let on = viewportFragments().filter { f in
+            f.maxY > v.minY + 1 && f.minY < v.maxY - 1 && f.maxY - v.minY - d > margin && f.minY - v.minY - d < v.height - margin
+        }
+        let inside = on.filter { $0.minY >= v.minY && $0.maxY <= v.maxY }
+        guard let f = (inside.isEmpty ? on : inside).min(by: { abs($0.minY - v.minY - target) < abs($1.minY - v.minY - target) }) else { return nil }
+        return (f.offset, f.minY - v.minY)
+    }
+
     /// 화면에 걸친(일부만 보여도 되는) 맨 아래/맨 위 문단 — 한 화면 가까이 넘기는 Page Down/Up 뒤에도 배치 범위에 남는 닻
     func edgeAnchor(bottom: Bool) -> (offset: Int, y: CGFloat)? {
         let v = visible
@@ -106,11 +120,18 @@ extension RealUseContext {
         let v = visible
         let clamped = d < 0 ? v.minY < -d + 1 : tv.frame.height - v.maxY < d + 1
         // 닻: 아래로 가면(내용이 위로) 화면 아래쪽 문단, 위로 가면 위쪽 문단 — 걸음 뒤에도 화면에 남는다
-        let a = anchor(nearScreenY: d > 0 ? min(v.height - 60, d + 30) : max(10, v.height + d - 90))
+        let a = anchor(nearScreenY: d > 0 ? min(v.height - 60, d + 30) : max(10, v.height + d - 90), survivingScroll: d)
         await scrollBy(d); await settle(0)
         let m = moved(since: a)
         let n0 = issues.count
-        if !clamped { checkContentMoved(anchor: a, expected: d, tolerance: tolerance, why) }
+        // 걸음 전의 좌표로는 끝까지 한 걸음이 남아 보였어도(뷰포트 밖은 추정 높이다) 걸음 뒤에 문서 처음·끝에 닿아 있고 덜 갔으면 걸린 것이다
+        let v1 = visible
+        let stopped = (d < 0 ? v1.minY < 0.5 : v1.maxY > tv.frame.height - 1) && (m.map { abs($0) <= abs(d) + tolerance && $0 * d >= 0 } ?? true)
+        if !clamped && !stopped {
+            checkContentMoved(anchor: a, expected: d, tolerance: tolerance, why)
+            // 닻은 걸음 뒤에도 화면에 남을 자리에서 골랐다 — 한 화면이 안 되는 걸음에 그것이 사라졌으면 화면이 엉뚱한 곳으로 튄 것이다
+            if a != nil, m == nil, abs(d) < v.height - 150 { issue("scroll-delta", "\(why): the paragraph that should still be on screen is gone — the view jumped (top line now \(topLine()))") }
+        }
         // 창이 완전히 가려지면(다른 Space·전체 화면 앱) 표시 주기가 멈춰 합성 이벤트의 결과가 달라질 수 있다 — 문제가 났을 때의 창 상태를 남긴다
         if issues.count > n0 { note("window at the failed step: occluded=\(!window.occlusionState.contains(.visible)) onActiveSpace=\(window.isOnActiveSpace) appActive=\(NSApp.isActive)") }
         if restMs > 0 { await settle(restMs) }
@@ -601,8 +622,9 @@ extension RealUse {
         Scenario(name: "scroll-arrow-keys") { ctx in
             ctx.logWindowState()
             await ctx.withRelaxedStalls { await ctx.open(.notes, name: "arrows.md") }
-            // AppKit(TextKit 2)은 캐럿이 화면 밖으로 나가는 순간 한 줄만 밀지 않고 캐럿 줄을 화면 가운데쯤으로 다시 맞춘다(실측: 가장자리를 넘을 때 약 220 pt).
-            // 그래서 걸음마다의 요구는: 캐럿 줄이 온전히 보이고, 화면이 움직였다면 가는 방향으로만 반 화면(+한 줄) 이내, 가장자리를 넘지 않은 걸음에서는 움직이지 않는다
+            // AppKit(TextKit 2)은 캐럿이 화면 밖으로 나가는 순간 한 줄만 밀지 않고 캐럿 줄을 화면 가운데쯤으로 다시 맞춘다(실측: 가장자리를 넘을 때 약 220 pt) —
+            // 편집기가 방향키 이동에서는 직접 필요한 만큼만 민다(HyperTextView.revealCaretStep). 걸음마다의 요구: 캐럿 줄이 온전히 보이고, 화면이 움직였다면 가는
+            // 방향으로 한 줄(+1 pt) 이내, 가장자리를 넘지 않은 걸음에서는 움직이지 않는다
             @MainActor func walk(_ key: RealUseContext.Key, _ count: Int, _ label: String) async {
                 let n0 = ctx.issues.count
                 let up = key == .up
@@ -623,8 +645,10 @@ extension RealUse {
                         scrolled += 1; landings.append(Int(cy))
                         // 가장자리에서 먼 캐럿(이동 전 화면 안쪽 두 줄 밖)이 움직였는데 화면이 밀렸다 / 반대 방향으로 밀렸다 / 반 화면 넘게 밀렸다
                         let nearEdge = before.map { up ? $0 < 2 * lh : $0 > v0.height - 3 * lh } ?? true
-                        if !nearEdge || (up ? m > 0.5 : m < -0.5) || abs(m) > v0.height / 2 + 2 * lh {
-                            ctx.issue("viewport-jump", "\(label) #\(i): one arrow key moved the content by \(String(format: "%.1f", m)) pt on screen (caret was at y \(before.map { String(Int($0)) } ?? "?"), now \(Int(cy)); half a viewport is \(Int(v0.height / 2)))")
+                        // 드러난 줄 하나만큼 (문서 처음·끝에 닿으면 위·아래 여백까지)
+                        let atEnd = up ? v.minY < 0.5 : v.maxY > ctx.tv.frame.height - 1
+                        if !nearEdge || (up ? m > 0.5 : m < -0.5) || abs(m) > max(lh, r.height) + 1 + (atEnd ? ctx.tv.textContainerInset.height + 4 : 0) {
+                            ctx.issue("viewport-jump", "\(label) #\(i): one arrow key moved the content by \(String(format: "%.1f", m)) pt on screen (caret was at y \(before.map { String(Int($0)) } ?? "?"), now \(Int(cy)); one line is \(String(format: "%.1f", lh)))")
                         }
                     }
                     ctx.checkLayout("\(label) #\(i)")
@@ -810,5 +834,5 @@ extension RealUse {
             await ctx.restedSteps("after Unfold All")
             ctx.snap("unfolded")
         },
-    ]
+    ] + scrollStateScenarios
 }

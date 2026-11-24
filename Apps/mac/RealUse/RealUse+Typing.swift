@@ -503,6 +503,16 @@ extension RealUse {
             } else { ctx.issue("other", "line \(line + 2) is not on screen after jumping to line \(total / 2)") }
 
             ctx.at("enter in the middle")
+            // 여기서 보는 것은 "화면 가운데쯤에서 Enter 를 쳐도 화면이 따라 움직이지 않는가"다. 편집기가 낮으면(382 pt = 16줄) 캐럿 아래에 여섯 줄이 들어갈 자리가
+            // 없어 캐럿이 아래 가장자리를 넘고, AppKit 이 캐럿 줄을 화면 가운데로 데려가며 반 화면(실측 201 pt)을 민다 — 창 높이에 따라 다른 것을 재게 된다.
+            // 새 줄 여섯이 캐럿 아래에 들어가도록 먼저 휠로 캐럿 줄을 올려 둔다
+            if let r = ctx.tv.caretRect(at: ctx.caret) {
+                let need = r.maxY + r.height * 7 - ctx.visible.maxY
+                if need > 0, r.minY - need > ctx.visible.minY + r.height {
+                    await ctx.scrollBy(need.rounded(.up)); await ctx.settle(100)
+                    ctx.note(String(format: "wheeled %.0f pt so that six new lines fit below the caret (view height %.0f pt)", need, ctx.visible.height))
+                } else if need > 0 { ctx.note(String(format: "the view is too short (%.0f pt) to fit six new lines below the caret", ctx.visible.height)) }
+            }
             y0 = ctx.visible.minY
             for i in 1...6 {
                 await ctx.press(.returnKey); await ctx.quiesce()

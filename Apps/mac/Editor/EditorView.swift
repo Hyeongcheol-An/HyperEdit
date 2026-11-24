@@ -119,6 +119,10 @@ struct EditorView: NSViewRepresentable {
             let tv = HyperTextView(usingTextLayoutManager: true)
             session.bind(textStorage: doc.textStorage)
             tv.textLayoutManager?.replace(session.contentStorage)
+            // 줄 높이는 문단 스타일(minimumLineHeight = maximumLineHeight)로 고정한다. 그런데 TextKit 2 는 기본으로 글꼴의 leading 을 그 위에 더한다 — D2Coding 은
+            // leading 이 있어(16.8 pt 에서 1.34) 한글이 든 줄만 24.00 이 아니라 25.34 pt 가 됐다(실측 2026-11-24). 줄 높이가 섞이면 한글을 치는 순간 그 줄이
+            // 1.3 pt 자라 맨 아랫줄에서는 화면이 밀리고, 보이지 않는 문단의 높이 추정도 그만큼 어긋난다
+            tv.textLayoutManager?.usesFontLeading = false
             tv.frame = NSRect(x: 0, y: 0, width: width, height: 100)
             if let container = tv.textContainer {
                 container.widthTracksTextView = true

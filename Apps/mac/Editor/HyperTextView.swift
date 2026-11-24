@@ -126,7 +126,8 @@ final class HyperTextView: NSTextView {
         guard constrainBudget > 0, let sv = enclosingScrollView, sv.documentView === self else { return false }
         let clip = sv.contentView
         let legal = clip.constrainBoundsRect(clip.bounds)
-        guard clip.bounds.minY > legal.minY + 0.5, frame.height > clip.bounds.height else { return false }
+        // 문서 처음 쪽도 본다: 위쪽의 추정 높이를 실측으로 바꾸며 올라오다 맨 위에 닿는 패스에서 AppKit 이 위치를 0 아래로 맞춰 둘 때가 있다 (실측 y = -1.0)
+        guard abs(clip.bounds.minY - legal.minY) > 0.5, frame.height > clip.bounds.height else { return false }
         if isLiveScrolling {
             // 제스처 중: 끝 알림이 오면 Coordinator 가 다시 부른다. 그 알림이 빠지는 경우에 대비해 제스처 판정이 풀릴 때 한 번 더 본다
             if !constrainRetryArmed {
@@ -143,7 +144,12 @@ final class HyperTextView: NSTextView {
     }
 
     override func scrollRangeToVisible(_ range: NSRange) {
-        super.scrollRangeToVisible(range)
+        if !(caretStepDepth > 0 && revealCaretStep(range)) { super.scrollRangeToVisible(range) }
+        blockLayoutAnchor(dropRecord: false)   // 보이게 스크롤은 글을 옮기는 것이 목적이다 — AppKit 이 다음 배치 패스 안으로 미뤄 수행할 수도 있다
+        // 멀리 뛰는 스크롤은 추정 좌표로 간다. 뒤따르는 배치 패스가 그 자리의 문단을 실측하며 문서 높이와 스크롤 위치를 다시 맞추는 사이, 조각은 맞추기 전의
+        // 자리에 놓인 채 패스가 끝날 수 있다 (실측: 9,997줄 파일을 끝에서 열자 조각이 화면 위 −230…178 pt 에만 놓여 아래 204 pt 가 다음 스크롤까지 비었다 —
+        // 그 패스 안에서는 스크롤 위치가 그대로라 layout() 의 '옮겨졌으면 확인'에 걸리지 않는다). 그 패스가 끝나면 뷰포트가 화면을 덮었는지 본다
+        checkViewportAfterEdit = true
         // macOS 27 실측: 대상이 이미 보여 스크롤이 일어나지 않으면 AppKit 은 뷰포트 컨트롤러를 '옮겨 놓기만' 한 채 둔다 — viewportRange 가 빈 범위가 되고
         // viewportBounds 는 화면과 어긋난다(다음 배치 때까지). 방향키로 캐럿만 옮겨도 그렇게 돼, viewportRange 로 보이는 범위를 정하는 검색 강조가
         // 다시 그려지는 줄마다 지워졌다(실사용 하네스 2026-11-24). 이번 표시 주기에 뷰포트를 다시 배치하게 한다 (조각은 이미 배치돼 있어 값싸다)
@@ -152,12 +158,236 @@ final class HyperTextView: NSTextView {
     }
 
     override func layout() {
+        let anchor = captureLayoutAnchor()
+        let cache = fragmentCacheState()
+        if let cache { trimFragmentCacheLimit(cache) }
+        let clipY = enclosingScrollView?.contentView.bounds.minY
         super.layout()
-        // 배치 패스 안에서 옮긴 위치는 다시 배치되지 않는다(needsLayout 이 서지 않는다) — 되돌렸으면 그 자리의 뷰포트를 한 번 더 배치한다.
-        // AppKit 이 배치 패스 안에서 미뤄 둔 '보이게 스크롤'을 수행해 뷰포트를 옮겨 놓기만 한 경우(viewportRange 가 빔)도 마찬가지다
+        if let cache, cache.count > cache.limit { retuneFragmentCacheLimit() }
+        settleViewportAfterLayout()
+        if restoreLayoutAnchor(anchor) { settleViewportAfterLayout() }
+        // 패스 안에서 스크롤 위치가 옮겨졌으면(AppKit 이 위쪽 문단의 추정 → 실측 차이만큼 맞췄거나, 위에서 닻을 되돌렸다) 뷰포트는 옮기기 전 자리에 맞춰 배치된 채다 —
+        // 새로 드러난 위·아래 띠의 줄이 번호만 있고 글자가 없다(실측: 버려진 구간으로 올라가며 339 pt 를 맞춘 패스에서 맨 위 두 줄이 다음 스크롤까지 비었다)
+        if let clipY, let now = enclosingScrollView?.contentView.bounds.minY, abs(now - clipY) > 0.5 { checkViewportAfterEdit = true }
+        coverViewportAfterEdit()
+        layoutAnchorBlocked = false
+        layoutRecord = makeLayoutRecord()
+        if cache != nil { fragmentCountAfterLayout = fragmentCacheState()?.count }
+    }
+
+    /// 배치 패스 안에서 옮긴 위치는 다시 배치되지 않는다(needsLayout 이 서지 않는다) — 되돌렸으면 그 자리의 뷰포트를 한 번 더 배치한다.
+    /// AppKit 이 배치 패스 안에서 미뤄 둔 '보이게 스크롤'을 수행해 뷰포트를 옮겨 놓기만 한 경우(viewportRange 가 빔)도 마찬가지다
+    private func settleViewportAfterLayout() {
         var passes = 0
         while passes < 3, constrainScrollToDocumentEnd() || viewportNeedsLayout { super.layout(); passes += 1 }
-        coverViewportAfterEdit()
+    }
+
+    // MARK: - 방향키로 화면 가장자리를 넘을 때: 필요한 만큼만 민다
+    // AppKit(TextKit 2)의 scrollRangeToVisible 은 대상이 화면 밖이면 그 줄을 화면 가운데쯤으로 데려간다 — 방향키로 맨 아랫줄을 넘는 순간마다 화면이 반 화면씩 튀고
+    // (실측: 460 pt 화면에서 약 220 pt), 아직 배치하지 않은 위쪽으로 올라갈 때는 추정 높이 때문에 착지 높이도 걸음마다 달랐다(y 25…268). 캐럿을 한 줄·한 글자·한 단어·
+    // 줄 끝으로 옮기는 키 명령에서는 캐럿 줄이 화면에 다 들어올 만큼만 직접 민다. 문서 처음·끝으로 가기, Page Up/Down, 줄로 이동, 입력 중의 따라가기는 AppKit 그대로다.
+    private static let caretStepCommands: Set<Selector> = {
+        let moves = ["moveUp", "moveDown", "moveLeft", "moveRight", "moveForward", "moveBackward", "moveWordLeft", "moveWordRight", "moveWordForward", "moveWordBackward",
+                     "moveToLeftEndOfLine", "moveToRightEndOfLine", "moveToBeginningOfLine", "moveToEndOfLine", "moveToBeginningOfParagraph", "moveToEndOfParagraph"]
+        let names = moves.flatMap { [$0 + ":", $0 + "AndModifySelection:"] } + ["moveParagraphBackwardAndModifySelection:", "moveParagraphForwardAndModifySelection:"]
+        return Set(names.map { NSSelectorFromString($0) })
+    }()
+    private var caretStepDepth = 0
+    private var selectionBeforeCaretStep = NSRange(location: 0, length: 0)
+
+    /// 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)의 줄이 화면에 다 들어오게 가장 적게 스크롤한다. 반환: 처리했는가 (false 면 AppKit 에 맡긴다)
+    private func revealCaretStep(_ range: NSRange) -> Bool {
+        // 조합 중인 글자는 입력기가 다룬다 · 줄바꿈 끔은 가로 스크롤까지 AppKit 이 맡는다
+        guard !hasMarkedText(), !isHorizontallyResizable, let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
+        let clip = sv.contentView
+        guard abs(clip.constrainBoundsRect(clip.bounds).minY - clip.bounds.minY) < 0.5 else { return false }   // 끝을 넘겨 당기는 중
+        let sel = selectedRange()
+        var head = range.location
+        if sel.length > 0 { head = sel.location != selectionBeforeCaretStep.location ? sel.location : NSMaxRange(sel) }
+        let height = clip.bounds.height
+        // 위쪽의 아직 배치하지 않은 문단으로 올라갈 때, 캐럿 줄을 재는 질의는 그 문단을 배치하지만 조각의 자리는 추정 높이로 잡아 둔 채다(다음 뷰포트 배치에서야
+        // 아래 조각들과 맞물린다 — 실측: 두 줄로 추정된 한 줄 문단의 캐럿 줄이 실제보다 25.9 pt 위로 나왔다). 그래서 밀고 → 뷰포트를 배치하고 → 다시 재서
+        // 캐럿 줄이 넘어온 쪽 가장자리에 정확히 붙을 때까지 맞춘다 (보통 한 번, 추정이 틀렸으면 두 번)
+        var edge = 0   // -1: 위 가장자리로 넘어왔다, 1: 아래
+        for pass in 0..<3 {
+            guard let line = caretRect(at: head) else { return pass > 0 }   // 거대 문단
+            let top = clip.bounds.minY
+            if pass == 0 {
+                edge = line.minY < top - 0.25 ? -1 : (line.maxY > top + height + 0.25 ? 1 : 0)
+                if edge == 0 { return true }   // 이미 다 보인다
+            }
+            var y = edge < 0 ? line.minY : line.maxY - height
+            if edge < 0, line.minY <= textContainerOrigin.y + 0.5 { y = 0 }   // 첫 줄이면 위 여백까지
+            if edge > 0, line.maxY >= bounds.height - textContainerInset.height - 4 { y = bounds.height - height }   // 마지막 줄이면 아래 여백까지
+            if pass == 0, abs(y - top) > height { return false }   // 한 화면 넘게 떨어진 곳(휠로 멀리 보던 중의 방향키)은 AppKit 이 데려간다
+            let legal = clip.constrainBoundsRect(NSRect(x: clip.bounds.minX, y: y, width: clip.bounds.width, height: height))
+            guard abs(legal.minY - top) > 0.25 else { break }
+            clip.scroll(to: legal.origin)
+            sv.reflectScrolledClipView(clip)
+            lm.textViewportLayoutController.layoutViewport()
+        }
+        return true
+    }
+
+    // MARK: - 배치 패스가 화면의 글을 옮기지 않게 (스크롤 닻)
+    // TextKit 2 의 레이아웃 관리자는 배치한 조각을 2,000개까지만 붙들고(비공개 `maximumNumberOfCachedTextLayoutFragments`), 넘으면 뷰포트 배치
+    // (`-[NSTextViewportLayoutController layoutViewport]` → `flushTextLayoutFragmentsFromLocation:direction:`) 때 뷰포트 밖의 조각을 전부 버린다.
+    // 버려진 문단의 높이는 추정값으로 돌아가는데 그 추정이 실제와 크게 다르다(macOS 27 실측: Fira Code 에서는 글자 폭을 실제의 두 배로 어림해, 한 줄에 82자가
+    // 들어가는데도 42자 넘는 문단을 두 줄로 본다 — 1.3 MB 메모의 문서 높이를 실제 70만 pt 대신 110만 pt 로 본다). 그런데 NSTextView 는 스크롤 위치를 맞추지 않는다:
+    //   · 한 문서에서 2,000 문단쯤 훑으면(휠·Page Down 으로 100 화면) 그 걸음에 화면이 수백 줄 떨어진 곳으로 튄다 (실측: 300 pt 휠 161 걸음째에 맨 윗줄 1772 → 1129).
+    //   · 조각 표는 문단 요소를 약한 참조로 든 NSMapTable 이라, 문단이 통째로 사라지면(탭 전환·파일 다시 읽기의 전체 교체, 글꼴·테마의 전체 속성 적용) 죽은 항목이
+    //     항목 수에 남는다. 죽은 항목이 2,000 을 넘기면 **모든** 배치 패스가 조각을 버린다 — 화면 위로 지나간 줄이 걸음마다 추정 높이로 돌아가 휠 75 pt 에 화면이
+    //     51 / 27 / 0.3 pt 만 움직이거나 거꾸로 간다. 앱을 다시 띄울 때까지 어느 문서에서나 그렇다 (실사용 하네스 scroll-jump-end → scroll-edit-then-scroll, 2026-11-24).
+    // 조각이 버려진 패스에서는 화면이 멀쩡하고, 좌표는 그 뒤에(다음 질의·다음 패스에서) 옮겨진다 — 그래서 한 패스의 앞뒤가 아니라 패스와 패스 사이를 본다:
+    // (1) 배치 패스가 끝날 때마다 뷰포트의 맨 위·맨 아래 조각의 자리를 적어 두고, 다음 패스가 끝났을 때 그 조각이 (그 사이의 스크롤만큼을 빼고) 화면에서 움직였으면
+    // 그만큼 스크롤 위치를 옮겨 다시 배치한다 — 편집도, 보이게 스크롤도 없었던 패스는 화면의 글을 옮길 이유가 없다. (2) 죽은 항목 때문에 버리기가 패스마다
+    // 되풀이되지 않게 상한을 "지금 항목 수 + 2,000" 으로 다시 잡는다. 비공개 값이라 없으면 건너뛴다 — 그러면 (1)이 2,000 문단째의 튐은 막지만, 죽은 항목이
+    // 상한을 넘긴 상태는 남는다((1)만으로는 못 푼다: 걸음마다 버려지면 AppKit 이 스크롤 위치를 엉뚱하게 당긴다 — 실측 75 pt 휠 6걸음에 5번 어긋남).
+
+    private struct LayoutMark { let location: NSTextLocation; let minY: CGFloat; let maxY: CGFloat }
+    /// 배치 패스가 끝났을 때 화면에 놓인 글의 자리
+    private struct LayoutRecord {
+        let marks: [LayoutMark]             // 뷰포트의 맨 아래·맨 위 조각
+        let neighbors: [NSTextLocation]     // 뷰포트 바로 밖의, 배치가 살아 있는 조각 — 배치를 잃으면 조각이 버려진 것이다
+        let containerWidth: CGFloat
+    }
+    private struct LayoutAnchor {
+        let record: LayoutRecord
+        let onScreen: LayoutMark?           // 이번 패스 뒤에도 화면에 있어야 할 조각 (사용자가 보고 있던 글)
+        let disturbed: Bool                 // 앞선 패스 뒤로 조각이 버려졌거나 자리가 옮겨졌다
+        let clipY: CGFloat
+    }
+    private var layoutRecord: LayoutRecord?
+    /// 다음 배치 패스는 글이 움직이는 것이 정상이다 (저장소 편집, 보이게 스크롤)
+    private var layoutAnchorBlocked = false
+    private var layoutAnchorUnblockScheduled = false
+
+    /// `dropRecord`: 적어 둔 자리도 버린다 (편집은 조각의 자리를 옮긴다 — 보이게 스크롤은 옮기지 않는다)
+    private func blockLayoutAnchor(dropRecord: Bool) {
+        layoutAnchorBlocked = true
+        if dropRecord { layoutRecord = nil }
+        // 배치 패스가 뒤따르지 않으면(이미 보이는 자리, 화면 밖의 속성 편집) 다음 턴에 푼다 — 안 그러면 한참 뒤의 스크롤 패스가 보정 없이 지나간다
+        guard !layoutAnchorUnblockScheduled else { return }
+        layoutAnchorUnblockScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.layoutAnchorUnblockScheduled = false
+            if !self.needsLayout { self.layoutAnchorBlocked = false }
+        }
+    }
+
+    /// 그 위치에서 시작하는 조각의 틀. `forcing` 이 아니면 읽기만 하고(배치를 강제하지 않는다) 배치가 살아 있지 않으면 nil
+    private func fragmentFrame(at location: NSTextLocation, in lm: NSTextLayoutManager, forcing: Bool = false) -> CGRect? {
+        var frame: CGRect?
+        lm.enumerateTextLayoutFragments(from: location, options: forcing ? [.ensuresLayout] : []) { f in
+            if f.state == .layoutAvailable, f.rangeInElement.location.compare(location) == .orderedSame { frame = f.layoutFragmentFrame }
+            return false
+        }
+        return frame
+    }
+
+    /// 지금 뷰포트에 놓인 글의 자리를 적는다 (읽기만 한다)
+    private func makeLayoutRecord() -> LayoutRecord? {
+        guard let lm = textLayoutManager, let vr = lm.textViewportLayoutController.viewportRange, !vr.isEmpty else { return nil }
+        var marks: [LayoutMark] = [], neighbors: [NSTextLocation] = []
+        func mark(_ f: NSTextLayoutFragment) {
+            guard f.state == .layoutAvailable else { return }
+            let fr = f.layoutFragmentFrame
+            marks.append(LayoutMark(location: f.rangeInElement.location, minY: fr.minY, maxY: fr.maxY))
+        }
+        lm.enumerateTextLayoutFragments(from: vr.endLocation, options: [.reverse]) { f in mark(f); return false }
+        lm.enumerateTextLayoutFragments(from: vr.location, options: []) { f in mark(f); return false }
+        guard !marks.isEmpty else { return nil }
+        lm.enumerateTextLayoutFragments(from: vr.location, options: [.reverse]) { f in if f.state == .layoutAvailable { neighbors.append(f.rangeInElement.location) }; return false }
+        lm.enumerateTextLayoutFragments(from: vr.endLocation, options: []) { f in if f.state == .layoutAvailable { neighbors.append(f.rangeInElement.location) }; return false }
+        return LayoutRecord(marks: marks, neighbors: neighbors, containerWidth: textContainer?.size.width ?? 0)
+    }
+
+    /// 배치 패스 앞에서: 앞선 패스가 놓은 글 가운데 이번 패스 뒤에도 화면에 있어야 할 조각을 고른다 (스크롤로 옮겨진 클립 원점 기준)
+    private func captureLayoutAnchor() -> LayoutAnchor? {
+        guard !layoutAnchorBlocked, let record = layoutRecord, let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager,
+              (textContainer?.size.width ?? 0) == record.containerWidth else { return nil }
+        let clip = sv.contentView
+        let legal = clip.constrainBoundsRect(clip.bounds)
+        guard abs(legal.minY - clip.bounds.minY) < 0.5 else { return nil }   // 끝을 넘겨 당기는 중(탄성 스크롤)에는 손대지 않는다
+        let originY = textContainerOrigin.y
+        let visible = visibleRect
+        var disturbed = record.neighbors.contains { fragmentFrame(at: $0, in: lm) == nil }
+        var onScreen: LayoutMark?
+        for m in record.marks {
+            if let now = fragmentFrame(at: m.location, in: lm) { if abs(now.minY - m.minY) > 0.5 { disturbed = true } } else { disturbed = true }
+            if onScreen == nil, m.maxY + originY > visible.minY + 1, m.minY + originY < visible.maxY - 1 { onScreen = m }
+        }
+        return LayoutAnchor(record: record, onScreen: onScreen, disturbed: disturbed, clipY: clip.bounds.minY)
+    }
+
+    /// 배치 패스 뒤에서: 닻 조각이 화면에서 움직였으면 그만큼 스크롤 위치를 옮기고 다시 배치한다. 반환: 옮겼는가
+    private func restoreLayoutAnchor(_ anchor: LayoutAnchor?) -> Bool {
+        guard let anchor, !layoutAnchorBlocked, let sv = enclosingScrollView, let lm = textLayoutManager,
+              (textContainer?.size.width ?? 0) == anchor.record.containerWidth else { return false }
+        // 화면에 남아 있어야 할 조각이 있으면 그것으로 잰다. 없으면(한 화면 넘는 걸음) 조각이 버려졌거나 자리가 옮겨진 때에만 바로잡는다 —
+        // 멀쩡한 패스의 큰 걸음은 AppKit 이 추정 좌표로 자리를 잡는 대로 둔다
+        var mark = anchor.onScreen
+        if mark == nil, anchor.disturbed || (anchor.record.marks.map(\.location) + anchor.record.neighbors).contains(where: { fragmentFrame(at: $0, in: lm) == nil }) {
+            mark = anchor.record.marks.first
+        }
+        guard let mark else { return false }
+        let clip = sv.contentView
+        let wanted = mark.minY - anchor.clipY   // 닻 조각이 있어야 할 화면 높이 (클립 원점으로부터)
+        var moved = false
+        for _ in 0..<4 {
+            // 조각이 버려졌으면(배치를 잃었다) 그 문단만 배치해 지금 좌표에서의 자리를 얻는다
+            guard let frame = fragmentFrame(at: mark.location, in: lm) ?? fragmentFrame(at: mark.location, in: lm, forcing: true) else { break }
+            let drift = (frame.minY - clip.bounds.minY) - wanted
+            guard abs(drift) > 0.5 else { break }
+            let legal = clip.constrainBoundsRect(NSRect(x: clip.bounds.minX, y: clip.bounds.minY + drift, width: clip.bounds.width, height: clip.bounds.height))
+            guard abs(legal.minY - clip.bounds.minY) > 0.5 else { break }
+            if Perf.enabled { Perf.log("HyperTextView.layout: the text moved by \(drift) pt on screen without a scroll or an edit — scrolling by that much and laying out again") }
+            clip.scroll(to: legal.origin)
+            sv.reflectScrolledClipView(clip)
+            moved = true
+            super.layout()
+        }
+        return moved
+    }
+
+    // MARK: 조각 캐시 상한 (TextKit 2 비공개 값 — 위 '스크롤 닻'의 (2))
+    nonisolated(unsafe) private static let fragmentTableIvar = class_getInstanceVariable(NSTextLayoutManager.self, "_textLayoutFragmentTable")
+    private static let fragmentLimitKey = "maximumNumberOfCachedTextLayoutFragments"
+    private static let fragmentLimitAdjustable: Bool = fragmentTableIvar != nil
+        && NSTextLayoutManager.instancesRespond(to: NSSelectorFromString("maximumNumberOfCachedTextLayoutFragments"))
+        && NSTextLayoutManager.instancesRespond(to: NSSelectorFromString("setMaximumNumberOfCachedTextLayoutFragments:"))
+    /// 죽은 항목이 없을 때 붙들어 둘 조각 수 — TextKit 2 의 기본값과 같다 (많이 붙들수록 그 위쪽에서의 입력이 느려진다: 실측 조각당 약 5 µs/키)
+    private static let fragmentCacheHeadroom = 2_000
+
+    /// 실사용 하네스: 끄면 상한을 건드리지 않는다 — 비공개 값이 없는 OS 에서처럼 '스크롤 닻'만으로 화면이 맞는지 본다
+    nonisolated(unsafe) static var adjustsFragmentCacheLimit = true
+    /// 앞선 배치 패스가 끝났을 때의 항목 수
+    private var fragmentCountAfterLayout: Int?
+
+    /// 조각 표의 항목 수(죽은 항목 포함)와 지금의 상한. 비공개 값을 읽을 수 없으면 nil
+    private func fragmentCacheState() -> (count: Int, limit: Int)? {
+        guard Self.fragmentLimitAdjustable, Self.adjustsFragmentCacheLimit, let lm = textLayoutManager, let iv = Self.fragmentTableIvar,
+              let table = object_getIvar(lm, iv) as? NSMapTable<AnyObject, AnyObject>,
+              let limit = lm.value(forKey: Self.fragmentLimitKey) as? Int else { return nil }
+        return (table.count, limit)
+    }
+
+    /// 배치 패스 앞에서: 패스 사이에 항목이 뭉텅이로 줄었으면(죽은 항목이 표의 재해시로 걷혔거나, 큰 편집이 조각을 무효화했다) 상한도 그만큼 내린다 —
+    /// 올려 둔 상한이 그대로 남아 살아 있는 조각을 2,000개 넘게 붙들지 않게. 기본값 아래로는 내리지 않고, 입력 한 번에 한두 개씩 줄었다 다시 느는 것은 세지 않는다
+    /// (셌다면 입력하는 동안 상한이 조금씩 내려가 편집 패스에서 조각이 버려진다 — 편집 패스는 닻으로 바로잡지 않는다)
+    private func trimFragmentCacheLimit(_ now: (count: Int, limit: Int)) {
+        guard let last = fragmentCountAfterLayout, last - now.count >= 256, now.limit > Self.fragmentCacheHeadroom, let lm = textLayoutManager else { return }
+        lm.setValue(max(Self.fragmentCacheHeadroom, now.limit - (last - now.count)), forKey: Self.fragmentLimitKey)
+    }
+
+    /// 조각을 버린 패스 뒤에 부른다: 버리고도 남은 항목(뷰포트의 조각 + 죽은 항목) 위로 2,000개를 더 붙들 수 있게 상한을 다시 잡는다
+    private func retuneFragmentCacheLimit() {
+        guard let now = fragmentCacheState(), let lm = textLayoutManager else { return }
+        let limit = now.count + Self.fragmentCacheHeadroom
+        guard limit != now.limit else { return }
+        if Perf.enabled { Perf.log("HyperTextView.layout: fragment table holds \(now.count) entries after a flush — cache limit \(now.limit) → \(limit)") }
+        lm.setValue(limit, forKey: Self.fragmentLimitKey)
     }
 
     /// 보이는 글이 있는데 뷰포트 컨트롤러의 배치 범위가 비어 있는가 (scrollRangeToVisible 주석의 '옮겨 놓기만 한' 상태)
@@ -660,7 +890,7 @@ final class HyperTextView: NSTextView {
     // 스크롤만으로 도는 배치 패스는 건드리지 않는다
     private var checkViewportAfterEdit = false
 
-    /// `layout()` 의 끝에서 부른다 (위의 '뷰포트 레이아웃 보정')
+    /// `layout()` 의 끝에서 부른다 (위의 '뷰포트 레이아웃 보정'). 편집 뒤의 패스와, 패스 안에서 스크롤 위치가 옮겨진 패스에서 본다
     private func coverViewportAfterEdit() {
         guard checkViewportAfterEdit else { return }
         checkViewportAfterEdit = false
@@ -920,6 +1150,7 @@ final class HyperTextView: NSTextView {
     @objc private func storageDidProcessEditing(_ n: Notification) {
         guard let ts = n.object as? NSTextStorage, ts === textStorage else { return }
         checkViewportAfterEdit = true   // 문자·속성 편집 모두 배치를 무효화한다 — 다음 배치 패스 뒤에 뷰포트 덮임을 본다 (layout)
+        blockLayoutAnchor(dropRecord: true)   // 편집 뒤의 배치는 글을 옮긴다 (스크롤 닻)
         guard ts.editedMask.contains(.editedCharacters) else { return }
         if expectingTrackedEdit { expectingTrackedEdit = false; return }
         // search: 추적되지 않은 문자 편집(undo/redo·파일 열기의 전체 교체·다른 뷰의 편집)만 저장소 범위로 옮긴다 — 입력은 trackedEdits 가 정확히 옮겼다
@@ -1103,7 +1334,10 @@ final class HyperTextView: NSTextView {
         }
         // 단일 캐럿 Tab: 캐럿 앞 단어가 스니펫 트리거면 펼친다 (아니면 일반 Tab)
         if selector == #selector(NSResponder.insertTab(_:)), !hasMulti, expandSnippetAtCaret() { return }
+        let caretStep = Self.caretStepCommands.contains(selector)   // 가장자리를 넘으면 필요한 만큼만 민다 (revealCaretStep)
+        if caretStep { caretStepDepth += 1; selectionBeforeCaretStep = selectedRange() }
         super.doCommand(by: selector)
+        if caretStep { caretStepDepth -= 1 }
         if snippetSession != nil, selector.description.hasPrefix("move") { snippetCaretMoved() }
     }
 
