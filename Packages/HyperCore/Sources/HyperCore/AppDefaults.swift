@@ -12,6 +12,10 @@ public enum AppDefaults {
     /// 스냅샷(`before-first-save` 등) 폴더 — 휘발성 실행에서는 임시 폴더. nil 이면 Application Support/HyperEdit/snapshots
     nonisolated(unsafe) public static var snapshotDirectoryOverride: URL?
 
+    /// 기본 문서 폴더(`~/Documents/HyperEdit`) — 휘발성 실행에서는 임시 폴더. 자동화 실행이 사용자의 실제 notes.md 를 열거나 만들지 않게 한다
+    /// (탭이 생긴 뒤로는 마지막 탭을 닫으면 기본 문서가 열리므로 더 중요하다)
+    nonisolated(unsafe) public static var defaultDirectoryOverride: URL?
+
     /// 자동화용 임시 suite 로 전환 (이전 실행의 잔여물은 비운다). 스냅샷도 임시 폴더로 — 셀프테스트·벤치의 1~28 MB 샘플이 실제 폴더에 쌓이지 않게 (2026-11-06)
     public static func useEphemeral(suiteName: String = "hyperedit.automation") {
         guard let d = UserDefaults(suiteName: suiteName) else { return }
@@ -21,6 +25,9 @@ public enum AppDefaults {
         let snaps = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-\(suiteName)-snapshots", isDirectory: true)
         try? FileManager.default.removeItem(at: snaps)
         snapshotDirectoryOverride = snaps
+        let docs = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-\(suiteName)-documents", isDirectory: true)
+        try? FileManager.default.removeItem(at: docs)
+        defaultDirectoryOverride = docs
     }
 }
 
