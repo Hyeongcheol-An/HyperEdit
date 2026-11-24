@@ -562,12 +562,59 @@ struct EditorView: NSViewRepresentable {
                 select(NSRange(location: min(loc, len), length: 0), center: true, indicator: false, focus: false)
                 return
             }
+            // 줄 수의 자릿수가 다른 파일로 넘어오면 거터 폭이 바뀌어 본문이 다시 감긴다. 그 갱신은 줄 인덱스 발행의 다음 턴에 오므로(bindDocument) 여기서 먼저 끝내고
+            // 최종 폭에서 보기 위치를 되살린다 — 아니면 되살린 직후에 본문이 다시 감기며 화면이 한두 줄 밀린다
+            gutter?.updateThickness()
+            container?.layoutSubtreeIfNeeded()
             if let st = ViewStateStore.load(for: document.url) {
-                select(NSRange(location: min(st.cursor, len), length: 0), center: true, indicator: false)
+                let caret = NSRange(location: min(st.cursor, len), length: 0)
+                if let top = st.topOffset, top <= len, !tv.isInHugeParagraph(top) {
+                    // 탭을 오가도 읽던 곳 그대로: 캐럿은 제자리에(화면 밖이었으면 밖에), 화면은 떠날 때 맨 위에 걸쳐 있던 문단이 같은 높이에 오게
+                    tv.setSelectedRange(caret)
+                    tv.scrollRangeToVisible(NSRange(location: top, length: 0))   // 그 근처를 먼저 배치하게 한다 (정확한 높이는 아래에서)
+                    tv.window?.makeFirstResponder(tv)
+                    let inset = CGFloat(st.topInset ?? 0)
+                    scrollToTop(offset: top, inset: inset)
+                    // 스크롤 뒤 TextKit 2 가 위쪽 문단의 추정 높이를 실측으로 바꾸며 좌표를 옮길 수 있다 → 다음 턴에 한 번 더 맞춘다 (centerCaret 과 같은 이유)
+                    let generation = document.reloadGeneration   // 그 사이 다른 파일로 또 넘어갔으면 이 오프셋은 그 파일의 것이 아니다
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self, self.document.reloadGeneration == generation else { return }
+                        self.scrollToTop(offset: top, inset: inset)
+                    }
+                } else {
+                    select(caret, center: true, indicator: false)
+                }
             } else {
                 select(NSRange(location: len, length: 0), center: false, indicator: false)
             }
-            _ = tv
+        }
+
+        /// 화면 맨 위에 걸친 문단(시작 오프셋)과, 그 문단의 위 가장자리가 화면 위 가장자리보다 얼마나 위에 있는가 — 보기 위치의 닻
+        private func topAnchor() -> (offset: Int, inset: CGFloat)? {
+            guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return nil }
+            // 문서 맨 위에서는 화면 위 가장자리가 첫 문단보다 위(위쪽 여백)에 있다 → inset 은 음수가 될 수 있다
+            let y = tv.visibleRect.minY - tv.textContainerOrigin.y
+            guard let f = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, y))) else { return nil }
+            return (cs.offset(from: cs.documentRange.location, to: f.rangeInElement.location), y - f.layoutFragmentFrame.minY)
+        }
+
+        /// `offset` 에서 시작하는 문단의 위 가장자리가 화면 위 가장자리보다 `inset` 만큼 위에 오게 스크롤한다 (이미 그 자리면 아무것도 하지 않는다)
+        private func scrollToTop(offset: Int, inset: CGFloat) {
+            guard restored, let tv = textView, let sv = scrollView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage,
+                  offset <= (tv.textStorage?.length ?? 0), let loc = cs.location(cs.documentRange.location, offsetBy: offset) else { return }
+            // 스크롤하면 TextKit 2 가 새 자리의 문단을 배치하며 위쪽 문단의 추정 높이를 실측으로 바꾸고, 그만큼 닻 문단의 좌표(와 때로는 스크롤 위치)가 밀린다.
+            // 그래서 "지금 보이는 자리를 배치 → 닻이 어디 있는지 봄 → 어긋났으면 스크롤"을 좌표가 가라앉을 때까지 되풀이한다 (보통 한두 바퀴)
+            for _ in 0..<4 {
+                lm.textViewportLayoutController.layoutViewport()
+                var frame: CGRect?
+                lm.enumerateTextLayoutFragments(from: loc, options: [.ensuresLayout]) { f in frame = f.layoutFragmentFrame; return false }
+                guard let fr = frame else { return }
+                let maxY = max(0, tv.bounds.height - sv.contentView.bounds.height)
+                let y = min(max(0, fr.minY + tv.textContainerOrigin.y + min(inset, max(0, fr.height - 1))), maxY)
+                guard abs(sv.contentView.bounds.origin.y - y) > 0.25 else { return }
+                sv.contentView.scroll(to: NSPoint(x: 0, y: y))
+                sv.reflectScrolledClipView(sv.contentView)
+            }
         }
 
         private func scheduleSaveViewState() {
@@ -581,8 +628,10 @@ struct EditorView: NSViewRepresentable {
         }
 
         private func saveViewStateNow() {
-            guard role == .primary, let tv = textView, document.isLoaded else { return }
-            ViewStateStore.save(EditorViewState(cursor: tv.selectedRange().location, scrollY: Double(tv.visibleRect.minY)), for: document.url)
+            // `restored`: 파일을 갈아탄 직후(내용은 바뀌었고 보기 위치는 아직 되살리기 전)의 캐럿·스크롤은 이 파일의 것이 아니다 — 그때 또 전환되면 저장하지 않는다
+            guard role == .primary, restored, let tv = textView, document.isLoaded else { return }
+            let top = topAnchor()
+            ViewStateStore.save(EditorViewState(cursor: tv.selectedRange().location, scrollY: Double(tv.visibleRect.minY), topOffset: top?.offset, topInset: top.map { Double($0.inset) }), for: document.url)
         }
 
         // MARK: 명령
