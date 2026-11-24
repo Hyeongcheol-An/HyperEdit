@@ -108,6 +108,64 @@ final class HyperTextView: NSTextView {
         if window != nil { DispatchQueue.main.async { [weak self] in self?.onDidMoveToWindow?() } }
     }
 
+    // MARK: - 문서 끝을 넘긴 스크롤 위치 바로잡기
+    // TextKit 2 는 끝으로 점프할 때(⌘↓·문서 끝으로·마지막 줄로 이동) 먼저 추정 높이 기준의 끝으로 스크롤하고, 뷰포트를 배치하며 추정 → 실측 차이만큼 문서 높이와
+    // 스크롤 위치를 다시 맞춘다. 그 과정이 끝났을 때 스크롤 위치가 줄어든 문서 높이를 넘긴 채 남는 경우가 있다(macOS 27 실측, 실사용 하네스 2026-11-24:
+    // layout() 한 번 안에서 높이 +93412 → −48, 위치는 −48 을 반영했다가 되돌림) — 마지막 줄 아래에 수십~수백 pt 의 빈 띠가 보이고, 다음 휠 이벤트에서야
+    // 그만큼 튀며 돌아온다. 배치가 끝난 뒤 클립 뷰가 허용하는 범위로 되돌린다. 트랙패드로 끝을 넘겨 당기는 중(탄성 스크롤)에는 손대지 않는다
+    /// 스크롤 제스처(트랙패드 탄성·관성 포함)의 마지막 움직임 시각, 제스처가 아니면 0 — Coordinator 가 스크롤 뷰의 live scroll 알림(시작·움직임·끝)으로 갱신한다.
+    /// 끝 알림이 빠져도(실측: 합성한 제스처 이벤트) 되돌리기가 영영 꺼지지 않도록 마지막 움직임에서 1초가 지나면 제스처가 아닌 것으로 본다
+    var liveScrollTick: CFAbsoluteTime = 0
+    private var isLiveScrolling: Bool { liveScrollTick > 0 && CFAbsoluteTimeGetCurrent() - liveScrollTick < 1 }
+    private var constrainBudget = 4   // 한 런루프 턴 안에서 되돌리기 횟수 상한 (배치 ↔ 되돌리기 핑퐁 방지)
+    private var constrainRetryArmed = false
+
+    /// 반환: 스크롤 위치를 되돌렸는가
+    @discardableResult
+    func constrainScrollToDocumentEnd() -> Bool {
+        guard constrainBudget > 0, let sv = enclosingScrollView, sv.documentView === self else { return false }
+        let clip = sv.contentView
+        let legal = clip.constrainBoundsRect(clip.bounds)
+        guard clip.bounds.minY > legal.minY + 0.5, frame.height > clip.bounds.height else { return false }
+        if isLiveScrolling {
+            // 제스처 중: 끝 알림이 오면 Coordinator 가 다시 부른다. 그 알림이 빠지는 경우에 대비해 제스처 판정이 풀릴 때 한 번 더 본다
+            if !constrainRetryArmed {
+                constrainRetryArmed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) { [weak self] in self?.constrainRetryArmed = false; self?.constrainScrollToDocumentEnd() }
+            }
+            return false
+        }
+        if constrainBudget == 4 { DispatchQueue.main.async { [weak self] in self?.constrainBudget = 4 } }
+        constrainBudget -= 1
+        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: legal.minY))
+        sv.reflectScrolledClipView(clip)
+        return true
+    }
+
+    override func scrollRangeToVisible(_ range: NSRange) {
+        super.scrollRangeToVisible(range)
+        // macOS 27 실측: 대상이 이미 보여 스크롤이 일어나지 않으면 AppKit 은 뷰포트 컨트롤러를 '옮겨 놓기만' 한 채 둔다 — viewportRange 가 빈 범위가 되고
+        // viewportBounds 는 화면과 어긋난다(다음 배치 때까지). 방향키로 캐럿만 옮겨도 그렇게 돼, viewportRange 로 보이는 범위를 정하는 검색 강조가
+        // 다시 그려지는 줄마다 지워졌다(실사용 하네스 2026-11-24). 이번 표시 주기에 뷰포트를 다시 배치하게 한다 (조각은 이미 배치돼 있어 값싸다)
+        if viewportNeedsLayout { needsLayout = true }
+        constrainScrollToDocumentEnd()
+    }
+
+    override func layout() {
+        super.layout()
+        // 배치 패스 안에서 옮긴 위치는 다시 배치되지 않는다(needsLayout 이 서지 않는다) — 되돌렸으면 그 자리의 뷰포트를 한 번 더 배치한다.
+        // AppKit 이 배치 패스 안에서 미뤄 둔 '보이게 스크롤'을 수행해 뷰포트를 옮겨 놓기만 한 경우(viewportRange 가 빔)도 마찬가지다
+        var passes = 0
+        while passes < 3, constrainScrollToDocumentEnd() || viewportNeedsLayout { super.layout(); passes += 1 }
+        coverViewportAfterEdit()
+    }
+
+    /// 보이는 글이 있는데 뷰포트 컨트롤러의 배치 범위가 비어 있는가 (scrollRangeToVisible 주석의 '옮겨 놓기만 한' 상태)
+    private var viewportNeedsLayout: Bool {
+        guard let lm = textLayoutManager, (textStorage?.length ?? 0) > 0, !visibleRect.isEmpty else { return false }
+        return lm.textViewportLayoutController.viewportRange?.isEmpty ?? true
+    }
+
     // MARK: - 그리기
 
     override func drawBackground(in rect: NSRect) {
@@ -602,8 +660,8 @@ final class HyperTextView: NSTextView {
     // 스크롤만으로 도는 배치 패스는 건드리지 않는다
     private var checkViewportAfterEdit = false
 
-    override func layout() {
-        super.layout()
+    /// `layout()` 의 끝에서 부른다 (위의 '뷰포트 레이아웃 보정')
+    private func coverViewportAfterEdit() {
         guard checkViewportAfterEdit else { return }
         checkViewportAfterEdit = false
         var passes = 0

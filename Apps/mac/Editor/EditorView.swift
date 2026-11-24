@@ -308,6 +308,20 @@ struct EditorView: NSViewRepresentable {
             NotificationCenter.default.publisher(for: NSView.boundsDidChangeNotification, object: scrollView.contentView)
                 .sink { [weak self] _ in self?.gutter?.needsDisplay = true }
                 .store(in: &cancellables)
+            // 스크롤 제스처(탄성·관성 포함) 중에는 텍스트 뷰가 문서 끝을 넘긴 위치를 되돌리지 않는다 (HyperTextView.constrainScrollToDocumentEnd)
+            for name in [NSScrollView.willStartLiveScrollNotification, NSScrollView.didLiveScrollNotification, NSScrollView.didEndLiveScrollNotification] {
+                NotificationCenter.default.publisher(for: name, object: scrollView)
+                    .sink { [weak self] n in
+                        guard let tv = self?.textView else { return }
+                        // 끝을 넘겨 당길 수 있는 것은 위상이 있는 트랙패드 제스처(와 그 관성)뿐이다 — 딸깍 휠·스크롤 막대 끌기도 live scroll 알림을 내지만 탄성이 없다
+                        let e = NSApp.currentEvent
+                        let gesture = e?.type == .scrollWheel && !((e?.phase.isEmpty ?? true) && (e?.momentumPhase.isEmpty ?? true))
+                        let ended = n.name == NSScrollView.didEndLiveScrollNotification
+                        tv.liveScrollTick = (ended || !gesture) ? 0 : CFAbsoluteTimeGetCurrent()
+                        if ended { tv.constrainScrollToDocumentEnd() }   // 제스처가 끝을 넘긴 채 끝났으면 이제 되돌린다
+                    }
+                    .store(in: &cancellables)
+            }
             // 보이는 첫 줄 → EditorCaret.firstVisibleLine (마크다운 미리보기 스크롤 동기화). 스크롤 이벤트는 초당 수백 번이라 60 ms 로 묶는다
             NotificationCenter.default.publisher(for: NSView.boundsDidChangeNotification, object: scrollView.contentView)
                 .throttle(for: .milliseconds(60), scheduler: RunLoop.main, latest: true)
@@ -549,6 +563,11 @@ struct EditorView: NSViewRepresentable {
         func publishFirstVisibleLine() {
             guard session.isActive(self) else { return }   // split: 미리보기는 활성 편집기를 따라간다
             guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return }
+            // 스크롤 직후(클립 뷰 bounds 가 바뀌고 텍스트 뷰의 layout() 은 아직인 때)에는 새 화면 위쪽의 문단이 추정 높이다. 그때 아래의 점 질의를 하면 TextKit 2 가
+            // 그 문단을 먼저 배치해 버려, 뒤이은 뷰포트 배치가 "추정 → 실측" 차이를 스크롤 위치로 보정하지 못한다 — 쉬었다가 위로 스크롤하는 첫 걸음마다 화면이
+            // 수십 pt(여러 번 감긴 문단은 100 pt 이상) 덜 가거나 거꾸로 튀었다(실사용 하네스 scroll-rested-wheel, 2026-11-24). 밀린 배치를 먼저 끝낸다 —
+            // 이 턴의 표시 주기가 어차피 할 일이라 추가 비용은 없다
+            if tv.needsLayout { tv.layoutSubtreeIfNeeded() }
             let visible = tv.visibleRect
             let origin = tv.textContainerOrigin
             let point = CGPoint(x: 0, y: max(0, visible.minY - origin.y))

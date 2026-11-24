@@ -473,7 +473,7 @@ extension RealUse {
             if m.document.isDirty { ctx.issue("dirty", "back on b: the document is dirty although nothing was typed since the switch") }
             ctx.checkCaretVisible("back on the edited tab"); ctx.checkAll("back on the edited tab")
             ctx.at("undo after coming back")
-            await ctx.shortcut("z"); await ctx.settle(150)
+            m.send(.undo); await ctx.settle(150)   // 리본의 ↶ 경로 — 앱이 비활성이면 메뉴의 ⌘Z 는 "처리했다"고 답하고도 편집기에 닿지 않는다(키 창이 없다)
             ctx.note("⌘Z after returning: length \(expect1.length) → \(ctx.length) (the undo stack is cleared on a switch)")
             if ctx.length != expect1.length, !ctx.text.hasPrefix("# edit-b") { ctx.issue("text", "⌘Z after returning to b replaced its content with something else (\(ctx.length) units, starts '\(ctx.text.substring(to: min(12, ctx.length)))')") }
             ctx.checkTabs("after ⌘Z on b")
