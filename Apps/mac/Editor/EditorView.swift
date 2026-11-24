@@ -259,6 +259,8 @@ struct EditorView: NSViewRepresentable {
         // 밀리고, undo 뒤 다음 줄 머리에 링크색이 남는다). 검색 강조가 스토리지 속성이던 때는 결과가 떠 있는 동안 키 입력마다 문서 전체가 다시 만들어져
         // 이를 가렸다. 다음 턴에 그 문단(들)만 속성 편집 통지로 다시 만들게 한다 — 문단 하나라 수십 µs. 밀린 런은 최대 delta 만큼 뒤까지 갈 수 있어 그만큼 넓힌다.
         private var pendingRevalidation: NSRange?
+        /// 이보다 넓은 재검증 범위는 화면에 놓인 문단(과 그 아래 이만큼)으로 줄인다 — 입력·몇 줄짜리 붙여넣기는 그대로 (flushParagraphRevalidation)
+        private static let revalidationSpanLimit = 2_048
 
         private func scheduleParagraphRevalidation(_ edited: NSRange, delta: Int) {
             guard role == .primary, highlightEnabled, edited.location != NSNotFound else { return }   // 스토리지 속성 편집은 모든 레이아웃 매니저에 전달된다
@@ -272,7 +274,18 @@ struct EditorView: NSViewRepresentable {
             pendingRevalidation = nil
             guard highlightEnabled, let tv = textView, let ts = tv.textStorage else { return }
             let len = ts.length
-            let loc = min(span.location, len), end = min(NSMaxRange(span), len)
+            var loc = min(span.location, len), end = min(NSMaxRange(span), len)
+            // 넓은 범위(수십 줄 넘는 붙여넣기와 그 되돌리기, 모두 선택 뒤 입력의 되돌리기)는 화면에 놓인 문단과 그 바로 아래로 줄인다. 범위 전부에 속성 편집을 알리면
+            // TextKit 2 가 그 문단들의 배치를 모두 버리고 높이를 다시 추정한다 — 방금 끝난 배치가 무효가 되고, 다시 배치하는 동안 뷰포트 위쪽의 추정과 실측의 차이만큼
+            // 조각이 밀려 보이는 영역이 비거나(실측 2026-11-24: 문서 끝의 선택 위에 300줄을 붙여넣으면 마지막 다섯 줄이 다음 스크롤까지 빈 채로 남았다) 화면이 캐럿과
+            // 상관없는 곳으로 갔다. 밀린 색 런은 편집 위치 **뒤**로만 가므로 뷰포트 위쪽은 다시 만들 필요가 없고, 화면 밖의 새 문단은 처음 배치될 때 validator 가 칠한다.
+            // 뷰포트 범위가 아직 없으면(편집 뒤 첫 배치 전 — nil 이거나 빈 범위) 버릴 배치도 없으므로 그대로 알린다
+            if end - loc > Self.revalidationSpanLimit, let viewport = tv.textLayoutManager?.textViewportLayoutController.viewportRange,
+               !viewport.isEmpty, let cs = tv.textContentStorage {
+                loc = max(loc, cs.offset(from: cs.documentRange.location, to: viewport.location))
+                end = min(end, cs.offset(from: cs.documentRange.location, to: viewport.endLocation) + Self.revalidationSpanLimit)
+                guard end > loc else { return }
+            }
             let para = (ts.string as NSString).paragraphRange(for: NSRange(location: loc, length: max(0, end - loc)))
             guard para.length > 0 else { return }
             Perf.measure("highlight.revalidate len=\(para.length)", threshold: 1) {
@@ -541,7 +554,7 @@ struct EditorView: NSViewRepresentable {
             let point = CGPoint(x: 0, y: max(0, visible.minY - origin.y))
             let location = lm.textLayoutFragment(for: point)?.rangeInElement.location ?? lm.documentRange.location
             let offset = cs.offset(from: cs.documentRange.location, to: location)
-            let line = document.lineIndex.lineNumber(forUTF16Offset: offset)
+            let line = document.liveLineIndex.lineNumber(forUTF16Offset: offset)
             if model.caret.firstVisibleLine != line { model.caret.firstVisibleLine = line }
         }
 
@@ -667,7 +680,7 @@ struct EditorView: NSViewRepresentable {
             case .selectMatch(let r):   // 빠른 찾기: 입력창 포커스 유지, 풍선 없음
                 select(r, center: true, indicator: false, focus: false)
             case .goToLine(let n):
-                let r = document.lineIndex.range(ofLine: n)
+                let r = document.liveLineIndex.range(ofLine: n)   // 지금 텍스트의 줄 (발행용 lineIndex 는 편집 뒤 250 ms 동안 낡아 있다)
                 select(NSRange(location: r.location, length: 0), center: true, indicator: true)
             case .goToEnd:
                 select(NSRange(location: document.textStorage.length, length: 0), center: false, indicator: false)
@@ -987,7 +1000,7 @@ struct EditorView: NSViewRepresentable {
             if let r = newRect { tv.setNeedsDisplay(NSRect(x: 0, y: r.minY - 2, width: tv.bounds.width, height: r.height + 4)) }
             if let old = lastCaretRect { tv.setNeedsDisplay(NSRect(x: 0, y: old.minY - 2, width: tv.bounds.width, height: old.height + 4)) }
             lastCaretRect = newRect
-            let line = isActive ? model.caretLine : document.lineIndex.lineNumber(forUTF16Offset: sel.location)
+            let line = isActive ? model.caretLine : document.liveLineIndex.lineNumber(forUTF16Offset: sel.location)
             if line != lastCaretLine { lastCaretLine = line; gutter?.needsDisplay = true }
             if isActive { scheduleSaveViewState() }
             foldController?.selectionDidChange()   // fold: 캐럿이 숨은 줄로 들어가면 펼친다 (뷰마다)

@@ -136,9 +136,8 @@ final class HyperTextView: NSTextView {
     /// 유령 띠를 그린다), 거대 문단(세그먼트 계산이 문단 전체 배치 — 그 문단의 매치를 한꺼번에 건너뛴다)
     private func drawMatchHighlights(in rect: NSRect) {
         guard !matchHighlights.isEmpty, let lm = textLayoutManager, let cs = textContentStorage, let ts = textStorage,
-              let viewport = lm.textViewportLayoutController.viewportRange else { return }
-        let start = cs.offset(from: cs.documentRange.location, to: viewport.location)
-        let end = cs.offset(from: cs.documentRange.location, to: viewport.endLocation)
+              let shown = laidOutCharacterRange() else { return }
+        let start = shown.location, end = NSMaxRange(shown)
         guard end > start else { return }
         var lo = 0, hi = matchHighlights.count   // 끝이 start 뒤인 첫 매치
         while lo < hi { let m = (lo + hi) / 2; if NSMaxRange(matchHighlights[m]) <= start { lo = m + 1 } else { hi = m } }
@@ -170,6 +169,26 @@ final class HyperTextView: NSTextView {
                 return true
             }
         }
+    }
+
+    /// 지금 화면에 놓인 문자 범위 (문단 경계). 뷰포트 레이아웃 컨트롤러의 `viewportRange` 를 쓰되, 그 범위가 비어 있으면 보이는 영역의 위·아래 끝에 놓인 문단으로 구한다.
+    /// 실측(2026-11-24, macOS 27): 캐럿을 키보드로 옮기면(화살표·Tab 이동 — AppKit 이 scrollRangeToVisible 안에서 뷰포트를 캐럿 줄로 '재배치'만 하고 다시 배치하지
+    /// 않는다) `viewportRange` 가 길이 0 인 범위로 바뀌어 다음 스크롤·편집까지 그대로다. 화면은 앞선 배치대로 멀쩡하지만 이 범위만 믿고 그리는 것(검색 매치 강조)은
+    /// 화살표 키 한 번에 전부 사라졌다. 폴백의 점 질의는 화면에 있는(이미 배치된) 문단만 건드리므로 뷰포트 밖의 배치를 강제하지 않는다
+    func laidOutCharacterRange() -> NSRange? {
+        guard let lm = textLayoutManager, let cs = textContentStorage else { return nil }
+        if let viewport = lm.textViewportLayoutController.viewportRange, !viewport.isEmpty {
+            let start = cs.offset(from: cs.documentRange.location, to: viewport.location)
+            return NSRange(location: start, length: cs.offset(from: viewport.location, to: viewport.endLocation))
+        }
+        let visible = visibleRect
+        guard visible.height > 1 else { return nil }
+        let originY = textContainerOrigin.y
+        guard let first = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, visible.minY - originY))) else { return nil }
+        let last = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, visible.maxY - originY)))
+        let start = cs.offset(from: cs.documentRange.location, to: first.rangeInElement.location)
+        let end = last.map { cs.offset(from: cs.documentRange.location, to: $0.rangeInElement.endLocation) } ?? (textStorage?.length ?? start)   // 보이는 영역이 문서 끝을 지나면 끝까지
+        return end > start ? NSRange(location: start, length: end - start) : nil
     }
 
     /// 편집 뒤 매치 범위를 옮긴다 (editedRange 는 편집 후 범위, delta 로 편집 전 구간을 되짚는다): 편집 앞은 그대로, 편집 전 구간 뒤는 delta 만큼,
@@ -436,6 +455,67 @@ final class HyperTextView: NSTextView {
         }
     }
 
+    /// 캐럿(선택의 시작)이 지금 보이는 영역에 걸쳐 있는가
+    var isCaretVisible: Bool {
+        guard let caret = caretRect(at: selectedRange().location) else { return false }
+        let visible = visibleRect
+        return caret.maxY > visible.minY && caret.minY < visible.maxY
+    }
+
+    /// 배치가 통째로 바뀌는 일 뒤에 캐럿을 다시 보이게 한다 — 되돌리기로 큰 범위가 돌아왔을 때(추정 위치로 스크롤돼 1.3 MB 를 되살리면 캐럿이 화면 아래로 한 줄 반
+    /// 벗어났다), 거터 폭이 바뀌어 본문이 다시 감길 때(GutterView.updateThickness). 그 배치를 끝낸 다음 턴에 캐럿이 정말 보이는지 보고, 아니면 그리로 스크롤한다
+    func revealCaretAfterRelayout() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.window else { return }
+            for _ in 0..<2 {   // 스크롤한 자리의 추정 높이가 실측으로 바뀌며 한 번 더 어긋날 수 있다
+                window.layoutIfNeeded()
+                let sel = self.selectedRange()
+                guard let caret = self.caretRect(at: sel.location) else { return }
+                let visible = self.visibleRect
+                guard caret.minY < visible.minY || caret.maxY > visible.maxY else { return }
+                self.scrollRangeToVisible(sel)
+            }
+        }
+    }
+
+    // MARK: - 뷰포트 레이아웃 보정
+    // TextKit 2 는 아직 배치하지 않은 문단의 높이를 추정한다. 편집으로 넓은 범위의 배치가 무효가 된 뒤의 배치 패스는 뷰포트를 채우는 동안 위쪽 문단의 추정 높이가
+    // 실측으로 바뀌어 방금 놓은 조각들이 통째로 밀리고, 보이는 영역의 아래(또는 위)가 빈 채로 끝날 수 있다 — 다시 배치할 일이 생기지 않으므로 다음 스크롤·편집까지
+    // 그 줄들은 번호만 있고 글자가 없다 (실측 2026-11-24: 문서 끝의 선택 위에 300줄을 붙여넣은 다음 턴에 구문 색 재검증이 붙여넣은 범위 전체를 무효화하자
+    // 조각이 177 pt 위로 밀려 마지막 다섯 줄이 비었다 — 그 무효화는 EditorView.flushParagraphRevalidation 이 화면 범위로 줄였다). 편집 뒤의 배치가 끝났는데
+    // 조각들이 보이는 영역을 덮지 못하면 바로 다시 배치한다 (최대 두 번). 실측은 두 가지뿐이다: 위의 붙여넣기는 한 번에 수렴했고, 문서 전체가 무효화된 경우
+    // (모두 선택 뒤 입력의 되돌리기 — 재검증 범위를 줄이기 전)는 두 번으로도 수렴하지 않았다. 그러니 이것은 안전망이지 보장이 아니다.
+    // 스크롤만으로 도는 배치 패스는 건드리지 않는다
+    private var checkViewportAfterEdit = false
+
+    override func layout() {
+        super.layout()
+        guard checkViewportAfterEdit else { return }
+        checkViewportAfterEdit = false
+        var passes = 0
+        while passes < 2, !viewportCoversVisibleRect() {
+            passes += 1
+            textLayoutManager?.textViewportLayoutController.layoutViewport()
+        }
+        if passes > 0, Perf.enabled { Perf.log("HyperTextView.layout: viewport did not cover the visible rect after an edit → \(passes) extra pass(es)") }
+    }
+
+    /// 뷰포트 레이아웃이 놓은 조각들이 보이는 영역의 위·아래 끝까지 닿는가 (문서의 처음·끝이면 닿지 않아도 된다). 조각 두 개만 본다
+    private func viewportCoversVisibleRect() -> Bool {
+        guard window != nil, let lm = textLayoutManager, let range = lm.textViewportLayoutController.viewportRange else { return true }
+        let visible = visibleRect
+        guard visible.height > 1 else { return true }
+        let originY = textContainerOrigin.y
+        var top: CGFloat?, bottom: CGFloat?
+        lm.enumerateTextLayoutFragments(from: range.location, options: []) { f in top = f.layoutFragmentFrame.minY + originY; return false }
+        lm.enumerateTextLayoutFragments(from: range.endLocation, options: [.reverse]) { f in bottom = f.layoutFragmentFrame.maxY + originY; return false }
+        guard let top, let bottom else { return true }
+        let document = lm.documentRange
+        if top > visible.minY + 1, range.location.compare(document.location) == .orderedDescending { return false }
+        if bottom < visible.maxY - 1, range.endLocation.compare(document.endLocation) == .orderedAscending { return false }
+        return true
+    }
+
     /// appearance: 배경이 투명(clear)하면 불투명 뷰로 취급되지 않게 — 반투명 창에서 검게 깔리는 것을 막는다
     override var isOpaque: Bool { drawsBackground && backgroundColor.alphaComponent >= 1 }
 
@@ -480,6 +560,7 @@ final class HyperTextView: NSTextView {
 
     override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
         super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+        if undoInProgress { selectionMovedByUndo = true }
         if !settingSelectionProgrammatically, multi != nil { multi = nil }
         restartBlink(); caretVisibilityChanged()   // appearance: 선택 유무에 따라 보이고 숨기며, 이전 자리를 지운다
         if cursorStyle != .bar { applyInsertionIndicatorMode() }   // appearance: 거대 문단 안팎을 오갈 때 시스템 캐럿 폴백을 켜고 끈다
@@ -630,10 +711,13 @@ final class HyperTextView: NSTextView {
 
     /// undo/redo 가 진행 중인가 (저장소 알림이 어떤 편집에서 왔는지 구분하는 데 쓴다)
     private var undoInProgress = false
+    /// 진행 중인 undo/redo 가 이 뷰의 선택을 옮겼는가 — 끝난 뒤 그 자리를 보여 준다 (undoDidChange)
+    private var selectionMovedByUndo = false
 
     @objc private func undoWillChange(_ n: Notification) {
         guard (n.object as? UndoManager) === undoManager else { return }
         undoInProgress = true
+        selectionMovedByUndo = false
         guard onLinesWillChange != nil, needsLineTracking?() ?? true else { undoNewlineCount = nil; return }
         let ns = string as NSString
         undoNewlineCount = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))
@@ -644,11 +728,24 @@ final class HyperTextView: NSTextView {
         undoInProgress = false
         undoNewlineCount = nil
         endSnippetSession()   // snippets: undo/redo 는 shouldChangeText 를 거치지 않아 탭스톱 범위가 낡는다 → 세션 종료
+        // 되돌린 자리를 보여 준다. AppKit(TextKit 2)의 undo/redo 는 선택만 그 자리로 옮기고 스크롤하지 않는다 — 화면 밖의 편집(큰 붙여넣기, 모두 선택 뒤 입력,
+        // 스크롤해 둔 채 ⌘Z)을 되돌리면 캐럿은 그 자리로 갔는데 화면은 상관없는 곳을 보여 줬다. 분할 보기에서는 포커스를 가진 뷰만 따라간다
+        // (다른 뷰의 선택도 편집에 맞춰 옮겨지지만 그 뷰가 보던 자리는 그대로 둔다); 포커스가 편집기 밖(찾기 입력창 + 리본의 되돌리기)이면 선택이 옮겨진 뷰가 따라간다
+        if selectionMovedByUndo {
+            selectionMovedByUndo = false
+            let responder = window?.firstResponder
+            if responder === self || !(responder is HyperTextView) {
+                scrollRangeToVisible(selectedRange())
+                revealCaretAfterRelayout()   // 통째로 되살아난 텍스트는 아직 배치되지 않아 위 스크롤이 추정 위치로 간다
+            }
+        }
     }
 
     /// shouldChangeText 를 거치지 않은 문자 편집(undo/redo)을 사후에 통지한다. editedRange 는 편집 후 범위, changeInLength 로 편집 전 범위를 되짚는다.
     @objc private func storageDidProcessEditing(_ n: Notification) {
-        guard let ts = n.object as? NSTextStorage, ts === textStorage, ts.editedMask.contains(.editedCharacters) else { return }
+        guard let ts = n.object as? NSTextStorage, ts === textStorage else { return }
+        checkViewportAfterEdit = true   // 문자·속성 편집 모두 배치를 무효화한다 — 다음 배치 패스 뒤에 뷰포트 덮임을 본다 (layout)
+        guard ts.editedMask.contains(.editedCharacters) else { return }
         if expectingTrackedEdit { expectingTrackedEdit = false; return }
         // search: 추적되지 않은 문자 편집(undo/redo·파일 열기의 전체 교체·다른 뷰의 편집)만 저장소 범위로 옮긴다 — 입력은 trackedEdits 가 정확히 옮겼다
         if !matchHighlights.isEmpty, ts.editedRange.location != NSNotFound { shiftMatchHighlights(edited: ts.editedRange, delta: ts.changeInLength) }

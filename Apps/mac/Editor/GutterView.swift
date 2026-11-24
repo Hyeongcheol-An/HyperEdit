@@ -18,6 +18,8 @@ final class GutterView: NSView {
     /// appearance: 배경 투명도. 1 미만이면 배경을 칠하지 않고(컨테이너 레이어의 α 배경이 비친다) 현재 줄 강조에 같은 α 를 준다
     var surfaceAlpha: CGFloat = 1 { didSet { if surfaceAlpha != oldValue { needsDisplay = true } } }
     private var lastDigits = 0
+    /// 마지막으로 폭을 정한 자릿수 (lastDigits 는 테마·글꼴 적용 때 0 으로 돌아간다) — 줄 수의 자릿수가 바뀌어 폭이 달라질 때만 캐럿을 따라간다
+    private var lastThicknessDigits = 0
     /// 한 번의 그리기에서 열거할 프래그먼트 상한 (보이는 줄 수백 + 접힌 높이 0 문단 수천)
     private static let maxFragmentsPerDraw = 5_000
 
@@ -72,16 +74,22 @@ final class GutterView: NSView {
 
     /// 자릿수에 맞춰 폭 갱신. 바뀌면 컨테이너 재배치.
     func updateThickness() {
-        let count = documentProvider()?.lineIndex.lineCount ?? 1
+        let count = documentProvider()?.liveLineIndex.lineCount ?? 1
         let digits = max(4, String(count).count)
         guard digits != lastDigits else { return }
         lastDigits = digits
         let w = (String(repeating: "8", count: digits) as NSString).size(withAttributes: [.font: numberFont]).width
         let t = ceil(w) + 18 + Self.foldColumnWidth   // fold: 왼쪽에 화살표 열
         if abs(t - thickness) > 0.5 {
+            // 폭이 바뀌면 본문 폭도 바뀌어 문서 전체가 다시 감긴다. TextKit 2 는 스크롤 위치(pt)만 지키므로 보던 줄이 밀려난다 (실측 2026-11-24: 문서 끝에서 줄을 지워
+            // 10,000 → 9,999 줄이 되는 순간 캐럿이 화면 아래로 16줄 벗어났다). 캐럿이 보이고 있었으면 다시 배치한 뒤에도 보이게 한다
+            let editor = textView as? HyperTextView
+            let keepCaret = lastThicknessDigits != 0 && digits != lastThicknessDigits && (editor?.isCaretVisible ?? false)   // 자릿수가 바뀐 경우만 (글꼴·테마 적용은 제외)
             thickness = t
             superview?.needsLayout = true
+            if keepCaret { editor?.revealCaretAfterRelayout() }
         }
+        lastThicknessDigits = digits
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -106,7 +114,9 @@ final class GutterView: NSView {
         guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage,
               let doc = documentProvider() else { return }
         updateThickness()
-        let index = doc.lineIndex
+        // 편집마다 증분 갱신되는 인덱스 — 발행용 `lineIndex`(입력이 멈춘 250 ms 뒤 재계산)로 번호를 매기면 Enter·줄 합치기 뒤 입력하는 동안 내내
+        // 아래 줄들의 번호가 밀려(같은 번호가 두 번) 보인다
+        let index = doc.liveLineIndex
         let visible = tv.visibleRect
         let origin = tv.textContainerOrigin
         let caretLine = index.lineNumber(forUTF16Offset: tv.selectedRange().location)

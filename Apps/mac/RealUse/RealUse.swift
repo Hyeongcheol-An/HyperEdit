@@ -499,9 +499,19 @@ final class RealUseContext {
     func viewportFragments() -> [Frag] {
         guard let lm = tv.textLayoutManager, let cs = tv.textContentStorage, let vr = lm.textViewportLayoutController.viewportRange else { return [] }
         let originY = tv.textContainerOrigin.y
+        // 캐럿을 키보드로 옮긴 직후에는 viewportRange 가 길이 0 인 범위다 (AppKit 이 scrollRangeToVisible 안에서 뷰포트를 캐럿 줄로 '재배치'만 하고 다시 배치하지
+        // 않는다 — 화면은 앞선 배치 그대로, 다음 스크롤·편집까지. 실측 2026-11-24). 그때는 보이는 영역의 위·아래 끝에 놓인 문단 사이를 본다 — 안 그러면 조각이
+        // 0개라 checkLayout 이 "no layout fragments" 거짓 양성을 내고 checkGutter·checkInk 는 아무것도 보지 않은 채 통과한다
+        var start = vr.location, end = vr.endLocation
+        if vr.isEmpty {
+            let v = tv.visibleRect
+            guard let first = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, v.minY - originY))) else { return [] }
+            start = first.rangeInElement.location
+            end = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, v.maxY - originY)))?.rangeInElement.endLocation ?? lm.documentRange.endLocation
+        }
         var out: [Frag] = []
-        lm.enumerateTextLayoutFragments(from: vr.location, options: []) { f in
-            if f.rangeInElement.location.compare(vr.endLocation) != .orderedAscending { return false }
+        lm.enumerateTextLayoutFragments(from: start, options: []) { f in
+            if f.rangeInElement.location.compare(end) != .orderedAscending { return false }
             let fr = f.layoutFragmentFrame
             if fr.height > 0 {
                 let off = cs.offset(from: cs.documentRange.location, to: f.rangeInElement.location)

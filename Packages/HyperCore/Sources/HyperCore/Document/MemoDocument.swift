@@ -37,7 +37,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     public private(set) var grammar: any LanguageGrammar
     /// 문법이 바뀔 때마다(사용자 문법 리로드) 증가 — 편집기는 보이는 줄의 색을 전부 다시 계산한다
     @Published public private(set) var grammarGeneration = 0
-    /// 편집 직후에도 정확한 줄 인덱스. 발행하지 않고(`lineIndex` 는 250 ms 뒤 전체 재계산) 문법이 상태를 추적할 때만 키 입력마다 증분 갱신한다.
+    /// 편집 직후에도 정확한 줄 인덱스. 발행하지 않고(`lineIndex` 는 입력이 멈춘 250 ms 뒤 전체 재계산해 발행 — 구조 재스캔·줄 수 표시의 신호) 문자 편집마다
+    /// 증분 갱신한다 (`LineIndex.updated`: 줄 수에 비례하는 배열 복사, 18만 줄에 0.1 ms). 지금 텍스트의 오프셋 ↔ 줄 변환(상태바 Ln/Col, 거터 줄 번호,
+    /// 줄로 이동)은 이것을 쓴다 — `lineIndex` 로 하면 입력하는 동안 내내(재계산이 키마다 미뤄진다) 번호가 밀리고 캐럿이 다시 움직일 때까지 Col 이 낡는다.
     public private(set) var liveLineIndex = LineIndex()
     /// 줄별 진입 상태. 문법이 상태를 추적하지 않으면(메모) 비어 있고 모든 줄이 `.normal`
     public private(set) var lineStates = LineStateIndex()
@@ -46,9 +48,6 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     /// 사용자·undo 의 문자 편집마다 (편집 후 범위, 길이 변화) — 저장소 편집 알림 안에서, 한글 폭 보정이 범위를 문단으로 넓히기 전의 정확한 값.
     /// 편집기는 그 문단의 구문 색(렌더링 속성)을 다음 턴에 다시 검증한다. 전체 교체(load/reload)는 보내지 않는다 — 어차피 전부 다시 만들어진다
     public let characterEdits = PassthroughSubject<(range: NSRange, delta: Int), Never>()
-    /// 상태 추적이 꺼진 동안 편집이 있었으면 `liveLineIndex` 가 낡았다 — 추적을 켤 때 다시 센다
-    private var liveIndexStale = false
-
     public var autosaveDelay: TimeInterval = 2.0
     /// 한글 런에 입힐 폰트(2:1 폭 보정). 에디터가 테마/폰트 적용 시 설정.
     public var hangulFont: PlatformFont?
@@ -229,8 +228,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         editedSinceLoad = false
         loadedLength = textStorage.length
         lineIndex = LineIndex(text: text)
-        liveLineIndex = lineIndex   // grammar
-        liveIndexStale = false
+        liveLineIndex = lineIndex
         rebuildLineStates()         // grammar: 전체 상태 계산 (상태를 추적하는 문법만, 1.3 MB 코드 파일 수 ms)
         reloadGeneration += 1
     }
@@ -247,7 +245,7 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private func rebuildLineStates() {
         guard grammar.tracksLineState else { lineStates = LineStateIndex(); return }
         let ns = textStorage.string as NSString
-        if liveIndexStale || liveLineIndex.utf16Count != ns.length { liveLineIndex = LineIndex(nsString: ns); liveIndexStale = false }
+        if liveLineIndex.utf16Count != ns.length { liveLineIndex = LineIndex(nsString: ns) }
         lineStates = LineStateIndex(text: ns, lineIndex: liveLineIndex, grammar: grammar)
     }
 
@@ -257,14 +255,22 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
         return lineStates.state(ofLine: liveLineIndex.lineNumber(forUTF16Offset: offset))
     }
 
-    /// 저장소 문자 편집 뒤 (didProcessEditing): 줄 인덱스와 줄 상태를 편집된 줄부터 증분 갱신한다. 편집 줄 밖에서 상태가 바뀐 줄은 `lineStatesChanged` 로 알린다.
-    private func updateLineStates(editedRange: NSRange, changeInLength delta: Int) {
+    /// 저장소 문자 편집 뒤 (didProcessEditing): 줄 인덱스를 편집 범위만 다시 세어 증분 갱신하고, 문법이 줄 상태를 추적하면 편집된 줄부터 상태도 갱신한다.
+    /// 편집 줄 밖에서 상태가 바뀐 줄은 `lineStatesChanged` 로 알린다.
+    private func updateLiveIndex(editedRange: NSRange, changeInLength delta: Int) {
         let ns = textStorage.string as NSString
         let old = liveLineIndex
+        // 인덱스가 편집 전 텍스트와 맞지 않으면(놓친 편집 — 있어서는 안 된다) 증분 갱신은 틀린 값을 굳힌다 → 통째로 다시 센다
+        guard old.utf16Count + delta == ns.length else {
+            liveLineIndex = LineIndex(nsString: ns)
+            if lineStates.isTracking { lineStates = LineStateIndex(text: ns, lineIndex: liveLineIndex, grammar: grammar) }
+            return
+        }
         let oldRange = NSRange(location: editedRange.location, length: max(0, editedRange.length - delta))
         let safe = NSIntersectionRange(editedRange, NSRange(location: 0, length: ns.length))
         let new = old.updated(replacing: oldRange, with: (safe.length > 0 ? ns.substring(with: safe) : "") as NSString)
         liveLineIndex = new
+        guard lineStates.isTracking else { return }
         let firstLine = old.lineNumber(forUTF16Offset: editedRange.location)
         let lastLine = max(firstLine, new.lineNumber(forUTF16Offset: NSMaxRange(safe)))
         let changed = lineStates.update(text: ns, lineIndex: new, editedLines: firstLine..<(lastLine + 1), lineDelta: new.lineCount - old.lineCount, grammar: grammar)
@@ -515,10 +521,8 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
             // 여기서 잡아 dirty·자동 저장·줄 인덱스 재계산을 건다. 뷰 경로의 textDidChange() 와 겹쳐도 예약 취소·재예약뿐이라 비용은 없다.
             if programmaticReplaceDepth == 0, isLoaded { editedSinceLoad = true; textDidChange() }
             if programmaticReplaceDepth == 0 { characterEdits.send((editedRange, delta)) }
-            // grammar: 줄 상태 증분 갱신 — 전체 교체(load/reload)는 replaceAll 이 끝나고 통째로 계산한다
-            if programmaticReplaceDepth == 0 {
-                if lineStates.isTracking { updateLineStates(editedRange: editedRange, changeInLength: delta) } else { liveIndexStale = true }
-            }
+            // 줄 인덱스(와 grammar: 줄 상태) 증분 갱신 — 전체 교체(load/reload)는 replaceAll 이 끝나고 통째로 계산한다
+            if programmaticReplaceDepth == 0 { updateLiveIndex(editedRange: editedRange, changeInLength: delta) }
             guard let font = hangulFont else { return }
             let para = (textStorage.string as NSString).paragraphRange(for: editedRange)
             HangulFontFixer.apply(font: font, to: textStorage, in: para)
