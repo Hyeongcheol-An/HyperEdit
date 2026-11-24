@@ -26,6 +26,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Bench.launchMilestone("didFinishLaunching")   // perf bench (계측이 꺼져 있으면 비용 0)
         if Perf.enabled { PerfProbe.log = { Perf.log($0) } }
         Perf.startWatchdog()
+        // 파일 탭: ⌃Tab = 직전에 보던 탭(최근 활성 순서, UltraEdit Ctrl+F6 "Last file"), ⌃⇧Tab = 이전 탭(순서). ⌘⇧] / ⌘⇧[ 는 메뉴 단축키
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.keyCode == 48, event.modifierFlags.intersection(.deviceIndependentFlagsMask).isSuperset(of: [.control]),
+                  !event.modifierFlags.contains(.command), !event.modifierFlags.contains(.option),
+                  let model = AppModel.current, !model.appLock.isLocked else { return event }
+            if event.modifierFlags.contains(.shift) { model.previousTab() } else { model.activateLastActiveTab() }
+            return nil
+        }
         // 같은 앱의 다른 인스턴스가 떠 있는 상태에서 LaunchServices 가 새 인스턴스를 띄우면 SwiftUI 가 기본 창을 만들지 않는 경우가 있다.
         // 잠시 뒤에도 창이 없으면 '다시 열기(rapp)' 애플 이벤트를 자신에게 보내 WindowGroup 창을 열게 한다.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -130,7 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 저장이 실패해 편집이 남아 있으면(쓰기 불가 폴더, 빈 내용 저장 차단 등) 메모리 내용을 스냅샷 폴더에 비상 사본으로 남기고 종료할지 묻는다 —
     /// Quick Append 는 패널이 바로 닫히고 앱이 비활성이라 상태바의 저장 오류를 볼 기회가 없기 때문이다.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let doc = AppModel.current?.document else { return .terminateNow }
+        guard let doc = AppModel.current?.document else { return .terminateNow }   // 탭이 여럿이어도 살아 있는 문서는 하나 (다른 탭은 전환할 때 저장됐다)
         if doc.saveSynchronously() || !doc.isDirty { return .terminateNow }
         let copy = doc.writeEmergencyCopy()
         AppModel.current?.log(copy.map { String(localized: "Save failed on quit — emergency copy written to \($0.path)") }

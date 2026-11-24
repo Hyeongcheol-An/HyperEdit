@@ -55,6 +55,7 @@ HyperEdit mở `~/Documents/HyperEdit/notes.md`. Nếu tệp đó chưa tồn t�
 
 - **⌘N** tạo một tệp văn bản trống mới (bạn chọn tên và thư mục).
 - **⌘O** mở bất kỳ tệp văn bản nào khác. Tệp mở gần nhất được ghi nhớ cho lần khởi chạy sau.
+- **Thẻ tệp.** Mỗi tệp đang mở có một thẻ phía trên trình soạn thảo, như UltraEdit: nhấp để chuyển; ⌘W, dấu ×, nhấp đúp hoặc nhấp chuột giữa để đóng thẻ (chỉnh sửa chưa lưu được lưu trước, và đóng thẻ đang hoạt động sẽ chuyển sang thẻ bên trái); kéo để sắp xếp lại; nhấp đúp vào chỗ trống trên thanh thẻ để tạo tệp mới; nhấp chuột phải vào thẻ để Đóng các thẻ khác / Đóng bên trái·bên phải / Mở lại thẻ vừa đóng (⌘⇧T) / Lưu và đóng / Khôi phục bản đã lưu / Sao chép đường dẫn / Sắp xếp thẻ. ⌘⇧] / ⌘⇧[ chuyển lần lượt qua các thẻ, ⌃Tab quay về thẻ bạn xem gần nhất, và ▾ ở bên phải liệt kê mọi thẻ đang mở. Các thẻ đang mở được khôi phục ở lần khởi động sau; chú giải của thẻ hiện đường dẫn đầy đủ, kích thước và thời gian sửa đổi.
 - **Tệp › Mở tài liệu mặc định** đưa bạn về `notes.md`.
 - Tệp nhị phân (ảnh, PDF, tệp nén…) không bao giờ được nạp vào trình soạn thảo; chúng mở bằng ứng dụng mặc định.
 
@@ -213,6 +214,8 @@ Trạng thái hiện/ẩn các bảng, ngắt dòng, số dòng, màu cú pháp,
 | Phím tắt | Thao tác | Phím tắt | Thao tác |
 |---|---|---|---|
 | ⌘N | Tài liệu mới | ⌘O | Mở |
+| ⌘W / ⌘⇧W | Đóng thẻ / tất cả thẻ | ⌘⇧] / ⌘⇧[ | Thẻ kế tiếp / trước |
+| ⌃Tab | Thẻ hoạt động gần nhất | ⌘⇧T | Mở lại thẻ vừa đóng |
 | ⌘S | Lưu | ⌘F | Tìm |
 | ⌘R | Thay thế | ⇧⌘F | Tìm trong tệp |
 | F3 / ⇧F3 | Kết quả kế tiếp / trước | ⌘L | Đi tới dòng |

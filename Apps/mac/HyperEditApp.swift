@@ -55,6 +55,15 @@ struct EditorCommands: Commands {
             Button("Save") { model.saveNow() }.keyboardShortcut("s")
             Button("Reveal in Finder") { model.revealInFinder() }
             Divider()
+            // 파일 탭 (UltraEdit 식 — docs/tabs-model.ko.md). ⌃Tab(마지막 파일) / ⌃⇧Tab(이전 탭) 은 AppDelegate 의 키 모니터가 처리한다
+            Button("Close Tab") { model.closeActiveTab() }.keyboardShortcut("w")
+            Button("Close Other Tabs") { model.closeOtherTabs() }
+            Button("Close All Tabs") { model.closeAllTabs() }.keyboardShortcut("w", modifiers: [.command, .shift])
+            Button("Reopen Last Closed Tab") { model.reopenLastClosedTab() }.keyboardShortcut("t", modifiers: [.command, .shift])
+            Button("Next Tab") { model.nextTab() }.keyboardShortcut("]", modifiers: [.command, .shift])
+            Button("Previous Tab") { model.previousTab() }.keyboardShortcut("[", modifiers: [.command, .shift])
+            Button("Last Active Tab") { model.activateLastActiveTab() }
+            Divider()
             Button("Open Snapshot Folder") { model.openSnapshotFolder() }
             Button("Reload from Disk") { model.reloadFromDisk() }
         }

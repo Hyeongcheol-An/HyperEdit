@@ -55,6 +55,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`. If that file does not exist it
 
 - **⌘N** creates a new empty text file (you choose the name and folder).
 - **⌘O** opens any other text file. The last opened file is remembered for the next launch.
+- **File tabs.** Every open file gets a tab above the editor, as in UltraEdit: click to switch; ⌘W, the ×, a double-click or a middle-click closes a tab (unsaved edits are saved first, and closing the active tab moves to the tab on its left); drag tabs to reorder; double-click the empty tab bar for a new file; right-click a tab for Close Others / Close to the Left or Right / Reopen Last Closed (⌘⇧T) / Save and Close / Revert to Saved / Copy Path / Sort Tabs. ⌘⇧] / ⌘⇧[ step through the tabs, ⌃Tab returns to the tab you viewed last, and the ▾ at the right lists all open tabs. Open tabs are restored on the next launch; the tab's tooltip shows the full path, size and modification time.
 - **File › Open Default Document** takes you back to `notes.md`.
 - Binary files (images, PDFs, archives…) are never loaded into the editor; they open in their default app instead.
 
@@ -213,6 +214,8 @@ Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the sp
 | Shortcut | Action | Shortcut | Action |
 |---|---|---|---|
 | ⌘N | New document | ⌘O | Open |
+| ⌘W / ⌘⇧W | Close tab / all tabs | ⌘⇧] / ⌘⇧[ | Next / previous tab |
+| ⌃Tab | Last active tab | ⌘⇧T | Reopen last closed tab |
 | ⌘S | Save | ⌘F | Find |
 | ⌘R | Replace | ⇧⌘F | Find in files |
 | F3 / ⇧F3 | Next / previous match | ⌘L | Go to line |

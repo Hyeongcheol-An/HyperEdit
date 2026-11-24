@@ -55,6 +55,7 @@ O HyperEdit abre `~/Documents/HyperEdit/notes.md`. Se esse arquivo não existir,
 
 - **⌘N** cria um novo arquivo de texto vazio (você escolhe o nome e a pasta).
 - **⌘O** abre qualquer outro arquivo de texto. O último arquivo aberto é lembrado para a próxima execução.
+- **Abas de arquivos.** Cada arquivo aberto ganha uma aba acima do editor, como no UltraEdit: clique para alternar; ⌘W, o ×, um duplo clique ou um clique do meio fecham a aba (edições não salvas são salvas antes, e fechar a aba ativa leva à aba à esquerda); arraste as abas para reordenar; um duplo clique na barra vazia cria um novo arquivo; o clique direito em uma aba oferece Fechar as outras / Fechar à esquerda·à direita / Reabrir a última aba fechada (⌘⇧T) / Salvar e fechar / Reverter para a versão salva / Copiar caminho / Ordenar abas. ⌘⇧] / ⌘⇧[ percorrem as abas, ⌃Tab volta à aba vista por último e o ▾ à direita lista todas as abas abertas. As abas abertas são restauradas na próxima inicialização; a dica da aba mostra o caminho completo, o tamanho e a data de modificação.
 - **Arquivo › Abrir Documento Padrão** leva você de volta ao `notes.md`.
 - Arquivos binários (imagens, PDFs, arquivos compactados…) nunca são carregados no editor; eles abrem no app padrão.
 
@@ -213,6 +214,8 @@ A visibilidade dos painéis, a quebra de linha, os números de linha, as cores d
 | Atalho | Ação | Atalho | Ação |
 |---|---|---|---|
 | ⌘N | Novo documento | ⌘O | Abrir |
+| ⌘W / ⌘⇧W | Fechar aba / todas as abas | ⌘⇧] / ⌘⇧[ | Próxima / aba anterior |
+| ⌃Tab | Última aba ativa | ⌘⇧T | Reabrir a última aba fechada |
 | ⌘S | Salvar | ⌘F | Buscar |
 | ⌘R | Substituir | ⇧⌘F | Buscar em arquivos |
 | F3 / ⇧F3 | Ocorrência seguinte / anterior | ⌘L | Ir para a linha |

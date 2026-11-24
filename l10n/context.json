@@ -690,6 +690,54 @@
   "placeholders": [],
   "limit": null
  },
+ "By Extension": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "By Modification Date": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "By Name": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "By Path": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
  "Calculate": {
   "where": [
    "Button",
@@ -894,6 +942,81 @@
   "placeholders": [],
   "limit": null
  },
+ "Close All Tabs": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift",
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "Close Other Tabs": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift",
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "Close Tab": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift",
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "Close Tab (⌘W)": {
+  "where": [
+   ".help"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "Close Tabs to the Left": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
+ "Close Tabs to the Right": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
  "Close sidebar (⌘1)": {
   "where": [
    ".help"
@@ -1038,6 +1161,18 @@
   "ko": "복사",
   "placeholders": [],
   "limit": "ribbon-small"
+ },
+ "Copy Path": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
  },
  "Create and open an empty text file (⌘N)": {
   "where": [
@@ -1629,7 +1764,7 @@
  },
  "Find (Enter)": {
   "where": [
-   "TextField"
+   "String(localized:)"
   ],
   "files": [
    "SearchPanel.swift"
@@ -2713,6 +2848,18 @@
   "placeholders": [],
   "limit": null
  },
+ "Last Active Tab": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
  "Latin font": {
   "where": [
    "TextField"
@@ -3477,7 +3624,7 @@
    ".help"
   ],
   "files": [
-   "ContentView.swift"
+   "DocumentTabBar.swift"
   ],
   "target": "app",
   "ko": "새 문서… (⌘N)",
@@ -3509,6 +3656,18 @@
   "ko": "다음 북마크",
   "placeholders": [],
   "limit": "ribbon-small"
+ },
+ "Next Tab": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
  },
  "Next Theme": {
   "where": [
@@ -3748,7 +3907,7 @@
    ".help"
   ],
   "files": [
-   "ContentView.swift"
+   "DocumentTabBar.swift"
   ],
   "target": "app",
   "ko": "파일 열기… (⌘O)",
@@ -3777,6 +3936,18 @@
   ],
   "target": "app",
   "ko": "스냅샷 폴더 열기",
+  "placeholders": [],
+  "limit": null
+ },
+ "Open Tabs": {
+  "where": [
+   ".help"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
   "placeholders": [],
   "limit": null
  },
@@ -4175,6 +4346,18 @@
   "placeholders": [],
   "limit": null
  },
+ "Previous Tab": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
  "Previous Theme": {
   "where": [
    "Button",
@@ -4508,6 +4691,19 @@
   "placeholders": [],
   "limit": null
  },
+ "Reopen Last Closed Tab": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift",
+   "HyperEditApp.swift"
+  ],
+  "target": "app",
+  "ko": "",
+  "placeholders": [],
+  "limit": null
+ },
  "Replace": {
   "where": [
    "RibbonSmallButton.title",
@@ -4590,7 +4786,7 @@
  },
  "Replace with": {
   "where": [
-   "TextField"
+   "String(localized:)"
   ],
   "files": [
    "SearchPanel.swift"
@@ -4692,6 +4888,7 @@
    "RibbonSmallButton.title"
   ],
   "files": [
+   "DocumentTabBar.swift",
    "HyperEditApp.swift",
    "RibbonView.swift"
   ],
@@ -4733,6 +4930,18 @@
   ],
   "target": "app",
   "ko": "선택 줄 순서 뒤집기",
+  "placeholders": [],
+  "limit": null
+ },
+ "Revert to Saved": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
   "placeholders": [],
   "limit": null
  },
@@ -4802,6 +5011,7 @@
    "RibbonBigButton.title"
   ],
   "files": [
+   "DocumentTabBar.swift",
    "HyperEditApp.swift",
    "MacroUI.swift",
    "RibbonView.swift"
@@ -4856,6 +5066,18 @@
   ],
   "target": "app",
   "ko": "매크로 저장",
+  "placeholders": [],
+  "limit": null
+ },
+ "Save and Close": {
+  "where": [
+   "Button"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
   "placeholders": [],
   "limit": null
  },
@@ -5485,6 +5707,18 @@
   ],
   "target": "app",
   "ko": "정렬",
+  "placeholders": [],
+  "limit": null
+ },
+ "Sort Tabs": {
+  "where": [
+   "Menu"
+  ],
+  "files": [
+   "DocumentTabBar.swift"
+  ],
+  "target": "app",
+  "ko": "",
   "placeholders": [],
   "limit": null
  },
@@ -6514,7 +6748,7 @@
    "UserGrammarStore.swift"
   ],
   "target": "HyperCore",
-  "ko": "",
+  "ko": "일반 파일이 아니거나 1 MB 를 넘어 건너뜀",
   "placeholders": [],
   "limit": null
  },

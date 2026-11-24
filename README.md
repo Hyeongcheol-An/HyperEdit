@@ -70,7 +70,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - Rendered with Apple's [swift-markdown](https://github.com/swiftlang/swift-markdown) (Apache-2.0). The status bar shows **MD** while the preview is on.
 
 ### Ribbon and panels
-- Ribbon tabs **Home / Edit / Layout / Advanced / Window**, a document tab bar with New (⌘N) and Open (⌘O) buttons, and quick-access Save / Undo / Redo.
+- Ribbon tabs **Home / Edit / Layout / Advanced / Window**, a file tab bar in the UltraEdit style (one tab per open file: click to switch, ⌘W / × / double-click / middle-click to close, drag to reorder, right-click for Close Others / Close to the Left or Right / Reopen Last Closed / Save and Close / Revert / Copy Path / Sort; ⌘⇧] / ⌘⇧[ and ⌃Tab switch tabs; open tabs are restored on launch) with New (⌘N) and Open (⌘O) buttons, and quick-access Save / Undo / Redo.
 - **Sidebar (⌘1)** — **Files** (folder tree of the current file's folder; a single click opens a file), **Outline** (⌘3: `##` headings, `[Title]` lines, Korean `가./나.` items and `1)` numbered items, with a filter box and the current item highlighted; `# …` lines that look like code comments are excluded), **Timeline** (⌘4: `## YYYY-MM-DD (weekday) HH:MM` timestamp headings plus loose date-prefixed lines, grouped by month, newest first).
 - **Bottom panel (⌘2)** — **Find Results**, **Bookmarks** and an **Output** log.
 
@@ -122,6 +122,8 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | Shortcut | Action | Shortcut | Action |
 |---|---|---|---|
 | ⌘N | New document | ⌘O | Open |
+| ⌘W / ⌘⇧W | Close tab / all tabs | ⌘⇧] / ⌘⇧[ | Next / previous tab |
+| ⌃Tab | Last active tab | ⌘⇧T | Reopen last closed tab |
 | ⌘S | Save | ⌘F | Find |
 | ⌘R | Replace | ⇧⌘F | Find in files |
 | F3 / ⇧F3 | Next / previous match | ⌘L | Go to line |

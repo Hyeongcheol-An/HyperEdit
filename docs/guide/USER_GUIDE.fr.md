@@ -55,6 +55,7 @@ HyperEdit ouvre `~/Documents/HyperEdit/notes.md`. Si ce fichier n'existe pas, il
 
 - **⌘N** crée un nouveau fichier texte vide (vous choisissez le nom et le dossier).
 - **⌘O** ouvre n'importe quel autre fichier texte. Le dernier fichier ouvert est mémorisé pour le prochain lancement.
+- **Onglets de fichiers.** Chaque fichier ouvert a son onglet au-dessus de l'éditeur, comme dans UltraEdit : un clic change d'onglet ; ⌘W, le ×, un double-clic ou un clic du milieu ferme l'onglet (les modifications non enregistrées sont d'abord enregistrées, et fermer l'onglet actif passe à l'onglet de gauche) ; glissez les onglets pour les réordonner ; un double-clic sur la barre vide crée un nouveau fichier ; un clic droit sur un onglet propose Fermer les autres / Fermer à gauche·à droite / Rouvrir le dernier onglet fermé (⌘⇧T) / Enregistrer et fermer / Revenir à la version enregistrée / Copier le chemin / Trier les onglets. ⌘⇧] / ⌘⇧[ parcourent les onglets, ⌃Tab revient à l'onglet consulté juste avant, et le ▾ à droite liste tous les onglets ouverts. Les onglets ouverts sont restaurés au lancement suivant ; l'info-bulle d'un onglet montre le chemin complet, la taille et la date de modification.
 - **Fichier › Ouvrir le document par défaut** vous ramène à `notes.md`.
 - Les fichiers binaires (images, PDF, archives…) ne sont jamais chargés dans l'éditeur ; ils s'ouvrent dans leur app par défaut.
 
@@ -213,6 +214,8 @@ La visibilité des volets, le retour à la ligne, les numéros de ligne, la colo
 | Raccourci | Action | Raccourci | Action |
 |---|---|---|---|
 | ⌘N | Nouveau document | ⌘O | Ouvrir |
+| ⌘W / ⌘⇧W | Fermer l'onglet / tous les onglets | ⌘⇧] / ⌘⇧[ | Onglet suivant / précédent |
+| ⌃Tab | Dernier onglet actif | ⌘⇧T | Rouvrir le dernier onglet fermé |
 | ⌘S | Enregistrer | ⌘F | Rechercher |
 | ⌘R | Remplacer | ⇧⌘F | Rechercher dans les fichiers |
 | F3 / ⇧F3 | Occurrence suivante / précédente | ⌘L | Atteindre la ligne |

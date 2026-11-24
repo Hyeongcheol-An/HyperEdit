@@ -55,6 +55,7 @@ HyperEdit abre `~/Documents/HyperEdit/notes.md`. Si ese archivo no existe, se cr
 
 - **⌘N** crea un archivo de texto vacío nuevo (tú eliges el nombre y la carpeta).
 - **⌘O** abre cualquier otro archivo de texto. El último archivo abierto se recuerda para el próximo inicio.
+- **Pestañas de archivos.** Cada archivo abierto tiene una pestaña sobre el editor, como en UltraEdit: un clic cambia de pestaña; ⌘W, la ×, un doble clic o un clic central la cierran (los cambios sin guardar se guardan antes, y al cerrar la pestaña activa se pasa a la de su izquierda); arrastra las pestañas para reordenarlas; un doble clic en la barra vacía crea un archivo nuevo; con clic derecho en una pestaña tienes Cerrar las otras / Cerrar a la izquierda·derecha / Reabrir la última pestaña cerrada (⌘⇧T) / Guardar y cerrar / Volver a la versión guardada / Copiar ruta / Ordenar pestañas. ⌘⇧] / ⌘⇧[ recorren las pestañas, ⌃Tab vuelve a la pestaña que veías antes y el ▾ de la derecha lista todas las pestañas abiertas. Las pestañas abiertas se restauran en el siguiente inicio; la descripción emergente de una pestaña muestra la ruta completa, el tamaño y la fecha de modificación.
 - **Archivo › Abrir documento predeterminado** te devuelve a `notes.md`.
 - Los archivos binarios (imágenes, PDF, archivos comprimidos…) nunca se cargan en el editor; se abren en su app predeterminada.
 
@@ -213,6 +214,8 @@ La visibilidad de los paneles, el ajuste de línea, los números de línea, los 
 | Atajo | Acción | Atajo | Acción |
 |---|---|---|---|
 | ⌘N | Nuevo documento | ⌘O | Abrir |
+| ⌘W / ⌘⇧W | Cerrar pestaña / todas | ⌘⇧] / ⌘⇧[ | Pestaña siguiente / anterior |
+| ⌃Tab | Última pestaña activa | ⌘⇧T | Reabrir la última pestaña cerrada |
 | ⌘S | Guardar | ⌘F | Buscar |
 | ⌘R | Reemplazar | ⇧⌘F | Buscar en archivos |
 | F3 / ⇧F3 | Coincidencia siguiente / anterior | ⌘L | Ir a la línea |

@@ -55,6 +55,7 @@ HyperEdit öffnet `~/Documents/HyperEdit/notes.md`. Existiert die Datei nicht, w
 
 - **⌘N** legt eine neue leere Textdatei an (du wählst Namen und Ordner).
 - **⌘O** öffnet jede andere Textdatei. Die zuletzt geöffnete Datei wird für den nächsten Start gemerkt.
+- **Dateitabs.** Jede geöffnete Datei bekommt einen Tab über dem Editor, wie in UltraEdit: Klick wechselt; ⌘W, das ×, ein Doppelklick oder ein Mittelklick schließt einen Tab (ungespeicherte Änderungen werden zuerst gespeichert, nach dem Schließen des aktiven Tabs ist der Tab links davon aktiv); Tabs lassen sich per Drag umsortieren; ein Doppelklick auf die leere Tableiste legt eine neue Datei an; Rechtsklick auf einen Tab bietet Andere schließen / Tabs links·rechts schließen / Zuletzt geschlossenen Tab wieder öffnen (⌘⇧T) / Speichern und schließen / Auf gespeicherte Version zurücksetzen / Pfad kopieren / Tabs sortieren. ⌘⇧] / ⌘⇧[ gehen die Tabs der Reihe nach durch, ⌃Tab kehrt zum zuletzt angesehenen Tab zurück, und das ▾ rechts listet alle offenen Tabs. Offene Tabs werden beim nächsten Start wiederhergestellt; der Tooltip eines Tabs zeigt vollständigen Pfad, Größe und Änderungszeit.
 - **Ablage › Standarddokument öffnen** bringt dich zurück zu `notes.md`.
 - Binärdateien (Bilder, PDFs, Archive …) werden nie in den Editor geladen; sie öffnen sich stattdessen in ihrer Standard-App.
 
@@ -213,6 +214,8 @@ Sichtbarkeit der Panels, Zeilenumbruch, Zeilennummern, Syntaxfarben, Scrollbalke
 | Kurzbefehl | Aktion | Kurzbefehl | Aktion |
 |---|---|---|---|
 | ⌘N | Neues Dokument | ⌘O | Öffnen |
+| ⌘W / ⌘⇧W | Tab / alle Tabs schließen | ⌘⇧] / ⌘⇧[ | Nächster / vorheriger Tab |
+| ⌃Tab | Zuletzt aktiver Tab | ⌘⇧T | Zuletzt geschlossenen Tab wieder öffnen |
 | ⌘S | Sichern | ⌘F | Suchen |
 | ⌘R | Ersetzen | ⇧⌘F | In Dateien suchen |
 | F3 / ⇧F3 | Nächster / vorheriger Treffer | ⌘L | Gehe zu Zeile |
