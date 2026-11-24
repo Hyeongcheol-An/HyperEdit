@@ -67,6 +67,7 @@ struct ContentView: View {
         .task { if SelfTest.enabled { await SelfTest.run(model: model) } }
         .task { if SelfTest.openEnabled { await SelfTest.runOpen(model: model) } }
         .task { if Bench.enabled { await Bench.run(model: model) } }   // perf bench
+        .task { if RealUse.enabled { await RealUse.run(model: model) } }   // 실사용 시뮬레이션 (RealUse/RealUse.swift)
         .onAppear { Bench.launchMilestone("contentViewAppeared") }   // perf bench (계측이 꺼져 있으면 비용 0)
         .onAppear { if CommandLine.arguments.contains("--debug-startup") { FileHandle.standardError.write("[startup] ContentView appeared\n".data(using: .utf8)!) } }
     }
