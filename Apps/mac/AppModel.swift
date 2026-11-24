@@ -975,7 +975,7 @@ final class AppModel: ObservableObject {
     func showTimeline() { leftTab = .timeline; showFileView = true }
 
     func jump(to hit: SearchHit) { editorCommands.send(.selectRange(hit.range)) }
-    func jump(toLine n: Int) { editorCommands.send(.goToLine(max(1, min(n, document.lineIndex.lineCount)))) }
+    func jump(toLine n: Int) { editorCommands.send(.goToLine(max(1, min(n, document.liveLineIndex.lineCount)))) }
     func jump(to bookmark: Bookmark) { jump(toLine: bookmark.line) }
     func goToEnd() { editorCommands.send(.goToEnd) }
     func insertTimestamp() { editorCommands.send(.insertTimestamp) }
@@ -991,7 +991,9 @@ final class AppModel: ObservableObject {
     // MARK: 캐럿 / 북마크
 
     func updateCaret(range: NSRange) {
-        let idx = document.lineIndex
+        // 편집마다 증분 갱신되는 인덱스로 센다 — 발행용 `lineIndex` 는 입력이 멈춘 250 ms 뒤에야 다시 만들어져, 문서 끝에 글자를 치면 Col 이 그대로였고
+        // Enter 뒤에도 앞 줄 번호가 남았다 (캐럿이 다시 움직일 때까지)
+        let idx = document.liveLineIndex
         let line = idx.lineNumber(forUTF16Offset: range.location)
         let col = idx.column(forUTF16Offset: range.location)
         if caret.offset != range.location { caret.offset = range.location }
@@ -1002,7 +1004,7 @@ final class AppModel: ObservableObject {
 
     func toggleBookmarkAtCaret() {
         let line = caretLine
-        let r = document.lineIndex.range(ofLine: line)
+        let r = document.liveLineIndex.range(ofLine: line)   // caretLine 과 같은 인덱스로 (편집 직후에도 지금 텍스트의 줄)
         let ns = document.textStorage.string as NSString
         let safe = NSIntersectionRange(r, NSRange(location: 0, length: ns.length))
         var preview = String(ns.substring(with: safe).trimmingCharacters(in: .whitespaces).prefix(60))

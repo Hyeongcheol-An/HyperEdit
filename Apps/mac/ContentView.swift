@@ -102,7 +102,8 @@ struct StatusBar: View {
             if caret.multiCaretCount > 1 {
                 cell("⌖ \(caret.multiCaretCount)", width: 60).foregroundStyle(theme.accent.color).help(caret.columnBlockActive ? "Column block" : "Multiple carets")
             }
-            cell(String(localized: "\(fmt(doc.lineIndex.lineCount)) lines · \(sizeString(doc.fileSize))"), width: 165)
+            // 줄 수는 편집마다 갱신되는 인덱스에서 읽는다 — 상태바는 캐럿이 움직일 때마다 다시 평가되므로 Enter 를 치는 대로 늘어난다 (발행용 lineIndex 는 입력이 멈춰야 바뀐다)
+            cell(String(localized: "\(fmt(doc.liveLineIndex.lineCount)) lines · \(sizeString(doc.fileSize))"), width: 165)
             if let e = doc.errorMessage {
                 cell(e, width: nil).foregroundStyle(theme.errorColor.color)
             } else {
