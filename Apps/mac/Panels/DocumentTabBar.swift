@@ -11,6 +11,9 @@ struct DocumentTabBar: View {
     @EnvironmentObject var model: AppModel
     @ObservedObject var doc: MemoDocument   // 활성 파일(url)·수정됨이 바뀌면 탭 줄을 다시 그린다
     let theme: Theme
+    /// 탭을 다 늘어놓은 폭. 스크롤 영역은 이만큼만 차지한다 — 탭이 다 들어가면 + · 폴더 버튼이 마지막 탭 바로 뒤에 붙고, 넘치면 남은 폭을 다 쓰고 스크롤한다
+    /// (가로 ScrollView 는 주는 폭을 다 받으므로 그대로 두면 탭이 두세 개여도 버튼이 오른쪽 끝으로 밀린다)
+    @State private var tabsWidth: CGFloat = .infinity
 
     var body: some View {
         HStack(spacing: 0) {
@@ -21,9 +24,13 @@ struct DocumentTabBar: View {
                             DocumentTab(url: url, isActive: url == doc.url, isDirty: url == doc.url && doc.isDirty, theme: theme).id(url)
                         }
                     }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { tabsWidth = $0.rounded(.up) }
                 }
                 .onChange(of: doc.url) { _, u in proxy.scrollTo(u) }   // 활성 탭이 보이게
+                .onChange(of: model.tabs) { _, _ in proxy.scrollTo(doc.url) }   // 정렬·이동·닫기로 활성 탭의 자리만 바뀌었을 때도
+                .onAppear { proxy.scrollTo(doc.url) }   // 지난 세션의 탭이 많은 채 시작하면 활성 탭이 스크롤 영역 밖일 수 있다
             }
+            .frame(maxWidth: tabsWidth)
             .layoutPriority(1)
             Button { model.newDocument() } label: { Image(systemName: "plus").font(.system(size: 11)) }
                 .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.horizontal, 10).help("New Document… (⌘N)")
@@ -68,6 +75,7 @@ struct DocumentTab: View {
         HStack(spacing: 6) {
             Image(systemName: "doc.text").font(.system(size: 11))
             Text(url.lastPathComponent).font(.system(size: 12, weight: isActive ? .semibold : .regular)).lineLimit(1)
+                .truncationMode(.middle).frame(maxWidth: 240)   // 아주 긴 이름 하나가 탭 줄을 다 차지하지 않게 (가운데를 줄여 확장자는 남긴다; 전체 경로는 툴팁)
             ZStack {
                 if isDirty && !hovering { Circle().fill(theme.accent.color).frame(width: 7, height: 7) }
                 if hovering || (isActive && !isDirty) {
