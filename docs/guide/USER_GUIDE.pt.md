@@ -55,6 +55,7 @@ O HyperEdit abre `~/Documents/HyperEdit/notes.md`. Se esse arquivo não existir,
 
 - **⌘N** cria um novo arquivo de texto vazio (você escolhe o nome e a pasta).
 - **⌘O** abre qualquer outro arquivo de texto. O último arquivo aberto é lembrado para a próxima execução.
+- **Abas de arquivos.** Cada arquivo aberto ganha uma aba acima do editor, como no UltraEdit: clique para alternar; ⌘W, o ×, um duplo clique ou um clique do meio fecham a aba (edições não salvas são salvas antes). Fechar a aba que você está vendo leva à aba à esquerda dela; um duplo clique em uma aba que você não está vendo a fecha e mantém você na aba que estava lendo. Arraste as abas para reordenar; um duplo clique na barra vazia cria um novo arquivo; o clique direito em uma aba oferece Fechar as Outras Abas / Fechar Abas à Esquerda / Fechar Abas à Direita / Reabrir a Última Aba Fechada (⇧⌘T) / Salvar e Fechar / Reverter para a Versão Salva / Copiar Caminho / Ordenar Abas. ⇧⌘] / ⇧⌘[ percorrem as abas, ⌃Tab volta à aba vista por último e o ▾ à direita lista todas as abas abertas; a dica da aba mostra o caminho completo, o tamanho e a data de modificação. Cada arquivo mantém o cursor, a posição da rolagem e as regiões recolhidas enquanto o app está em execução, mas seu histórico de desfazer é apagado quando você sai da aba dele. Até 30 abas abertas são restauradas na próxima inicialização. Fechar a última aba abre o documento padrão, e uma aba cujo arquivo foi apagado é removida quando você clica nela.
 - **Arquivo › Abrir Documento Padrão** leva você de volta ao `notes.md`.
 - Arquivos binários (imagens, PDFs, arquivos compactados…) nunca são carregados no editor; eles abrem no app padrão.
 
@@ -79,7 +80,7 @@ Um idioma que não está na lista recorre ao inglês (por exemplo, o chinês tra
 O layout segue um editor clássico com faixa de opções (ribbon) e barra de título oculta.
 
 - **Abas da faixa** — **Início** (Área de Transferência, Buscar, Inserir, Modo, Arquivo), **Editar** (Linhas, Maiúsculas/Minúsculas, Ordenar, Espaços, Coluna e Multicursor, Ferramentas, Macro), **Layout** (Tema, Painéis, Recolhimento, Markdown, Tamanho do Texto), **Avançado** (Ajustes, pasta de snapshots, recarregar, documento padrão), **Janela** (tela cheia, painéis). Quando a janela é estreita, os grupos se recolhem em ícones a partir da direita; a dica do ícone mostra o rótulo.
-- **Barra de abas do documento** — o nome do arquivo atual com os botões Novo (⌘N) e Abrir (⌘O), além de acesso rápido a Salvar / Desfazer / Refazer.
+- **Barra de abas de arquivos** — uma aba por arquivo aberto, seguida dos botões Novo (+, ⌘N) e Abrir (pasta, ⌘O); com duas ou mais abas, o ▾ na extremidade direita lista todas elas. O acesso rápido a Salvar / Desfazer / Refazer fica à direita da fileira de abas da faixa.
 - **Barra lateral (⌘1)** — **Arquivos** (a pasta do arquivo atual; um clique abre um arquivo), **Estrutura (⌘3)** (títulos, linhas `[Título]` e itens numerados, com uma caixa de filtro; o item atual fica destacado), **Linha do Tempo (⌘4)** (cabeçalhos de data/hora agrupados por mês, os mais recentes primeiro).
 - **Painel inferior (⌘2)** — **Resultados da Busca**, **Marcadores** e **Saída**, um registro do que o app fez (salvamentos, substituições, erros).
 - **Barra de status** — linha e coluna (mais o tamanho da seleção; passe o mouse para ver o deslocamento em caracteres), fim de linha (UNIX / DOS / MAC), codificação do arquivo, **COL** enquanto o modo coluna está ativado, número de cursores, número de linhas · tamanho do arquivo, a mensagem de status mais recente, a linguagem de sintaxe (esmaecida enquanto as cores de sintaxe estão desativadas), um menu de temas (marcado com "· Sistema" enquanto segue a aparência do sistema) e a porcentagem de zoom. A maioria dos itens é clicável.
@@ -152,7 +153,7 @@ A última gravação fica só na memória até você encerrar o app, então nada
 - em Markdown, tudo o que está sob um título `#` até o próximo título do mesmo nível ou superior (blocos de código cercados também são recolhidos),
 - em código, uma linha que termina em `{`, `[` ou `(` até a linha do fechamento correspondente.
 
-Clique na seta na coluna lateral ou na pílula `⋯ N linhas` depois de uma linha recolhida para alternar com o mouse. Mover o cursor para dentro de uma linha recolhida (busca, ir para a linha, marcador, desfazer) a expande; ↑ / ↓ pulam as regiões recolhidas. As regiões recolhidas acompanham suas edições e duram até o fim da sessão.
+Clique na seta na coluna lateral ou na pílula `⋯ N linhas` depois de uma linha recolhida para alternar com o mouse. Mover o cursor para dentro de uma linha recolhida (busca, ir para a linha, marcador, desfazer) a expande; ↑ / ↓ pulam as regiões recolhidas. As regiões recolhidas acompanham suas edições e são mantidas por arquivo enquanto o app está em execução (elas não se perdem ao trocar de aba), mas não são salvas para a próxima inicialização.
 
 **Marcas na barra de rolagem** — uma faixa fina na borda direita do editor mostra as ocorrências da busca (cor de destaque), os marcadores (cor de aviso), a linha do cursor e os cabeçalhos recolhidos em suas posições relativas no arquivo. Ela fica oculta quando o documento inteiro cabe na tela. Desative-a em **Visualizar › Marcas na Barra de Rolagem** ou no grupo Recolhimento da aba Layout (**Marcas Laterais**).
 
@@ -213,6 +214,8 @@ A visibilidade dos painéis, a quebra de linha, os números de linha, as cores d
 | Atalho | Ação | Atalho | Ação |
 |---|---|---|---|
 | ⌘N | Novo documento | ⌘O | Abrir |
+| ⌘W / ⇧⌘W | Fechar aba / todas as abas | ⇧⌘] / ⇧⌘[ | Próxima aba / anterior |
+| ⌃Tab | Última aba ativa | ⇧⌘T | Reabrir a última aba fechada |
 | ⌘S | Salvar | ⌘F | Buscar |
 | ⌘R | Substituir | ⇧⌘F | Buscar em arquivos |
 | F3 / ⇧F3 | Ocorrência seguinte / anterior | ⌘L | Ir para a linha |
@@ -271,7 +274,8 @@ Nada é gravado ao lado dos seus documentos, e nada sai do seu Mac.
 - A exportação grava só o documento inteiro, sem exportação de seleção ou de vários arquivos, opções de página ou de fonte, nem sumário no PDF.
 - Os blocos secretos são ocultados só na tela: o arquivo, os salvamentos automáticos e os snapshots são texto simples, a barra de ocultação mostra o comprimento de cada linha, e o VoiceOver ainda lê o texto. Uma cerca secreta precisa começar na margem esquerda (com menos de quatro espaços de recuo, fora de item de lista ou citação), e um bloco cercado aninhado dentro de um bloco secreto precisa de quatro crases na cerca externa. O bloqueio do app esconde a janela e o conteúdo dela do VoiceOver; não criptografa nada.
 - Os comentários de bloco não se aninham, e arquivos com finais de linha do Mac clássico (só CR) são coloridos linha por linha. Dentro de um único parágrafo com mais de 20.000 caracteres, os cursores Bloco e Sublinhado voltam ao cursor padrão em barra.
-- As regiões recolhidas duram até o fim da sessão e não são salvas por arquivo; arrastar o mouse por uma linha recolhida ainda seleciona o texto oculto.
+- As regiões recolhidas são mantidas por arquivo só enquanto o app está em execução e não são salvas para a próxima inicialização; arrastar o mouse por uma linha recolhida ainda seleciona o texto oculto.
+- Só a aba que você está vendo fica na memória: sair de uma aba apaga o histórico de desfazer daquele arquivo, e no máximo 30 abas abertas são restauradas na próxima inicialização.
 - Documentos formados por uma única linha de um megabyte ou mais são lentos para abrir e navegar; Minificar JSON avisa antes de produzir um.
 - Só arquivos locais; sem sincronização na nuvem e ainda sem app para iOS.
 - Idiomas diferentes dos onze listados recorrem ao inglês.

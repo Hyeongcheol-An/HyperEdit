@@ -45,6 +45,11 @@ targets:
             CFBundleTypeRole: Editor
             LSHandlerRank: Alternate
             LSItemContentTypes: [public.plain-text, net.daringfireball.markdown]
+        # 탭 순서 바꾸기 드래그 전용 타입 (Panels/DocumentTabBar.swift 의 UTType.hyperEditTab)
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: io.github.hyeongcheol-an.hyperedit.tab
+            UTTypeDescription: HyperEdit file tab
+            UTTypeConformsTo: [public.data]
     settings:
       base:
         PRODUCT_NAME: HyperEdit

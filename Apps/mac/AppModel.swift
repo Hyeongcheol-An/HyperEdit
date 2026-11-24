@@ -132,6 +132,23 @@ final class AppModel: ObservableObject {
     let themes = ThemeStore()
     @Published var font: FontSettings { didSet { font.save() } }
     @Published private(set) var document: MemoDocument
+    // MARK: 문서 탭 (UltraEdit 식 파일 탭 — docs/tabs-model.ko.md)
+    /// 열린 파일들 = 탭 순서 (심볼릭 링크를 푼 경로). 살아 있는 문서 객체는 `document` 하나뿐이고 탭 전환은 `document.switchTo(url:)` 다.
+    /// 탭마다 NSTextStorage 를 따로 두고 콘텐츠 스토리지에 갈아끼우는 방식은 TextKit 2 레이아웃을 퇴화시켜("-[NSTextView layout] failed to converge")
+    /// 몇 분 뒤 화면 갱신 중에 충돌했다(2026-11-24 셀프테스트 실측) — MemoDocument.switchTo 의 주석과 같은 이유
+    @Published private(set) var tabs: [URL] = []
+    private var docCancellables = Set<AnyCancellable>()
+    static let openDocumentsKey = "ui.openDocuments"
+    static let maxRestoredDocuments = 30
+    /// 최근 활성 순서 (앞이 가장 최근) — ⌃Tab 의 "마지막 파일" 전환 (UltraEdit Ctrl+F6 / Last file)
+    private(set) var recentTabs: [URL] = []
+    /// 탭을 눌러 전환한 직전 기록 — 그 클릭이 더블클릭(닫기)의 첫 클릭이었을 때 보던 탭으로 돌아가는 데 쓴다
+    private var tabClickOrigin: (from: URL, to: URL, at: TimeInterval)?
+    /// 지금 처리 중인 클릭의 이벤트 시각(부팅 뒤 초). 처리 시각이 아니라 이벤트 시각이라 큰 파일 전환에 걸린 시간이 섞이지 않는다
+    private var tabClickTime: TimeInterval { NSApp.currentEvent?.timestamp ?? ProcessInfo.processInfo.systemUptime }
+    /// 닫은 탭의 경로 (최근 것이 뒤) — "마지막 닫은 탭 다시 열기" (UltraEdit v28 Open last-closed tab)
+    private(set) var closedTabs: [URL] = []
+    enum TabSort { case name, path, ext, modified }
     @Published private(set) var bookmarks: BookmarkStore
 
     /// 종료 처리(AppDelegate)가 동기 저장을 요청할 수 있도록
@@ -283,10 +300,13 @@ final class AppModel: ObservableObject {
         Self.loadUserGrammarsAtLaunch()   // grammar: 첫 문서의 문법 결정 전에 사용자 문법을 읽는다 (GrammarUI.swift)
         let doc = MemoDocument(url: url)
         document = doc
-        bookmarks = BookmarkStore(fileURL: doc.url)
+        tabs = [doc.url]
+        bookmarks = BookmarkStore(fileURL: doc.url, storeDirectory: BookmarkStore.launchDirectory)
         fileSearchDirectory = doc.url.deletingLastPathComponent()
         doc.load()
         bind()
+        bindDocument()
+        restoreSessionTabs()
         Self.current = self
         log(String(localized: "HyperEdit started · \(doc.url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))"))
         reportGrammarLoad()   // grammar: 건너뛴 문법 파일을 출력 패널에
@@ -306,10 +326,15 @@ final class AppModel: ObservableObject {
             .sink { [weak self] dark in self?.themes.systemAppearanceChanged(isDark: dark) }
             .store(in: &cancellables)
         session.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)   // split: 메뉴·상태바·리본 토글
+    }
+
+    /// 활성 문서에 붙는 구독 — 탭을 바꿀 때마다 다시 맺는다
+    private func bindDocument() {
+        docCancellables.removeAll()
         document.$status.removeDuplicates().filter { !$0.isEmpty }
-            .sink { [weak self] s in self?.log(s) }.store(in: &cancellables)
+            .sink { [weak self] s in self?.log(s) }.store(in: &docCancellables)
         document.$errorMessage.compactMap { $0 }.removeDuplicates()
-            .sink { [weak self] e in self?.log(String(localized: "Error: \(e)"), isError: true) }.store(in: &cancellables)
+            .sink { [weak self] e in self?.log(String(localized: "Error: \(e)"), isError: true) }.store(in: &docCancellables)
         document.$lineIndex
             .debounce(for: .milliseconds(1200), scheduler: RunLoop.main)
             .sink { [weak self] _ in
@@ -319,7 +344,249 @@ final class AppModel: ObservableObject {
                     // 편집으로 낡아진 검색 결과(범위·줄 번호)를 자동 갱신 — 결과가 떠 있을 때만
                     if self.findScope == .document, !self.searchQuery.isEmpty, !self.searchHits.isEmpty { self.runSearch(keepScroll: true) }
                 }
-            }.store(in: &cancellables)
+            }.store(in: &docCancellables)
+    }
+
+    // MARK: 문서 탭
+
+    /// 지난 세션에서 열려 있던 탭을 다시 만든다 (UltraEdit "Reload files previously open on startup"). 탭은 경로일 뿐이라 내용은 탭을 누를 때 읽는다
+    private func restoreSessionTabs() {
+        let paths = AppDefaults.store.stringArray(forKey: Self.openDocumentsKey) ?? []
+        var list: [URL] = []
+        for p in paths {
+            let u = URL(fileURLWithPath: p).resolvingSymlinksInPath()
+            guard FileManager.default.fileExists(atPath: u.path), TextFileDetector.isLikelyText(u), !list.contains(u) else { continue }
+            list.append(u)
+        }
+        // 상한을 넘으면 뒤쪽(나중에 연 탭)을 남긴다 — 앞에서 자르면 방금 연 파일들이 다음 실행에 사라진다
+        if list.count > Self.maxRestoredDocuments { list = Array(list.suffix(Self.maxRestoredDocuments)) }
+        if !list.contains(document.url) { list.append(document.url) }
+        tabs = list
+        recentTabs = [document.url]
+    }
+
+    private func persistSession() { AppDefaults.store.set(tabs.map(\.path), forKey: Self.openDocumentsKey) }
+
+    var defaultDocumentURL: URL { MemoLocation.defaultLocalURL.resolvingSymlinksInPath() }
+
+    /// 활성 문서를 다른 파일로 바꾼다 — 이전 파일의 미저장 편집은 switchTo 가 동기로 저장한다 (비동기 저장과의 경쟁 없음).
+    /// 반환 false: 떠나는 파일을 저장하지도 비상 사본으로 남기지도 못해 전환하지 않았다 — 편집을 잃지 않게 그 탭에 머문다 (출력 패널에 이유)
+    @discardableResult
+    private func switchDocument(to url: URL) -> Bool {
+        Perf.measure("AppModel.open total") {
+            // 입력기 조합 중이면 확정한다 — 조합 상태(marked range)가 살아 있는 채 내용이 통째로 바뀌면 다음 입력이 새 파일의 엉뚱한 자리를 바꾼다
+            for c in session.coordinators { if let tv = c.textView, tv.hasMarkedText() { tv.inputContext?.discardMarkedText(); tv.unmarkText() } }
+            editorCommands.send(.saveViewState)
+            let leaving = document.url
+            let switched = Perf.measure("MemoDocument.switchTo") { document.switchTo(url: url) }
+            reportLeave(of: leaving)
+            guard switched else { if !SelfTest.enabled { NSSound.beep() }; return false }
+            secrets.remaskAll(automatic: true, quiet: true)   // secrets: 한 파일에서 '모두 드러내기'를 켠 것이 다음 파일의 비밀까지 드러내지 않게
+            bookmarks.switchTo(fileURL: document.url)
+            MemoLocation.remember(document.url)
+            cancelSearch()   // 이전 문서의 검색이 뒤늦게 끝나 새 문서에 결과·강조를 얹지 않도록
+            quickFindTask?.cancel(); quickFindTask = nil; quickFindAnchor = nil   // 옛 문서의 오프셋은 새 문서에 맞지 않는다
+            if !searchHits.isEmpty { searchHits = [] }
+            if searchError != nil { searchError = nil }
+            hitsQuery = nil
+            rescanStructure()
+            log(String(localized: "Opened · \(document.url.path)"))
+            return true
+        }
+    }
+
+    /// 떠난(또는 떠나지 못한) 파일의 미저장 편집이 어떻게 됐는지 출력 패널에 알린다 — 새 파일을 읽으면 상태바의 저장 오류 문구가 지워지므로 여기에 남긴다
+    private func reportLeave(of url: URL) {
+        let name = url.lastPathComponent
+        switch document.lastLeaveOutcome {
+        case .nothingToSave, .saved: break
+        case .keptOnDisk:
+            log(String(localized: "\(name): empty content was not saved — the file on disk is unchanged"), isError: true)
+        case .rescued(let copy, let reason):
+            log(String(localized: "\(name): \(reason) — the unsaved text was written to \(copy.path)"), isError: true)
+        case .failed(let reason):
+            log(String(localized: "\(name): \(reason) — staying on this tab so the unsaved text is not lost"), isError: true)
+        }
+    }
+
+    /// 활성 문서가 바뀐 뒤: 탭 목록·최근 순서·세션 저장을 맞춘다
+    private func noteActiveTab() {
+        let u = document.url
+        if !tabs.contains(u) { tabs.append(u) }
+        recentTabs.removeAll { $0 == u }; recentTabs.insert(u, at: 0)
+        persistSession()
+    }
+
+    /// 탭을 누름: 그 파일로 전환한다. 파일이 사라졌으면 탭을 걷어낸다 (없는 경로를 열면 빈 파일이 새로 만들어지므로 열지 않는다)
+    func activateTab(_ url: URL) {
+        guard tabs.contains(url), url != document.url else { return }
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            dropTab(url)
+            log(String(localized: "Error: \(url.lastPathComponent + " — " + CocoaError(.fileNoSuchFile).localizedDescription)"), isError: true)
+            return
+        }
+        guard switchDocument(to: url) else { return }
+        noteActiveTab()
+    }
+
+    private func dropTab(_ url: URL) {
+        tabs.removeAll { $0 == url }
+        recentTabs.removeAll { $0 == url }
+        persistSession()
+    }
+
+    private func rememberClosed(_ url: URL) {
+        recentTabs.removeAll { $0 == url }
+        closedTabs.removeAll { $0 == url }; closedTabs.append(url)
+        if closedTabs.count > 10 { closedTabs.removeFirst() }
+    }
+
+    /// 활성 탭을 닫을 때 대신 보여 줄 파일: `preferred`(남는 탭이고 파일이 있으면) → `index` 왼쪽에서 가장 가까운(없으면 오른쪽) 남는 탭 → 기본 문서.
+    /// 파일이 사라진 탭은 건너뛴다
+    private func tabToShow(afterClosing closing: Set<URL>, near index: Int, preferred: URL? = nil) -> URL {
+        func usable(_ u: URL) -> Bool { !closing.contains(u) && FileManager.default.fileExists(atPath: u.path) }
+        if let p = preferred, tabs.contains(p), usable(p) { return p }
+        let i = min(max(index, 0), tabs.count)
+        if let u = (Array(tabs[..<i].reversed()) + Array(tabs[i...])).first(where: usable) { return u }
+        MemoLocation.ensureDefaultDocument()
+        return defaultDocumentURL
+    }
+
+    /// 탭 닫기의 공통 경로. 활성 탭이 닫힐 탭에 들어 있으면 **먼저** 남는 탭(없으면 기본 문서)으로 옮겨 가고 — 그 전환이 미저장 편집을 저장한다 — 그다음에
+    /// 목록에서 뺀다. 떠나는 파일을 저장하지도 비상 사본으로 남기지도 못하면 아무것도 닫지 않는다 (반환 false)
+    @discardableResult
+    private func closeTabs(_ closing: Set<URL>, returningTo preferred: URL? = nil, remember: Bool = true) -> Bool {
+        guard !closing.isEmpty else { return true }
+        if closing.contains(document.url) {
+            let target = tabToShow(afterClosing: closing, near: tabs.firstIndex(of: document.url) ?? 0, preferred: preferred)
+            if target != document.url, !switchDocument(to: target) { return false }
+        }
+        for u in tabs where closing.contains(u) && u != document.url {
+            if remember { rememberClosed(u) } else { recentTabs.removeAll { $0 == u } }
+        }
+        tabs.removeAll { closing.contains($0) && $0 != document.url }
+        noteActiveTab()
+        return true
+    }
+
+    /// 탭 닫기 (⌘W·탭의 ×·더블클릭·가운데 클릭·우클릭). 활성 탭이면 왼쪽 이웃(UltraEdit "nearest left", 맨 왼쪽이었으면 새 첫 탭)으로 전환하며,
+    /// 그 전환이 미저장 편집을 동기로 저장한다 (자동 저장 문서라 묻지 않는다). 마지막 탭을 닫으면 기본 문서가 대신 열린다 — 편집기는 항상 문서를
+    /// 하나 든다(UltraEdit 의 빈 편집 영역과 다른 점). 마지막 탭이 기본 문서면 그대로 둔다
+    func closeTab(_ url: URL, returningTo back: URL? = nil) {
+        guard tabs.contains(url) else { return }
+        if tabs.count == 1 && url == defaultDocumentURL { return }
+        closeTabs([url], returningTo: back)
+    }
+
+    /// 탭 줄 클릭: 바로 전환한다. 더블클릭의 첫 클릭일 수 있으므로 보고 있던 탭을 잠깐 기억해 둔다 (`tabDoubleClicked`)
+    func tabClicked(_ url: URL) {
+        guard tabs.contains(url) else { return }   // 방금 닫힌 탭에 늦게 도착한 클릭
+        if url != document.url { tabClickOrigin = (from: document.url, to: url, at: tabClickTime) }
+        activateTab(url)
+    }
+
+    /// 탭 줄 더블클릭: 닫기 (UltraEdit 기본). 보고 있지 않던 탭을 더블클릭하면 첫 클릭이 이미 그 탭으로 전환해 버렸으므로, 닫은 뒤에는 왼쪽 이웃이
+    /// 아니라 **보고 있던 탭**으로 돌아간다 — "저 탭만 치우기"가 보던 문서를 바꾸지 않게. 이미 보고 있던 탭이면 평소대로 왼쪽 이웃.
+    /// 그 탭으로 전환한 클릭이 이 더블클릭의 첫 클릭이었는지는 두 클릭의 이벤트 시각으로 가린다 (탭을 눌러 와서 잠시 본 뒤의 더블클릭은 해당하지 않는다)
+    func tabDoubleClicked(_ url: URL) {
+        let origin = tabClickOrigin
+        tabClickOrigin = nil
+        if let o = origin, o.to == url, tabClickTime - o.at <= NSEvent.doubleClickInterval + 0.05 {
+            closeTab(url, returningTo: o.from)
+        } else {
+            closeTab(url)
+        }
+    }
+
+    /// 탭 단축키(⌘W·⌃Tab·⌃⇧Tab)를 지금 탭에 적용해도 되는가 — 설정 창이나 Quick Append 패널이 앞에 있거나, 편집기 창에 시트·모달(저장·내보내기 패널)이
+    /// 떠 있거나, 매크로를 재생하는 중이면 아니다 (뒤에 있는 문서의 탭이 바뀌거나 닫히면 안 된다). 앱이 비활성이라 키 창이 없을 때는 적용한다
+    var tabKeysApply: Bool {
+        guard !appLock.isLocked, !macros.isPlaying, NSApp.modalWindow == nil else { return false }
+        guard let window = session.primary?.textView?.window else { return true }
+        if window.attachedSheet != nil { return false }
+        return NSApp.keyWindow == nil || NSApp.keyWindow === window
+    }
+
+    /// ⌘W: 활성 탭을 닫는다. 유일한 탭이 기본 문서면 창을 닫는다 (macOS 관례 유지); 잠겨 있거나 다른 창(설정·Quick Append)이 앞에 있으면
+    /// 탭은 건드리지 않고 그 창을 닫는다
+    func closeActiveTab() {
+        if !tabKeysApply || (tabs.count == 1 && document.url == defaultDocumentURL) { NSApp.keyWindow?.performClose(nil); return }
+        closeTab(document.url)
+    }
+
+    func closeOtherTabs(except keep: URL? = nil) {
+        let keep = keep ?? document.url
+        guard tabs.contains(keep) else { return }
+        closeTabs(Set(tabs.filter { $0 != keep }), returningTo: keep)
+    }
+
+    func closeAllTabs() {
+        MemoLocation.ensureDefaultDocument()
+        closeTabs(Set(tabs.filter { $0 != defaultDocumentURL }), returningTo: defaultDocumentURL)
+    }
+
+    func closeTabs(toLeftOf url: URL) {
+        guard let i = tabs.firstIndex(of: url), i > 0 else { return }
+        closeTabs(Set(tabs[..<i]), returningTo: url)
+    }
+
+    func closeTabs(toRightOf url: URL) {
+        guard let i = tabs.firstIndex(of: url), i < tabs.count - 1 else { return }
+        closeTabs(Set(tabs[(i + 1)...]), returningTo: url)
+    }
+
+    /// 폴더 아래의 파일 탭을 전부 닫는다 (셀프테스트·벤치·실사용 하네스가 임시 폴더를 지우기 전에). 다시 열기 목록에는 남기지 않는다
+    func closeTabs(in directory: URL) {
+        let prefix = directory.resolvingSymlinksInPath().path + "/"
+        closedTabs.removeAll { $0.path.hasPrefix(prefix) }
+        closeTabs(Set(tabs.filter { $0.path.hasPrefix(prefix) }), remember: false)
+    }
+
+    /// 저장 후 닫기 (UltraEdit v28 Save and Close). 자동 저장 문서라 닫기와 같다 — 활성 탭은 닫을 때의 전환이 저장하고, 다른 탭은 떠날 때 이미 저장됐다
+    func saveAndCloseTab(_ url: URL) { closeTab(url) }
+
+    /// 마지막으로 닫은 탭 다시 열기 (⌘⇧T)
+    func reopenLastClosedTab() {
+        while let u = closedTabs.popLast() {
+            if FileManager.default.fileExists(atPath: u.path) { open(url: u); return }
+        }
+    }
+
+    func nextTab() { cycleTab(by: 1) }
+    func previousTab() { cycleTab(by: -1) }
+    private func cycleTab(by delta: Int) {
+        guard tabs.count > 1, let i = tabs.firstIndex(of: document.url) else { return }
+        activateTab(tabs[(i + delta + tabs.count) % tabs.count])
+    }
+
+    /// ⌃Tab: 직전에 보던 탭으로 (최근 활성 순서 — 두 탭 사이를 오간다)
+    func activateLastActiveTab() {
+        if let last = recentTabs.dropFirst().first(where: { tabs.contains($0) }) { activateTab(last) }
+    }
+
+    /// 탭 순서 바꾸기 (드래그): `url` 을 `index` 자리로
+    func moveTab(_ url: URL, to index: Int) {
+        guard let from = tabs.firstIndex(of: url) else { return }
+        var list = tabs
+        list.remove(at: from)
+        list.insert(url, at: max(0, min(index, list.count)))
+        if list != tabs { tabs = list; persistSession() }
+    }
+
+    /// 탭 정렬 (UltraEdit "Sort tabs by Name / Path / Extension / Modification date")
+    func sortTabs(by key: TabSort) {
+        func modified(_ u: URL) -> Date { (try? FileManager.default.attributesOfItem(atPath: u.path)[.modificationDate] as? Date) ?? .distantPast }
+        let sorted: [URL]
+        switch key {
+        case .name: sorted = tabs.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        case .path: sorted = tabs.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        case .ext: sorted = tabs.sorted {
+            let e = $0.pathExtension.localizedStandardCompare($1.pathExtension)
+            return e == .orderedSame ? $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending : e == .orderedAscending
+        }
+        case .modified: sorted = tabs.sorted { modified($0) > modified($1) }
+        }
+        if sorted != tabs { tabs = sorted; persistSession() }
     }
 
     /// 아웃라인·타임라인 재계산 (백그라운드, 텍스트 스냅샷 기준)
@@ -360,26 +627,28 @@ final class AppModel: ObservableObject {
             NSWorkspace.shared.open(url)
             return
         }
-        Perf.measure("AppModel.open total") {
-            editorCommands.send(.saveViewState)
-            // 이전 파일의 미저장 편집은 switchTo 가 동기로 저장한다 (비동기 저장과의 경쟁 없음)
-            Perf.measure("MemoDocument.switchTo") { document.switchTo(url: url) }
-            bookmarks.switchTo(fileURL: document.url)
-            MemoLocation.remember(document.url)
-            cancelSearch()   // 이전 문서의 검색이 뒤늦게 끝나 새 문서에 결과·강조를 얹지 않도록
-            quickFindTask?.cancel(); quickFindTask = nil; quickFindAnchor = nil   // 옛 문서의 오프셋은 새 문서에 맞지 않는다
-            if !searchHits.isEmpty { searchHits = [] }
-            if searchError != nil { searchError = nil }
-            rescanStructure()
-            log(String(localized: "Opened · \(document.url.path)"))
-        }
+        // 파일 탭(UltraEdit 식): 처음 여는 파일이면 탭을 맨 끝에 만들고, 그 파일로 전환한다. 이미 활성인 파일을 다시 열면 디스크에서 다시 읽는다(기존 동작)
+        let resolved = url.resolvingSymlinksInPath()
+        guard switchDocument(to: resolved) else { return }   // 떠나는 파일을 지킬 수 없으면 열지 않는다 (탭도 만들지 않는다)
+        noteActiveTab()   // 처음 여는 파일이면 여기서 탭이 맨 끝에 생긴다
     }
 
     /// 파일 검색 결과에서 열기: 로드 후 해당 줄로 (에디터 재바인딩 뒤에 점프)
     func open(hit: FileSearchHit) {
-        if hit.url.standardizedFileURL != document.url.standardizedFileURL { open(url: hit.url) }
+        let target = hit.url.resolvingSymlinksInPath()   // 문서 url 과 같은 기준 (링크 경로로 고른 검색 폴더의 결과가 "다른 파일"로 보여 다시 읽히지 않게)
+        if target != document.url {
+            // 검색 뒤에 지워지거나 옮겨진 파일의 결과 — `open(url:)` 은 없는 경로에 빈 파일을 만들므로 여기서 막는다
+            guard FileManager.default.fileExists(atPath: target.path) else {
+                log(String(localized: "Error: \(hit.url.lastPathComponent + " — " + CocoaError(.fileNoSuchFile).localizedDescription)"), isError: true)
+                return
+            }
+            open(url: target)
+        }
         let line = hit.line
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.jump(toLine: line) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            guard let self, self.document.url == target else { return }   // 그 사이 다른 탭으로 갔으면 그 문서에서 줄을 옮기지 않는다
+            self.jump(toLine: line)
+        }
     }
 
     func presentOpenPanel() {
@@ -653,11 +922,13 @@ final class AppModel: ObservableObject {
         let repl = SearchEngine.replacement(for: sel, in: text, query: searchQuery, options: searchOptions, template: replaceText)
         editorCommands.send(.replaceRanges([Replacement(range: sel, string: repl)]))
         log(String(localized: "Replace · line \(caretLine)"))
+        let started = document.url
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: 350_000_000)
-            guard let self else { return }
+            guard let self, self.document.url == started else { return }   // 그 사이 다른 탭으로 갔으면 그 문서에서 검색·점프하지 않는다
             self.runSearch(keepScroll: true)   // 목록은 제자리에서 갱신되고(맨 위로 튀지 않음) 다음 매치로 간다
             try? await Task.sleep(nanoseconds: 300_000_000)
+            guard self.document.url == started else { return }
             self.findNext()
         }
     }
@@ -671,7 +942,12 @@ final class AppModel: ObservableObject {
         let reps = hits.map { Replacement(range: $0.range, string: SearchEngine.replacement(for: $0.range, in: text, query: searchQuery, options: searchOptions, template: replaceText)) }
         editorCommands.send(.replaceRanges(reps))
         log(String(localized: "Replace all '\(searchQuery)' → '\(replaceText)' · \(reps.count) hits"))
-        Task { [weak self] in try? await Task.sleep(nanoseconds: 400_000_000); self?.runSearch() }
+        let started = document.url
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            guard let self, self.document.url == started else { return }
+            self.runSearch()
+        }
     }
 
     /// 모든 매치를 멀티 커서로 선택
@@ -849,5 +1125,15 @@ enum LaunchOptions {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: flag), i + 1 < a.count else { return nil }
         return a[i + 1]
+    }
+}
+
+extension BookmarkStore {
+    /// 자동화 실행(`--selftest` `--snapshot` `--ephemeral`)은 임시 폴더를 써 사용자의 북마크 폴더를 건드리지 않는다 (SnippetStore.launchDirectory 와 같은 규칙)
+    static var launchDirectory: URL {
+        if LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--snapshot") || LaunchOptions.has("--ephemeral") {
+            return FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-ephemeral-\(ProcessInfo.processInfo.processIdentifier)/bookmarks", isDirectory: true)
+        }
+        return storeDirectory
     }
 }

@@ -10,7 +10,7 @@ struct ContentView: View {
         let theme = model.themes.current
         VStack(spacing: 0) {
             RibbonView(theme: theme)
-            DocumentTabBar(doc: model.document, theme: theme)
+            DocumentTabBar(doc: model.document, theme: theme)   // 파일 탭 (Panels/DocumentTabBar.swift)
             HSplitView {
                 if model.showFileView {
                     LeftDock(theme: theme)
@@ -69,38 +69,6 @@ struct ContentView: View {
         .task { if Bench.enabled { await Bench.run(model: model) } }   // perf bench
         .onAppear { Bench.launchMilestone("contentViewAppeared") }   // perf bench (계측이 꺼져 있으면 비용 0)
         .onAppear { if CommandLine.arguments.contains("--debug-startup") { FileHandle.standardError.write("[startup] ContentView appeared\n".data(using: .utf8)!) } }
-    }
-}
-
-/// 문서 탭 (M1: 단일 문서)
-struct DocumentTabBar: View {
-    @EnvironmentObject var model: AppModel
-    @ObservedObject var doc: MemoDocument
-    let theme: Theme
-
-    var body: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 6) {
-                Image(systemName: "doc.text").font(.system(size: 11))
-                Text(doc.url.lastPathComponent).font(.system(size: 12, weight: .medium))
-                if doc.isDirty { Circle().fill(theme.accent.color).frame(width: 7, height: 7) }
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 26)
-            .background(model.surfaceColor(theme.background))   // appearance
-            .overlay(alignment: .top) { theme.accent.color.frame(height: 2) }
-            .overlay(alignment: .trailing) { theme.border.color.frame(width: 1) }
-            .foregroundStyle(theme.foreground.color)
-            .help(doc.url.path)
-            Button { model.newDocument() } label: { Image(systemName: "plus").font(.system(size: 11)) }
-                .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.horizontal, 10).help("New Document… (⌘N)")
-            Button { model.presentOpenPanel() } label: { Image(systemName: "folder").font(.system(size: 11)) }
-                .buttonStyle(.plain).foregroundStyle(theme.foregroundMuted.color).padding(.trailing, 10).help("Open File… (⌘O)")
-            Spacer()
-        }
-        .frame(height: 26)
-        .background(model.surfaceColor(theme.backgroundAlt))   // appearance
-        .overlay(alignment: .bottom) { theme.border.color.frame(height: 1) }
     }
 }
 

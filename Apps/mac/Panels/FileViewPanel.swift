@@ -78,7 +78,10 @@ struct FileViewPanel: View {
             .scrollContentBackground(.hidden)
             .onChange(of: selected) { _, id in
                 guard let id, let node = nodes.lazy.compactMap({ $0.find(id) }).first, !node.isDirectory else { return }
-                if id != currentID { model.open(url: node.url) }
+                guard id != currentID else { return }
+                // 목록을 읽은 뒤 밖에서 지워진 파일 — 열면 빈 파일이 새로 만들어지므로 열지 않는다 (목록은 새로 고침 버튼으로 다시 읽는다)
+                guard FileManager.default.fileExists(atPath: node.url.path) else { DispatchQueue.main.async { selected = currentID }; return }
+                model.open(url: node.url)
             }
             .onChange(of: currentID) { _, id in if selected != id { selected = id } }
         }

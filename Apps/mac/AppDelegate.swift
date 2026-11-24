@@ -21,11 +21,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do { try task.run() } catch { NSLog("relaunch failed: \(error)") }
     }
 
+    /// 셀프테스트를 뒤에서 돌리는가. 터미널·IDE 가 앞에 있을 때 앱을 띄우면 macOS 가 새 앱을 활성화한다 — 검사가 도는 몇 분 동안 창이 앞에 나오고
+    /// 사용자가 다른 앱에 치던 키 입력을 받는다 (2026-11-24 실측: 10번 중 9번이 활성 상태로 돌았다). `--selftest-foreground` 를 주면 예전처럼 앞에서 돈다
+    static var selfTestStaysInBackground: Bool { (SelfTest.enabled || SelfTest.openEnabled) && !LaunchOptions.has("--selftest-foreground") }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        guard Self.selfTestStaysInBackground else { return }
+        NSApp.deactivate()
+        for w in NSApp.windows where w.isVisible { w.orderBack(nil) }
+    }
+
+    /// 뒤에서 도는 셀프테스트가 App Nap 에 걸리지 않게 실행 내내 잡아 두는 활동 토큰. 비활성 + 가려진 창이면 2~3분 뒤 타이머가 늦게 깨고 CPU 우선순위가
+    /// 깎여, 시간을 재는 검사(매크로 100회·타이핑 지연·유휴 잠금)가 몇 배 느리게 재진다 (2026-11-24 실측: 막지 않은 실행에서 8건 실패)
+    private var backgroundActivity: NSObjectProtocol?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
+        if Self.selfTestStaysInBackground {
+            backgroundActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical], reason: "background self-test")
+        }
         Bench.launchMilestone("didFinishLaunching")   // perf bench (계측이 꺼져 있으면 비용 0)
         if Perf.enabled { PerfProbe.log = { Perf.log($0) } }
         Perf.startWatchdog()
+        // 파일 탭: ⌃Tab = 직전에 보던 탭(최근 활성 순서, UltraEdit Ctrl+F6 "Last file"), ⌃⇧Tab = 이전 탭(순서). ⌘⇧] / ⌘⇧[ 는 메뉴 단축키
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.keyCode == 48, event.modifierFlags.intersection(.deviceIndependentFlagsMask).isSuperset(of: [.control]),
+                  !event.modifierFlags.contains(.command), !event.modifierFlags.contains(.option),
+                  let model = AppModel.current, model.tabKeysApply, model.tabs.count > 1 else { return event }
+            // 편집기 창이 앞에 있고 옮겨 갈 탭이 있을 때만 가로챈다 — 설정 창·Quick Append 패널·저장/내보내기 패널·매크로 재생 중에는 뒤의 문서를 바꾸지 않고,
+            // 탭이 하나뿐이면 ⌃Tab 의 원래 뜻(다음 키 뷰)을 삼키지 않는다
+            if event.modifierFlags.contains(.shift) { model.previousTab() } else { model.activateLastActiveTab() }
+            return nil
+        }
         // 같은 앱의 다른 인스턴스가 떠 있는 상태에서 LaunchServices 가 새 인스턴스를 띄우면 SwiftUI 가 기본 창을 만들지 않는 경우가 있다.
         // 잠시 뒤에도 창이 없으면 '다시 열기(rapp)' 애플 이벤트를 자신에게 보내 WindowGroup 창을 열게 한다.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -130,7 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 저장이 실패해 편집이 남아 있으면(쓰기 불가 폴더, 빈 내용 저장 차단 등) 메모리 내용을 스냅샷 폴더에 비상 사본으로 남기고 종료할지 묻는다 —
     /// Quick Append 는 패널이 바로 닫히고 앱이 비활성이라 상태바의 저장 오류를 볼 기회가 없기 때문이다.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let doc = AppModel.current?.document else { return .terminateNow }
+        guard let doc = AppModel.current?.document else { return .terminateNow }   // 탭이 여럿이어도 살아 있는 문서는 하나 (다른 탭은 전환할 때 저장됐다)
         if doc.saveSynchronously() || !doc.isDirty { return .terminateNow }
         let copy = doc.writeEmergencyCopy()
         AppModel.current?.log(copy.map { String(localized: "Save failed on quit — emergency copy written to \($0.path)") }

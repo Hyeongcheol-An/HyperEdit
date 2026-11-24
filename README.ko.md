@@ -70,7 +70,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - 렌더링에는 Apple의 [swift-markdown](https://github.com/swiftlang/swift-markdown)(Apache-2.0)을 씁니다. 미리보기가 켜져 있으면 상태바에 **MD**가 표시됩니다.
 
 ### 리본과 패널
-- 리본 탭 **홈 / 편집 / 레이아웃 / 고급 / 창**, 새 문서(⌘N)·열기(⌘O) 버튼이 있는 문서 탭 줄, 빠른 실행 저장 / 실행 취소 / 다시 실행.
+- 리본 탭 **홈 / 편집 / 레이아웃 / 고급 / 창**, UltraEdit식 파일 탭 줄(연 파일마다 탭: 클릭 전환, ⌘W·×·더블클릭·가운데 클릭으로 닫기, 드래그 정렬, 우클릭으로 다른 탭 모두 닫기 / 왼쪽·오른쪽 탭 닫기 / 마지막으로 닫은 탭 다시 열기 / 저장 후 닫기 / 저장된 내용으로 되돌리기 / 경로 복사 / 탭 정렬, ⇧⌘] / ⇧⌘[·⌃Tab 전환, 실행 중에는 파일마다 캐럿·스크롤 위치·접힘 유지, 다음 실행 때 30개까지 복원)과 새 문서(⌘N)·열기(⌘O) 버튼, 빠른 실행 저장 / 실행 취소 / 다시 실행.
 - **사이드바(⌘1)** — **파일**(현재 파일 폴더의 트리, 한 번 클릭으로 열기), **아웃라인**(⌘3: `##` 헤딩, `[제목]` 줄, `가./나.` 항목, `1)` 번호 항목. 필터 상자와 현재 항목 강조. 코드 주석처럼 보이는 `# …` 줄은 제외), **타임라인**(⌘4: `## YYYY-MM-DD (요일) HH:MM` 타임스탬프 헤딩과 날짜로 시작하는 느슨한 줄을 월별로 묶어 최신순 표시).
 - **하단 패널(⌘2)** — **찾기 결과**, **북마크**, **출력** 로그.
 
@@ -122,6 +122,8 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 | 단축키 | 동작 | 단축키 | 동작 |
 |---|---|---|---|
 | ⌘N | 새 문서 | ⌘O | 열기 |
+| ⌘W / ⇧⌘W | 탭 닫기 / 모두 닫기 | ⇧⌘] / ⇧⌘[ | 다음 / 이전 탭 |
+| ⌃Tab | 직전에 본 탭 | ⇧⌘T | 마지막으로 닫은 탭 다시 열기 |
 | ⌘S | 저장 | ⌘F | 찾기 |
 | ⌘R | 바꾸기 | ⇧⌘F | 파일에서 찾기 |
 | F3 / ⇧F3 | 다음 / 이전 매치 | ⌘L | 줄로 이동 |
@@ -184,7 +186,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 |---|---|
 | `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(672개 검사) 실행. 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(약 700개 검사)를 뒤에서 실행(앱이 포커스를 돌려주고 창을 뒤에 둔다 — 앞에서 돌리려면 `--selftest-foreground`). 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | 사이드바 / 하단 패널 탭 표시, 또는 사이드바 / 하단 패널 숨기기 |
@@ -197,7 +199,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--cursor <bar\|block\|underline>` · `--no-cursor-blink` · `--opacity <0.5~1.0>` · `--blur` | 그 캐럿 스타일 / 깜빡임 끄고 / 그 창 투명도 / 반투명 창 뒤 블러로 시작 |
 | `--reveal-secrets` | 모든 비밀 블록을 드러낸 상태로 시작(자동 재마스킹 없음) |
 | `--locked` | 잠긴 상태로 시작(스크린샷용). 실제 인증기를 쓰므로 잠금 해제 버튼을 누르기 전에는 프롬프트가 뜨지 않으며, 자동화 실행은 이 인자 없이는 잠긴 채 시작하지 않음 |
-| `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법)을 쓴다 — 수동 테스트용 |
+| `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법·북마크)과 임시 기본 문서 폴더를 쓴다 — 수동 테스트용 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
 | `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui findquery replace save`. `scripts/bench.sh` 가 감싸서 실행 |
@@ -233,7 +235,8 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 - 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.
 - 스니펫·매크로·사용자 문법은 JSON 파일(Application Support의 `snippets.json`, `macros/macros.json`, `grammars/*.json`)로 편집합니다. GUI 편집기는 없습니다.
 - 내보내기는 문서 전체만(선택 영역·여러 파일·용지·글꼴 옵션·PDF 목차 없음). 비밀 블록은 화면에서만 가리며 파일·자동 저장·스냅샷은 평문이고, 가림막 길이로 줄 길이는 보이며, VoiceOver 는 텍스트를 그대로 읽습니다. 비밀 펜스는 왼쪽 여백에서 시작해야 합니다(목록·인용 안은 인식하지 않음). 앱 잠금은 창을 가리고 입력을 막을 뿐 파일을 암호화하지 않습니다. 블록 주석은 중첩되지 않고, 2만 자가 넘는 문단 안에서는 블록·밑줄 캐럿 대신 막대 캐럿이 보입니다.
-- 접기는 세션 동안만 유지되고(파일별로 저장하지 않음), 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
+- 접힘은 앱이 실행되는 동안에만 파일별로 유지되고(다음 실행까지 저장하지 않음), 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
+- 메모리에는 보고 있는 탭의 파일만 있습니다. 탭을 떠나면 그 파일의 실행 취소 기록이 비워지고, 다음 실행 때 복원되는 탭은 30개까지입니다.
 - 빠른 추가의 전역 단축키는 시스템 핫키 API를 쓰므로, 시스템 설정 › 키보드에서 입력 소스 전환이 켜져 있으면 ⌃Space / ⌃⌥Space 변형은 아무 알림 없이 시스템에 밀립니다. 대신 ⌃⌥N 이나 ⌃⌥⌘N 을 고르세요.
 
 설계 메모와 결정 이력은 [docs/design.ko.md](docs/design.ko.md)에, 상태가 표시된 기능 목록은 [docs/features.md](docs/features.md)에 있습니다.

@@ -55,6 +55,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`. If that file does not exist it
 
 - **⌘N** creates a new empty text file (you choose the name and folder).
 - **⌘O** opens any other text file. The last opened file is remembered for the next launch.
+- **File tabs.** Every open file gets a tab above the editor, as in UltraEdit: click to switch; ⌘W, the ×, a double-click or a middle-click closes a tab (unsaved edits are saved first). Closing the tab you are viewing moves to the tab on its left; double-clicking a tab you are not viewing closes it and leaves you on the one you were reading. Drag tabs to reorder; double-click the empty tab bar for a new file; right-click a tab for Close Other Tabs / Close Tabs to the Left or Right / Reopen Last Closed Tab (⇧⌘T) / Save and Close / Revert to Saved / Copy Path / Sort Tabs. ⇧⌘] / ⇧⌘[ step through the tabs, ⌃Tab returns to the tab you viewed last, and the ▾ at the right lists all open tabs; a tab's tooltip shows the full path, size and modification time. Each file keeps its caret, scroll position and folds while the app runs, but its undo history is cleared when you leave its tab. Up to 30 open tabs are restored on the next launch. Closing the last tab opens the default document, and a tab whose file has been deleted is removed when you click it.
 - **File › Open Default Document** takes you back to `notes.md`.
 - Binary files (images, PDFs, archives…) are never loaded into the editor; they open in their default app instead.
 
@@ -79,7 +80,7 @@ A language that is not in the list falls back to English (for example Traditiona
 The layout follows a classic ribbon editor, with a hidden title bar.
 
 - **Ribbon tabs** — **Home** (Clipboard, Find, Insert, Mode, File), **Edit** (Lines, Case, Sort, Whitespace, Column & Multi-Caret, Tools, Macro), **Layout** (Theme, Panels, Folding, Markdown, Font Size), **Advanced** (Settings, snapshot folder, reload, default document), **Window** (full screen, panels). When the window is narrow, groups fold to icons from the right; the icon's tooltip shows the label.
-- **Document tab bar** — the current file name with New (⌘N) and Open (⌘O) buttons, plus quick-access Save / Undo / Redo.
+- **File tab bar** — one tab per open file, followed by the New (+, ⌘N) and Open (folder, ⌘O) buttons; with two or more tabs, the ▾ at the right end lists them. Quick-access Save / Undo / Redo sit at the right of the ribbon tab row.
 - **Sidebar (⌘1)** — **Files** (the folder of the current file; one click opens a file), **Outline (⌘3)** (headings, `[Title]` lines and numbered items, with a filter box; the current item is highlighted), **Timeline (⌘4)** (timestamp headings grouped by month, newest first).
 - **Bottom panel (⌘2)** — **Find Results**, **Bookmarks** and **Output**, a log of what the app did (saves, replacements, errors).
 - **Status bar** — line and column (plus the selection length; hover for the character offset), line ending (UNIX / DOS / MAC), file encoding, **COL** while column mode is on, caret count, line count · file size, the latest status message, the syntax language (dimmed while syntax colors are off), a theme menu (marked "· System" while following the system appearance) and the zoom percentage. Most items are clickable.
@@ -152,7 +153,7 @@ The last recording stays in memory only until you quit, so anything sensitive yo
 - in Markdown, everything under a `#` heading up to the next heading of the same or higher level (fenced code blocks fold too),
 - in code, a line ending in `{`, `[` or `(` through its closing bracket line.
 
-Click the chevron in the gutter or the `⋯ N lines` pill after a folded line to toggle it with the mouse. Moving the caret into a folded line (find, go to line, bookmark, undo) unfolds it; ↑ / ↓ skip over folds. Folds follow your edits and last for the session.
+Click the chevron in the gutter or the `⋯ N lines` pill after a folded line to toggle it with the mouse. Moving the caret into a folded line (find, go to line, bookmark, undo) unfolds it; ↑ / ↓ skip over folds. Folds follow your edits and are kept per file while the app runs — switching tabs does not lose them — but they are not saved for the next launch.
 
 **Scrollbar markers** — a thin strip at the editor's right edge shows search matches (accent color), bookmarks (warning color), the caret line and folded headers at their relative positions in the file. It is hidden when the whole document fits on screen. Turn it off in **View › Scrollbar Markers** or in the Layout tab's Folding group.
 
@@ -213,6 +214,8 @@ Panel visibility, word wrap, line numbers, syntax colors, scroll markers, the sp
 | Shortcut | Action | Shortcut | Action |
 |---|---|---|---|
 | ⌘N | New document | ⌘O | Open |
+| ⌘W / ⇧⌘W | Close tab / all tabs | ⇧⌘] / ⇧⌘[ | Next / previous tab |
+| ⌃Tab | Last active tab | ⇧⌘T | Reopen last closed tab |
 | ⌘S | Save | ⌘F | Find |
 | ⌘R | Replace | ⇧⌘F | Find in files |
 | F3 / ⇧F3 | Next / previous match | ⌘L | Go to line |
@@ -271,7 +274,8 @@ Nothing is written next to your documents, and nothing leaves your Mac.
 - Export writes the whole document only, without selection or multi-file export, page or font options, or a PDF table of contents.
 - Secret blocks are masked on screen only: the file, autosaves and snapshots are plain text, the mask bar shows how long each line is, and VoiceOver still reads the text. A secret fence must start at the left margin (indented less than four spaces, not inside a list item or quote), and a fenced block nested inside a secret block needs four backticks on the outer fence. App lock hides the window and its contents from VoiceOver; it does not encrypt anything.
 - Block comments do not nest, and files with classic Mac (CR-only) line endings are colored line by line. Inside a single paragraph longer than 20,000 characters the Block and Underline carets fall back to the standard bar caret.
-- Folds last for the session and are not saved per file; a mouse drag across a folded line still selects the hidden text.
+- Folds are kept per file only while the app runs and are not saved for the next launch; a mouse drag across a folded line still selects the hidden text.
+- Only the tab you are viewing is held in memory: leaving a tab clears that file's undo history, and no more than 30 open tabs are restored on the next launch.
 - Documents that are a single line of a megabyte or more are slow to open and move around in; Minify JSON warns before producing one.
 - Local files only; no cloud sync and no iOS app yet.
 - Languages other than the eleven listed fall back to English.
