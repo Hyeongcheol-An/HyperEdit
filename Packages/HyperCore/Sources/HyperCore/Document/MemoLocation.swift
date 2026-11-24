@@ -7,7 +7,8 @@ public enum MemoLocation {
 
     /// 기본 문서 폴더: macOS `~/Documents/HyperEdit`, iOS 앱 Documents/HyperEdit
     public static var defaultDirectory: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        if let o = AppDefaults.defaultDirectoryOverride { return o }   // --ephemeral · 셀프테스트 · 벤치 · 실사용 하네스
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("HyperEdit", isDirectory: true)
     }
 

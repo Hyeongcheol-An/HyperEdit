@@ -68,7 +68,15 @@ final class QuickAppendController: ObservableObject {
         let p = panel ?? makePanel()
         p.contentView?.layoutSubtreeIfNeeded()   // 처음 열 때 SwiftUI 가 텍스트 뷰를 만들도록 (makeNSView → textView 등록)
         // nonactivating 패널: 앱이 비활성이어도 윈도 서버가 키 입력을 이 창에 보낸다 (이때 isKeyWindow/NSApp.keyWindow 는 문서대로 false/nil — 활성화하지 않는다)
-        p.makeKeyAndOrderFront(nil)
+        if SelfTest.enabled && !NSApp.isActive {
+            // 셀프테스트가 뒤에서 도는 동안에는 키 입력을 가져오지도, 다른 앱 위에 뜨지도 않는다 — 떠 있는 키 패널은 사용자가 다른 앱에 치던 글자를 받아 간다
+            // (2026-11-24 실측: 검사의 초안이 'panel noteL' 이 됐다). 패널은 맨 뒤에 보이기만 하고, 검사는 텍스트 뷰에 직접 넣는다
+            p.level = .normal
+            p.orderBack(nil)
+        } else {
+            p.level = .floating
+            p.makeKeyAndOrderFront(nil)
+        }
         focusTextView(in: p)
         if textView == nil { DispatchQueue.main.async { [weak self] in if let self, let p = self.panel { self.focusTextView(in: p) } } }
     }

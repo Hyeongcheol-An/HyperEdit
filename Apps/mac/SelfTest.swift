@@ -322,6 +322,7 @@ enum SelfTest {
         await runEditTools(model: model, check: check, log: log)
         await runSplit(model: model, check: check, log: log)
         await runDocumentTracking(model: model, check: check, log: log)
+        await runTabs(model: model, check: check, log: log)   // tabs: 파일 탭 열기·전환·닫기·순서·세션 (SelfTest+Tabs.swift)
         await runQASplit(model: model, check: check, log: log)   // split · quick append · 문서 무결성 QA (SelfTest+QASplit.swift)
         await runMacro(model: model, check: check, log: log)   // macro
         await runFold(model: model, check: check, log: log)

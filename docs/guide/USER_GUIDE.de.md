@@ -55,6 +55,7 @@ HyperEdit öffnet `~/Documents/HyperEdit/notes.md`. Existiert die Datei nicht, w
 
 - **⌘N** legt eine neue leere Textdatei an (du wählst Namen und Ordner).
 - **⌘O** öffnet jede andere Textdatei. Die zuletzt geöffnete Datei wird für den nächsten Start gemerkt.
+- **Dateitabs.** Jede geöffnete Datei bekommt einen Tab über dem Editor, wie in UltraEdit: Klick wechselt; ⌘W, das ×, ein Doppelklick oder ein Mittelklick schließt einen Tab (ungesicherte Änderungen werden zuerst gesichert). Schließt du den Tab, den du gerade ansiehst, landest du im Tab links davon; ein Doppelklick auf einen Tab, den du gerade nicht ansiehst, schließt ihn, und du bleibst in dem Tab, den du gelesen hast. Tabs lassen sich per Drag umsortieren; ein Doppelklick auf die leere Tableiste legt eine neue Datei an; Rechtsklick auf einen Tab bietet Andere Tabs schließen / Tabs links schließen / Tabs rechts schließen / Zuletzt geschlossenen Tab wieder öffnen (⇧⌘T) / Sichern und schließen / Auf gesicherte Version zurücksetzen / Pfad kopieren / Tabs sortieren. ⇧⌘] / ⇧⌘[ gehen die Tabs der Reihe nach durch, ⌃Tab kehrt zum zuletzt angesehenen Tab zurück, und das ▾ rechts listet alle offenen Tabs; der Tooltip eines Tabs zeigt vollständigen Pfad, Größe und Änderungszeit. Jede Datei behält Cursor, Scrollposition und Faltungen, solange die App läuft, ihr Widerrufen-Verlauf wird aber geleert, sobald du ihren Tab verlässt. Beim nächsten Start werden bis zu 30 offene Tabs wiederhergestellt. Schließt du den letzten Tab, öffnet sich das Standarddokument, und ein Tab, dessen Datei gelöscht wurde, wird entfernt, sobald du ihn anklickst.
 - **Ablage › Standarddokument öffnen** bringt dich zurück zu `notes.md`.
 - Binärdateien (Bilder, PDFs, Archive …) werden nie in den Editor geladen; sie öffnen sich stattdessen in ihrer Standard-App.
 
@@ -79,7 +80,7 @@ Eine Sprache, die nicht in der Liste steht, fällt auf Englisch zurück (zum Bei
 Das Layout folgt einem klassischen Editor mit Menüband und ausgeblendeter Titelleiste.
 
 - **Menüband-Tabs** – **Start** (Zwischenablage, Suchen, Einfügen, Modus, Datei), **Bearbeiten** (Zeilen, Groß-/Kleinschreibung, Sortieren, Leerraum, Spalten & Multi-Cursor, Werkzeuge, Makro), **Layout** (Theme, Panels, Faltung, Markdown, Schriftgröße), **Erweitert** (Optionen, Schnappschuss-Ordner, Neu laden, Standarddokument), **Fenster** (Vollbild, Panels). Ist das Fenster schmal, klappen die Gruppen von rechts her zu Symbolen zusammen; der Tooltip des Symbols zeigt die Beschriftung.
-- **Dokument-Tableiste** – der aktuelle Dateiname mit den Tasten Neu (⌘N) und Öffnen (⌘O) sowie Schnellzugriff auf Sichern / Widerrufen / Wiederholen.
+- **Datei-Tableiste** – ein Tab pro geöffneter Datei, gefolgt von den Tasten Neu (+, ⌘N) und Öffnen (Ordner, ⌘O); bei zwei oder mehr Tabs listet das ▾ am rechten Ende sie auf. Der Schnellzugriff auf Sichern / Widerrufen / Wiederholen sitzt rechts in der Zeile der Menüband-Tabs.
 - **Seitenleiste (⌘1)** – **Dateien** (der Ordner der aktuellen Datei; ein Klick öffnet eine Datei), **Gliederung (⌘3)** (Überschriften, `[Titel]`-Zeilen und nummerierte Punkte, mit Filterfeld; der aktuelle Eintrag ist hervorgehoben), **Zeitleiste (⌘4)** (Zeitstempel-Überschriften nach Monat gruppiert, neueste zuerst).
 - **Unteres Panel (⌘2)** – **Suchergebnisse**, **Lesezeichen** und **Ausgabe**, ein Protokoll dessen, was die App getan hat (Sichern, Ersetzungen, Fehler).
 - **Statusleiste** – Zeile und Spalte (plus Länge der Auswahl; beim Überfahren erscheint der Zeichen-Offset), Zeilenende (UNIX / DOS / MAC), Zeichencodierung, **COL**, solange der Spaltenmodus an ist, Anzahl der Cursor, Zeilenzahl · Dateigröße, die letzte Statusmeldung, die Syntaxsprache (abgeblendet, solange die Syntaxfarben aus sind), ein Theme-Menü (mit „· System“ markiert, solange die App dem Erscheinungsbild des Systems folgt) und der Zoom in Prozent. Die meisten Einträge sind anklickbar.
@@ -152,7 +153,7 @@ Die letzte Aufzeichnung bleibt nur bis zum Beenden im Speicher, sodass nichts Ve
 - in Markdown alles unter einer `#`-Überschrift bis zur nächsten Überschrift gleicher oder höherer Ebene (eingezäunte Codeblöcke klappen ebenfalls),
 - in Code eine Zeile, die auf `{`, `[` oder `(` endet, bis zur Zeile mit der schließenden Klammer.
 
-Klicke auf das Winkelsymbol in der Randspalte oder auf die Pille `⋯ N Zeilen` hinter einer eingeklappten Zeile, um sie mit der Maus umzuschalten. Bewegt sich der Cursor in eine eingeklappte Zeile (Suchen, Gehe zu Zeile, Lesezeichen, Widerrufen), wird sie ausgeklappt; ↑ / ↓ überspringen Faltungen. Faltungen folgen deinen Bearbeitungen und bleiben für die Sitzung erhalten.
+Klicke auf das Winkelsymbol in der Randspalte oder auf die Pille `⋯ N Zeilen` hinter einer eingeklappten Zeile, um sie mit der Maus umzuschalten. Bewegt sich der Cursor in eine eingeklappte Zeile (Suchen, Gehe zu Zeile, Lesezeichen, Widerrufen), wird sie ausgeklappt; ↑ / ↓ überspringen Faltungen. Faltungen folgen deinen Bearbeitungen und bleiben pro Datei erhalten, solange die App läuft – beim Tabwechsel gehen sie nicht verloren –, werden aber nicht für den nächsten Start gesichert.
 
 **Scrollbalken-Marker** – ein schmaler Streifen am rechten Rand des Editors zeigt Suchtreffer (Akzentfarbe), Lesezeichen (Warnfarbe), die Cursorzeile und eingeklappte Kopfzeilen an ihrer relativen Position in der Datei. Er ist ausgeblendet, wenn das ganze Dokument auf den Bildschirm passt. Ausschalten kannst du ihn unter **Darstellung › Scrollbalken-Marker** oder in der Gruppe „Faltung“ des Tabs „Layout“.
 
@@ -213,6 +214,8 @@ Sichtbarkeit der Panels, Zeilenumbruch, Zeilennummern, Syntaxfarben, Scrollbalke
 | Kurzbefehl | Aktion | Kurzbefehl | Aktion |
 |---|---|---|---|
 | ⌘N | Neues Dokument | ⌘O | Öffnen |
+| ⌘W / ⇧⌘W | Tab / alle Tabs schließen | ⇧⌘] / ⇧⌘[ | Nächster / vorheriger Tab |
+| ⌃Tab | Zuletzt aktiver Tab | ⇧⌘T | Zuletzt geschlossenen Tab wieder öffnen |
 | ⌘S | Sichern | ⌘F | Suchen |
 | ⌘R | Ersetzen | ⇧⌘F | In Dateien suchen |
 | F3 / ⇧F3 | Nächster / vorheriger Treffer | ⌘L | Gehe zu Zeile |
@@ -271,7 +274,8 @@ Nichts wird neben deine Dokumente geschrieben, und nichts verlässt deinen Mac.
 - Der Export schreibt nur das ganze Dokument – ohne Export einer Auswahl oder mehrerer Dateien, ohne Seiten- oder Schriftoptionen und ohne PDF-Inhaltsverzeichnis.
 - Geheime Blöcke werden nur auf dem Bildschirm maskiert: Die Datei, automatische Sicherungen und Schnappschüsse sind reiner Text, der Maskierungsbalken zeigt, wie lang jede Zeile ist, und VoiceOver liest den Text weiterhin vor. Ein geheimer Zaun muss am linken Rand beginnen (weniger als vier Leerzeichen eingerückt, nicht in einem Listenpunkt oder Zitat), und ein eingezäunter Block innerhalb eines geheimen Blocks braucht vier Backticks am äußeren Zaun. Die App-Sperre verbirgt das Fenster und seinen Inhalt auch vor VoiceOver; sie verschlüsselt nichts.
 - Blockkommentare lassen sich nicht verschachteln, und Dateien mit klassischen Mac-Zeilenenden (nur CR) werden zeilenweise eingefärbt. Innerhalb eines einzelnen Absatzes mit mehr als 20.000 Zeichen fallen Block- und Unterstrich-Cursor auf den normalen Balken-Cursor zurück.
-- Faltungen bleiben für die Sitzung erhalten und werden nicht pro Datei gesichert; ein Mausziehen über eine eingeklappte Zeile wählt den verborgenen Text trotzdem aus.
+- Faltungen bleiben pro Datei nur erhalten, solange die App läuft, und werden nicht für den nächsten Start gesichert; ein Mausziehen über eine eingeklappte Zeile wählt den verborgenen Text trotzdem aus.
+- Nur der Tab, den du gerade ansiehst, wird im Speicher gehalten: Verlässt du einen Tab, wird der Widerrufen-Verlauf dieser Datei geleert, und beim nächsten Start werden höchstens 30 offene Tabs wiederhergestellt.
 - Dokumente, die aus einer einzigen Zeile von einem Megabyte oder mehr bestehen, lassen sich nur langsam öffnen und durchlaufen; „JSON minifizieren“ warnt, bevor es eine solche erzeugt.
 - Nur lokale Dateien; keine Cloud-Synchronisierung und noch keine iOS-App.
 - Andere als die elf aufgeführten Sprachen fallen auf Englisch zurück.

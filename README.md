@@ -70,7 +70,7 @@ HyperEdit opens `~/Documents/HyperEdit/notes.md`, creating it with a short welco
 - Rendered with Apple's [swift-markdown](https://github.com/swiftlang/swift-markdown) (Apache-2.0). The status bar shows **MD** while the preview is on.
 
 ### Ribbon and panels
-- Ribbon tabs **Home / Edit / Layout / Advanced / Window**, a document tab bar with New (⌘N) and Open (⌘O) buttons, and quick-access Save / Undo / Redo.
+- Ribbon tabs **Home / Edit / Layout / Advanced / Window**, a file tab bar in the UltraEdit style (one tab per open file: click to switch, ⌘W / × / double-click / middle-click to close, drag to reorder, right-click for Close Other Tabs / Close Tabs to the Left or Right / Reopen Last Closed Tab / Save and Close / Revert to Saved / Copy Path / Sort Tabs; ⇧⌘] / ⇧⌘[ and ⌃Tab switch tabs; each file keeps its caret, scroll position and folds while the app runs; up to 30 open tabs are restored on launch) with New (⌘N) and Open (⌘O) buttons, and quick-access Save / Undo / Redo.
 - **Sidebar (⌘1)** — **Files** (folder tree of the current file's folder; a single click opens a file), **Outline** (⌘3: `##` headings, `[Title]` lines, Korean `가./나.` items and `1)` numbered items, with a filter box and the current item highlighted; `# …` lines that look like code comments are excluded), **Timeline** (⌘4: `## YYYY-MM-DD (weekday) HH:MM` timestamp headings plus loose date-prefixed lines, grouped by month, newest first).
 - **Bottom panel (⌘2)** — **Find Results**, **Bookmarks** and an **Output** log.
 
@@ -122,6 +122,8 @@ Delete line ⇧⌘K · duplicate ⇧⌘D · move up / down ⌥↑ / ⌥↓ · jo
 | Shortcut | Action | Shortcut | Action |
 |---|---|---|---|
 | ⌘N | New document | ⌘O | Open |
+| ⌘W / ⇧⌘W | Close tab / all tabs | ⇧⌘] / ⇧⌘[ | Next / previous tab |
+| ⌃Tab | Last active tab | ⇧⌘T | Reopen last closed tab |
 | ⌘S | Save | ⌘F | Find |
 | ⌘R | Replace | ⇧⌘F | Find in files |
 | F3 / ⇧F3 | Next / previous match | ⌘L | Go to line |
@@ -184,7 +186,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 |---|---|
 | `--file <path>` | Open this file instead of the remembered one |
 | `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | Capture the window to PNG via ScreenCaptureKit (needs Screen Recording permission); `--snapshot-panel` captures the floating Quick Append panel opened by `--quick-append`. Snapshot runs use a 1280 pt window unless a width is given |
-| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | Run the built-in self-test (672 checks) on temporary files; never touches your documents. `--selftest-split-big` adds a split-editor typing-latency check that types into and restores the given file (use a copy); `--show-snippet-picker` leaves the Insert Snippet sheet open for screenshots. `--selftest-open` is a file-switching benchmark that edits the files it is pointed at — copies only; `--selftest-markers-big <file>` measures typing latency and scrollbar-marker drawing with 5,000 matches in that file (a copy) |
+| `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | Run the built-in self-test (about 700 checks) on temporary files, in the background (the app gives focus back and keeps its window behind; add `--selftest-foreground` to run in front); never touches your documents. `--selftest-split-big` adds a split-editor typing-latency check that types into and restores the given file (use a copy); `--show-snippet-picker` leaves the Insert Snippet sheet open for screenshots. `--selftest-open` is a file-switching benchmark that edits the files it is pointed at — copies only; `--selftest-markers-big <file>` measures typing latency and scrollbar-marker drawing with 5,000 matches in that file (a copy) |
 | `--theme <id>` · `--follow-system-theme` | Start with a palette id from `palettes.json`, e.g. `hyper-dark` / start following the system appearance |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | Select a ribbon tab |
 | `--left <files\|outline\|timeline>` · `--bottom <find\|bookmarks\|output>` · `--hide-left` · `--hide-bottom` | Show a sidebar / bottom-panel tab, or hide the sidebar / bottom panel |
@@ -197,7 +199,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--cursor <bar\|block\|underline>` · `--no-cursor-blink` · `--opacity <0.5–1.0>` · `--blur` | Start with that caret style / blinking off / the window at that opacity / blur behind the translucent window |
 | `--reveal-secrets` | Start with every secret block revealed (no re-mask timer) |
 | `--locked` | Start locked (for screenshots). The real authenticator is used, so nothing prompts until you click Unlock; automation runs never start locked without this flag |
-| `--ephemeral` | Use throwaway preferences (theme, panels, remembered file, snippets, macros, grammars) for this run — for manual testing |
+| `--ephemeral` | Use throwaway preferences (theme, panels, remembered file, snippets, macros, grammars, bookmarks) and a temporary default-document folder for this run — for manual testing |
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | Diagnostics: log window creation during launch to stderr (and a file) / log Markdown preview renders and navigation / skip theme and font attribute application |
 | `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | Performance benchmark on a generated corpus (2 KB–28 MB); writes JSON + Markdown with PASS/FAIL budgets — see [docs/performance.md](docs/performance.md). Phases: `idle open memory scroll search outline theme typing findui findquery replace save`. `scripts/bench.sh` wraps it |
@@ -233,7 +235,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org); subj
 - Macros record keyboard editing only (no mouse, selection or multi-caret steps). The inline calculator and column alignment work on plain arithmetic and tab / pipe tables only (no variables, units or date math). Toggle Comment is line-based (no block-comment selection), and the JSON formatter has no sort or schema features.
 - Snippets, macros and user grammars are edited as JSON files (`snippets.json`, `macros/macros.json`, `grammars/*.json` under Application Support); there is no GUI editor for them.
 - Export writes the whole document only (no selection or multi-file export, no page-size or font options, no PDF table of contents). Secret blocks are masked on screen only — the file, autosaves and snapshots are plain text, the mask bar reveals line lengths, VoiceOver still reads the text, and a secret fence must start at the left margin (not inside a list or quote). App lock hides the window and blocks input; it does not encrypt files. Block comments do not nest; inside a paragraph longer than 20,000 characters the Block and Underline carets fall back to the bar caret.
-- Code folding lasts for the session only (folds are not saved per file), and a mouse drag across a folded header still selects the hidden text.
+- Folds are kept per file only while the app runs (they are not saved for the next launch), and a mouse drag across a folded header still selects the hidden text.
+- Only the tab you are viewing is held in memory: leaving a tab clears that file's undo history, and no more than 30 open tabs are restored on the next launch.
 - The Quick Append global shortcut uses the system hot-key API, so the ⌃Space / ⌃⌥Space variants lose silently to input-source switching when that is enabled in System Settings › Keyboard; pick ⌃⌥N or ⌃⌥⌘N instead.
 
 Design notes and the decision history are in [docs/design.ko.md](docs/design.ko.md) (Korean); the feature catalog with status is in [docs/features.md](docs/features.md).

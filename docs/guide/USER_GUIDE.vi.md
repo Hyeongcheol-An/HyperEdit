@@ -55,6 +55,7 @@ HyperEdit mở `~/Documents/HyperEdit/notes.md`. Nếu tệp đó chưa tồn t�
 
 - **⌘N** tạo một tệp văn bản trống mới (bạn chọn tên và thư mục).
 - **⌘O** mở bất kỳ tệp văn bản nào khác. Tệp mở gần nhất được ghi nhớ cho lần khởi chạy sau.
+- **Tab tệp.** Mỗi tệp đang mở có một tab phía trên trình soạn thảo, như UltraEdit: nhấp để chuyển; ⌘W, dấu ×, nhấp đúp hoặc nhấp chuột giữa để đóng tab (chỉnh sửa chưa lưu được lưu trước). Đóng tab bạn đang xem sẽ chuyển sang tab bên trái nó; nhấp đúp vào một tab bạn không xem sẽ đóng tab đó, còn bạn vẫn ở lại tab đang đọc. Kéo tab để sắp xếp lại; nhấp đúp vào chỗ trống trên thanh tab để tạo tệp mới; nhấp chuột phải vào tab để dùng Đóng các tab khác / Đóng các tab bên trái / Đóng các tab bên phải / Mở lại tab vừa đóng (⇧⌘T) / Lưu và đóng / Khôi phục bản đã lưu / Sao chép đường dẫn / Sắp xếp tab. ⇧⌘] / ⇧⌘[ chuyển lần lượt qua các tab, ⌃Tab quay về tab bạn xem gần nhất, và ▾ ở bên phải liệt kê mọi tab đang mở; chú giải công cụ của tab hiện đường dẫn đầy đủ, kích thước và thời gian sửa đổi. Mỗi tệp giữ vị trí con trỏ, vị trí cuộn và các vùng thu gọn trong khi ứng dụng đang chạy, nhưng lịch sử hoàn tác của tệp bị xóa khi bạn rời tab của nó. Tối đa 30 tab đang mở được khôi phục ở lần khởi chạy sau. Đóng tab cuối cùng sẽ mở tài liệu mặc định, và tab có tệp đã bị xóa sẽ bị gỡ khi bạn nhấp vào nó.
 - **Tệp › Mở tài liệu mặc định** đưa bạn về `notes.md`.
 - Tệp nhị phân (ảnh, PDF, tệp nén…) không bao giờ được nạp vào trình soạn thảo; chúng mở bằng ứng dụng mặc định.
 
@@ -79,7 +80,7 @@ Ngôn ngữ không có trong danh sách sẽ dùng tiếng Anh (ví dụ tiếng
 Bố cục theo kiểu trình soạn thảo ribbon cổ điển, với thanh tiêu đề ẩn.
 
 - **Các tab ribbon** — **Trang đầu** (Bảng nhớ tạm, Tìm, Chèn, Chế độ, Tệp), **Chỉnh sửa** (Dòng, Chữ hoa/thường, Sắp xếp, Khoảng trắng, Cột & Đa con trỏ, Công cụ, Macro), **Bố cục** (Chủ đề, Bảng, Thu gọn, Markdown, Cỡ chữ), **Nâng cao** (Cài đặt, thư mục bản chụp, tải lại, tài liệu mặc định), **Cửa sổ** (toàn màn hình, các bảng). Khi cửa sổ hẹp, các nhóm thu thành biểu tượng từ bên phải; chú giải công cụ của biểu tượng hiện nhãn.
-- **Thanh tab tài liệu** — tên tệp hiện tại với nút Mới (⌘N) và Mở (⌘O), cùng các nút nhanh Lưu / Hoàn tác / Làm lại.
+- **Thanh tab tệp** — mỗi tệp đang mở một tab, theo sau là nút Mới (+, ⌘N) và Mở (thư mục, ⌘O); khi có từ hai tab trở lên, ▾ ở cuối bên phải liệt kê chúng. Các nút nhanh Lưu / Hoàn tác / Làm lại nằm ở bên phải hàng tab ribbon.
 - **Thanh bên (⌘1)** — **Tệp** (thư mục của tệp hiện tại; nhấp một lần để mở tệp), **Dàn ý (⌘3)** (tiêu đề, dòng `[Tiêu đề]` và mục đánh số, có ô lọc; mục hiện tại được tô sáng), **Dòng thời gian (⌘4)** (tiêu đề dấu thời gian nhóm theo tháng, mới nhất trước).
 - **Bảng dưới (⌘2)** — **Kết quả tìm kiếm**, **Dấu trang** và **Đầu ra**, nhật ký những gì ứng dụng đã làm (lưu, thay thế, lỗi).
 - **Thanh trạng thái** — dòng và cột (cùng độ dài vùng chọn; di chuột để xem vị trí ký tự), kết thúc dòng (UNIX / DOS / MAC), bảng mã tệp, **COL** khi chế độ cột đang bật, số con trỏ, số dòng · kích thước tệp, thông báo trạng thái mới nhất, ngôn ngữ cú pháp (mờ khi màu cú pháp tắt), menu chủ đề (đánh dấu "· Hệ thống" khi theo giao diện hệ thống) và tỷ lệ thu phóng. Hầu hết các mục đều nhấp được.
@@ -152,7 +153,7 @@ Bản ghi gần nhất chỉ nằm trong bộ nhớ cho đến khi bạn thoát,
 - trong Markdown, mọi thứ dưới một tiêu đề `#` cho đến tiêu đề kế tiếp cùng cấp hoặc cao hơn (khối mã rào cũng thu gọn được),
 - trong mã, một dòng kết thúc bằng `{`, `[` hoặc `(` cho đến dòng có dấu đóng tương ứng.
 
-Nhấp chevron ở lề hoặc viên `⋯ N dòng` sau dòng đã thu gọn để bật/tắt bằng chuột. Di chuyển con trỏ vào dòng đã thu gọn (tìm, đi tới dòng, dấu trang, hoàn tác) sẽ mở rộng nó; ↑ / ↓ nhảy qua các vùng thu gọn. Các vùng thu gọn đi theo chỉnh sửa của bạn và tồn tại trong phiên.
+Nhấp chevron ở lề hoặc viên `⋯ N dòng` sau dòng đã thu gọn để bật/tắt bằng chuột. Di chuyển con trỏ vào dòng đã thu gọn (tìm, đi tới dòng, dấu trang, hoàn tác) sẽ mở rộng nó; ↑ / ↓ nhảy qua các vùng thu gọn. Các vùng thu gọn đi theo chỉnh sửa của bạn và được giữ theo từng tệp trong khi ứng dụng đang chạy — chuyển tab không làm mất chúng — nhưng không được lưu cho lần khởi chạy sau.
 
 **Dấu thanh cuộn** — một dải mỏng ở mép phải trình soạn thảo hiện kết quả tìm kiếm (màu nhấn), dấu trang (màu cảnh báo), dòng con trỏ và tiêu đề đã thu gọn ở vị trí tương đối trong tệp. Dải này ẩn khi toàn bộ tài liệu vừa màn hình. Tắt nó trong **Hiển thị › Dấu thanh cuộn** hoặc trong nhóm Thu gọn của tab Bố cục.
 
@@ -213,6 +214,8 @@ Trạng thái hiện/ẩn các bảng, ngắt dòng, số dòng, màu cú pháp,
 | Phím tắt | Thao tác | Phím tắt | Thao tác |
 |---|---|---|---|
 | ⌘N | Tài liệu mới | ⌘O | Mở |
+| ⌘W / ⇧⌘W | Đóng tab / tất cả tab | ⇧⌘] / ⇧⌘[ | Tab kế tiếp / trước |
+| ⌃Tab | Tab hoạt động gần nhất | ⇧⌘T | Mở lại tab vừa đóng |
 | ⌘S | Lưu | ⌘F | Tìm |
 | ⌘R | Thay thế | ⇧⌘F | Tìm trong tệp |
 | F3 / ⇧F3 | Kết quả kế tiếp / trước | ⌘L | Đi tới dòng |
@@ -271,7 +274,8 @@ Không có gì được ghi cạnh tài liệu của bạn, và không có gì r
 - Xuất chỉ ghi toàn bộ tài liệu, không có xuất vùng chọn hay nhiều tệp, không có tùy chọn trang hay phông chữ, và không có mục lục PDF.
 - Khối bí mật chỉ được che trên màn hình: tệp, bản tự động lưu và bản chụp đều là văn bản thuần, thanh che cho thấy độ dài của từng dòng, và VoiceOver vẫn đọc được văn bản. Hàng rào secret phải bắt đầu ở lề trái (thụt lề dưới bốn dấu cách, không nằm trong mục danh sách hay trích dẫn), và một khối rào lồng trong khối bí mật cần bốn dấu backtick ở hàng rào ngoài. Khóa ứng dụng ẩn cửa sổ và nội dung của nó khỏi VoiceOver; nó không mã hóa gì cả.
 - Chú thích khối không lồng nhau được, và tệp dùng kết thúc dòng kiểu Mac cổ điển (chỉ CR) được tô màu theo từng dòng. Trong một đoạn văn dài hơn 20.000 ký tự, con trỏ Khối và Gạch dưới trở về con trỏ thanh tiêu chuẩn.
-- Vùng thu gọn tồn tại trong phiên và không được lưu theo tệp; kéo chuột qua dòng đã thu gọn vẫn chọn văn bản bị ẩn.
+- Vùng thu gọn chỉ được giữ theo từng tệp trong khi ứng dụng đang chạy và không được lưu cho lần khởi chạy sau; kéo chuột qua dòng đã thu gọn vẫn chọn văn bản bị ẩn.
+- Chỉ tab bạn đang xem được giữ trong bộ nhớ: rời một tab sẽ xóa lịch sử hoàn tác của tệp đó, và không quá 30 tab đang mở được khôi phục ở lần khởi chạy sau.
 - Tài liệu chỉ có một dòng dài từ một megabyte trở lên mở và di chuyển chậm; Rút gọn JSON cảnh báo trước khi tạo ra dòng như vậy.
 - Chỉ tệp cục bộ; chưa có đồng bộ đám mây và chưa có ứng dụng iOS.
 - Ngôn ngữ ngoài mười một ngôn ngữ đã liệt kê sẽ dùng tiếng Anh.

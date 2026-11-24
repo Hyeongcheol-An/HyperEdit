@@ -334,6 +334,7 @@ struct EditorView: NSViewRepresentable {
             container.markerView = markers                                                                                  // markers
             markerView = markers                                                                                            // markers
             fold.onChange = { [weak markers] in markers?.needsDisplay = true }                                              // markers
+            fold.onRestore = { [weak self] in self?.reanchorAfterFoldRestore() }                                           // 탭으로 돌아와 접힘을 되살린 뒤 보기 위치 다시 맞춤
         }
 
         private func bindDocument() {
@@ -486,7 +487,8 @@ struct EditorView: NSViewRepresentable {
             lastReloadGeneration = generation
             session.clearUndo()
             // 디스크에서 다시 읽은 내용은 shouldChangeText 를 거치지 않으므로 줄 수만 맞춘다
-            model.bookmarks.clamp(toLineCount: document.lineIndex.lineCount)
+            // 읽지 못한 파일(권한·인코딩)은 버퍼가 비어 줄 수가 1 이다 — 그 값으로 맞추면 그 파일의 북마크가 1번 줄 하나로 뭉개져 저장된다
+            if document.isLoaded { model.bookmarks.clamp(toLineCount: document.lineIndex.lineCount) }
             if let t = lastTheme, let f = lastFont { apply(theme: t, font: f, force: true) }
             // 외부 변경 반영 뒤 캐럿이 문서 끝으로 튀지 않도록 직전 위치(클램프)를 복원 — 같은 파일을 다른 도구로 덧붙여 쓰는 흐름에서 읽던 자리를 잃지 않는다
             if restored, let tv = textView, let keep = lastSelection {
@@ -557,17 +559,79 @@ struct EditorView: NSViewRepresentable {
             restored = true
             let len = document.textStorage.length
             if role == .secondary {
-                // split: 보조 편집기는 저장된 위치를 쓰지 않고 주 편집기의 캐럿 줄에서 시작한다 (가운데, 포커스는 주 편집기에 둔다)
-                let loc = session.primary?.textView?.selectedRange().location ?? len
+                // split: 보조 편집기는 저장된 위치를 쓰지 않고 주 편집기의 캐럿 줄에서 시작한다 (가운데, 포커스는 주 편집기에 둔다).
+                // 탭을 바꾼 직후에는 주 편집기가 아직 제 캐럿을 되살리기 전일 수 있다 — 그때의 선택은 내용 교체가 밀어 둔 문서 끝이라 보조 편집기만 문서 끝을
+                // 보여 주게 된다. 그때는 주 편집기가 되살릴 캐럿(저장된 보기 상태)을 쓴다
+                let primary = session.primary
+                let loc = (primary?.restored == true ? primary?.textView?.selectedRange().location : ViewStateStore.load(for: document.url)?.cursor) ?? len
                 select(NSRange(location: min(loc, len), length: 0), center: true, indicator: false, focus: false)
                 return
             }
+            // 줄 수의 자릿수가 다른 파일로 넘어오면 거터 폭이 바뀌어 본문이 다시 감긴다. 그 갱신은 줄 인덱스 발행의 다음 턴에 오므로(bindDocument) 여기서 먼저 끝내고
+            // 최종 폭에서 보기 위치를 되살린다 — 아니면 되살린 직후에 본문이 다시 감기며 화면이 한두 줄 밀린다
+            gutter?.updateThickness()
+            container?.layoutSubtreeIfNeeded()
             if let st = ViewStateStore.load(for: document.url) {
-                select(NSRange(location: min(st.cursor, len), length: 0), center: true, indicator: false)
+                let caret = NSRange(location: min(st.cursor, len), length: 0)
+                if let top = st.topOffset, top <= len, !tv.isInHugeParagraph(top) {
+                    // 탭을 오가도 읽던 곳 그대로: 캐럿은 제자리에(화면 밖이었으면 밖에), 화면은 떠날 때 맨 위에 걸쳐 있던 문단이 같은 높이에 오게
+                    tv.setSelectedRange(caret)
+                    tv.scrollRangeToVisible(NSRange(location: top, length: 0))   // 그 근처를 먼저 배치하게 한다 (정확한 높이는 아래에서)
+                    tv.window?.makeFirstResponder(tv)
+                    let inset = CGFloat(st.topInset ?? 0)
+                    scrollToTop(offset: top, inset: inset)
+                    restoredAnchor = (top, inset, document.reloadGeneration, sv.contentView.bounds.origin.y)
+                    // 스크롤 뒤 TextKit 2 가 위쪽 문단의 추정 높이를 실측으로 바꾸며 좌표를 옮길 수 있다 → 다음 턴에 한 번 더 맞춘다 (centerCaret 과 같은 이유)
+                    let generation = document.reloadGeneration   // 그 사이 다른 파일로 또 넘어갔으면 이 오프셋은 그 파일의 것이 아니다
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self, self.document.reloadGeneration == generation else { return }
+                        self.scrollToTop(offset: top, inset: inset)
+                        self.restoredAnchor?.y = self.scrollView?.contentView.bounds.origin.y ?? 0
+                    }
+                } else {
+                    select(caret, center: true, indicator: false)
+                }
             } else {
                 select(NSRange(location: len, length: 0), center: false, indicator: false)
             }
-            _ = tv
+        }
+
+        /// 방금 되살린 보기 위치 (닻·그때의 문서 세대·맞춘 뒤의 스크롤 위치) — 접힘이 뒤늦게 되살아나면 같은 닻으로 한 번 더 맞춘다
+        private var restoredAnchor: (offset: Int, inset: CGFloat, generation: Int, y: CGFloat)?
+
+        /// 돌아온 탭의 접힘이 (영역 스캔 뒤에) 되살아났다: 화면보다 위가 접히면 글이 올라오므로 닻을 다시 맞춘다. 그 사이 사용자가 스크롤했으면 건드리지 않는다
+        private func reanchorAfterFoldRestore() {
+            guard let a = restoredAnchor, a.generation == document.reloadGeneration, let sv = scrollView,
+                  abs(sv.contentView.bounds.origin.y - a.y) < 1 else { return }
+            scrollToTop(offset: a.offset, inset: a.inset)
+        }
+
+        /// 화면 맨 위에 걸친 문단(시작 오프셋)과, 그 문단의 위 가장자리가 화면 위 가장자리보다 얼마나 위에 있는가 — 보기 위치의 닻
+        private func topAnchor() -> (offset: Int, inset: CGFloat)? {
+            guard let tv = textView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage else { return nil }
+            // 문서 맨 위에서는 화면 위 가장자리가 첫 문단보다 위(위쪽 여백)에 있다 → inset 은 음수가 될 수 있다
+            let y = tv.visibleRect.minY - tv.textContainerOrigin.y
+            guard let f = lm.textLayoutFragment(for: CGPoint(x: 0, y: max(0, y))) else { return nil }
+            return (cs.offset(from: cs.documentRange.location, to: f.rangeInElement.location), y - f.layoutFragmentFrame.minY)
+        }
+
+        /// `offset` 에서 시작하는 문단의 위 가장자리가 화면 위 가장자리보다 `inset` 만큼 위에 오게 스크롤한다 (이미 그 자리면 아무것도 하지 않는다)
+        private func scrollToTop(offset: Int, inset: CGFloat) {
+            guard restored, let tv = textView, let sv = scrollView, let lm = tv.textLayoutManager, let cs = tv.textContentStorage,
+                  offset <= (tv.textStorage?.length ?? 0), let loc = cs.location(cs.documentRange.location, offsetBy: offset) else { return }
+            // 스크롤하면 TextKit 2 가 새 자리의 문단을 배치하며 위쪽 문단의 추정 높이를 실측으로 바꾸고, 그만큼 닻 문단의 좌표(와 때로는 스크롤 위치)가 밀린다.
+            // 그래서 "지금 보이는 자리를 배치 → 닻이 어디 있는지 봄 → 어긋났으면 스크롤"을 좌표가 가라앉을 때까지 되풀이한다 (보통 한두 바퀴)
+            for _ in 0..<4 {
+                lm.textViewportLayoutController.layoutViewport()
+                var frame: CGRect?
+                lm.enumerateTextLayoutFragments(from: loc, options: [.ensuresLayout]) { f in frame = f.layoutFragmentFrame; return false }
+                guard let fr = frame else { return }
+                let maxY = max(0, tv.bounds.height - sv.contentView.bounds.height)
+                let y = min(max(0, fr.minY + tv.textContainerOrigin.y + min(inset, max(0, fr.height - 1))), maxY)
+                guard abs(sv.contentView.bounds.origin.y - y) > 0.25 else { return }
+                sv.contentView.scroll(to: NSPoint(x: 0, y: y))
+                sv.reflectScrolledClipView(sv.contentView)
+            }
         }
 
         private func scheduleSaveViewState() {
@@ -581,8 +645,10 @@ struct EditorView: NSViewRepresentable {
         }
 
         private func saveViewStateNow() {
-            guard role == .primary, let tv = textView, document.isLoaded else { return }
-            ViewStateStore.save(EditorViewState(cursor: tv.selectedRange().location, scrollY: Double(tv.visibleRect.minY)), for: document.url)
+            // `restored`: 파일을 갈아탄 직후(내용은 바뀌었고 보기 위치는 아직 되살리기 전)의 캐럿·스크롤은 이 파일의 것이 아니다 — 그때 또 전환되면 저장하지 않는다
+            guard role == .primary, restored, let tv = textView, document.isLoaded else { return }
+            let top = topAnchor()
+            ViewStateStore.save(EditorViewState(cursor: tv.selectedRange().location, scrollY: Double(tv.visibleRect.minY), topOffset: top?.offset, topInset: top.map { Double($0.inset) }), for: document.url)
         }
 
         // MARK: 명령
@@ -913,7 +979,7 @@ struct EditorView: NSViewRepresentable {
         private func selectionDidChangeImpl() {
             guard let tv = textView else { return }
             let sel = tv.selectedRange()
-            lastSelection = sel
+            if !document.isReplacingContent { lastSelection = sel }   // 다시 읽기가 캐럿을 문서 끝으로 밀어 둔 것은 기억하지 않는다 (handleReload 가 직전 자리로 되돌린다)
             let isActive = session.isActive(self)   // split: 상태바·미리보기·위치 저장은 활성 편집기만
             if isActive { model.updateCaret(range: sel) }
             // 현재 줄 하이라이트: 이전/현재 줄 영역만 다시 그림 (전체 needsDisplay 는 TextKit 2 서피스 재합성을 유발)

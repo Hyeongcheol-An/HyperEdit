@@ -4,9 +4,14 @@ import Foundation
 public struct EditorViewState: Codable, Equatable, Sendable {
     public var cursor: Int
     public var scrollY: Double?
+    /// 화면 맨 위에 걸쳐 있던 문단의 시작 오프셋(UTF-16)과, 그 문단의 위 가장자리가 화면 위 가장자리보다 얼마나 위에 있었는가(pt).
+    /// 문서 좌표 `scrollY` 는 다시 읽은 문서에서 같은 글을 가리키지 않는다(TextKit 2 는 아직 배치하지 않은 문단의 높이를 추정한다) —
+    /// 보기 위치는 이 닻으로 되살린다. 예전 버전이 저장한 상태에는 없다(nil → 캐럿 줄을 화면에 맞춘다)
+    public var topOffset: Int?
+    public var topInset: Double?
     public var savedAt: Date
-    public init(cursor: Int, scrollY: Double? = nil, savedAt: Date = Date()) {
-        self.cursor = cursor; self.scrollY = scrollY; self.savedAt = savedAt
+    public init(cursor: Int, scrollY: Double? = nil, topOffset: Int? = nil, topInset: Double? = nil, savedAt: Date = Date()) {
+        self.cursor = cursor; self.scrollY = scrollY; self.topOffset = topOffset; self.topInset = topInset; self.savedAt = savedAt
     }
 }
 

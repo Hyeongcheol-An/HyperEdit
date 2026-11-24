@@ -321,7 +321,7 @@ extension SelfTest {
             model.open(url: dosURL); await wait(800)
             _ = model.quickAppend("c", withTimestamp: false); await wait(600)
             log("J: DOS document after quick append → \(disk().debugDescription) (lineEnding=\(doc.lineEnding))")
-            for u in [emptyURL, empty2, dosURL] { try? fm.removeItem(at: u) }
+            for u in [emptyURL, empty2, dosURL] { model.closeTab(u.resolvingSymlinksInPath()); try? fm.removeItem(at: u) }   // tabs
         }
         await sectionJ()
 
@@ -377,6 +377,7 @@ extension SelfTest {
             try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: roDir.path)
             model.saveNow(); await wait(800)
             check(!doc.isDirty && disk(roURL).hasSuffix("note in ro\n"), "L: save succeeds once the folder is writable again")
+            for u in [noReadURL, roURL] { model.closeTab(u.resolvingSymlinksInPath()) }   // tabs
             try? fm.removeItem(at: noReadURL); try? fm.removeItem(at: roURL); try? fm.removeItem(at: roDir)
         }
         await sectionL()
@@ -401,6 +402,7 @@ extension SelfTest {
             let bomRaw = (try? Data(contentsOf: bomURL)) ?? Data()
             check(bomRaw.prefix(3) == Data([0xEF, 0xBB, 0xBF]) && String(data: bomRaw.dropFirst(3), encoding: .utf8) == "bom text\nmore ✓\n" && doc.hasBOM,
                   "M: BOM preserved on save")
+            for u in [krURL, bomURL] { model.closeTab(u.resolvingSymlinksInPath()) }   // tabs
             try? fm.removeItem(at: krURL); try? fm.removeItem(at: bomURL)
         }
         await sectionM()

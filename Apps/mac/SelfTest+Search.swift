@@ -150,6 +150,7 @@ extension SelfTest {
         // 정리: 검색을 비우고 원래 문서로 (전환 시 샘플의 편집은 임시 파일에 저장된다), 임시 폴더 삭제
         model.searchQuery = ""; model.runSearch()
         model.open(url: previous); await wait(800)
+        model.closeTabs(in: dir)   // tabs: 임시 문서 탭을 닫고 폴더를 지운다
         try? FileManager.default.removeItem(at: dir)
         check(model.document.url.lastPathComponent == previous.lastPathComponent, "search: back on \(previous.lastPathComponent)")
         check(tv.matchHighlights.isEmpty, "search: highlights cleared after switching documents (\(tv.matchHighlights.count))")
@@ -200,6 +201,7 @@ extension SelfTest {
             model.findFields.query = ""; model.quickFindTextChanged(); await wait(200)
             model.quickFindFocusLost()   // 앵커를 남기지 않는다
             model.open(url: previous); await wait(800)
+            model.closeTabs(in: dir)   // tabs
             try? FileManager.default.removeItem(at: dir)
         }
     }
