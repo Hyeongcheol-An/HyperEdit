@@ -1293,7 +1293,9 @@ extension RealUse {
             ctx.at("arrow keys move the band")
             for _ in 0..<6 { await ctx.key(.down); await ctx.settle(0); ctx.checkBandOnScreen("after ↓"); ctx.checkLineHighlight("after ↓") }
             ctx.at("band on the second visual line of a wrapped paragraph")
-            if let f = frags.first(where: { ctx.visualLines(ofParagraphAt: $0.offset).count >= 2 }) {
+            // 지금 화면에 있는 문단에서 고른다 — 처음에 잡아 둔 목록은 방향키·휠로 화면이 움직이면(편집기가 낮을수록 쉽게) 화면 밖일 수 있다
+            @MainActor func onScreen() -> [RealUseContext.Frag] { let v = ctx.visible; return ctx.viewportFragments().filter { $0.minY >= v.minY && $0.maxY <= v.maxY } }
+            if let f = onScreen().first(where: { ctx.visualLines(ofParagraphAt: $0.offset).count >= 2 }) {
                 let vls = ctx.visualLines(ofParagraphAt: f.offset)
                 await ctx.clickExpect(vls[1].range.location + 6, "click the second visual line")
                 await ctx.settle(0); ctx.checkLineHighlight("caret on the second visual line"); ctx.snap("band-wrapped")
@@ -1319,7 +1321,7 @@ extension RealUse {
                 // 글자 칸: 영문 한 칸, 한글 두 칸, 탭은 탭 폭, 줄 끝은 한 칸
                 let cw = ctx.tv.charWidth
                 let ns = ctx.text
-                if let f = frags.first(where: { ns.substring(with: NSRange(location: $0.offset, length: $0.length)).contains("한글") }) {
+                if let f = onScreen().first(where: { ns.substring(with: NSRange(location: $0.offset, length: $0.length)).contains("한글") }) {
                     let ko = ns.range(of: "한글", options: [], range: NSRange(location: f.offset, length: f.length)).location
                     await ctx.clickExpect(ko, "click a Hangul character (\(style.rawValue))")
                     if let cell = ctx.tv.caretCell(at: ko), let r = ctx.tv.caretRect(at: ko) {
@@ -1329,7 +1331,7 @@ extension RealUse {
                     }
                     let end = f.offset + f.length - 1
                     if let cell = ctx.tv.caretCell(at: end) { ctx.expect(abs(cell.width - cw) < 0.5, "caret", "\(style.rawValue) caret cell at the line end is \(cell.width) wide (expected \(cw))") }
-                }
+                } else { ctx.issue("other", "no paragraph with Hangul on screen for the caret cell test (\(style.rawValue))") }
                 await ctx.settle(0); ctx.checkLineHighlight("cursor style \(style.rawValue)"); ctx.snap("style-\(style.rawValue)")
             }
             ctx.model.cursorStyle = style0
