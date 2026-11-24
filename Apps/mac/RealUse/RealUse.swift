@@ -34,7 +34,7 @@ enum RealUse {
 
     /// 모든 시나리오 (영역 파일들이 채운다)
     @MainActor static var scenarios: [Scenario] {
-        coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios
+        coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios + fileViewScenarios
     }
 
     @MainActor

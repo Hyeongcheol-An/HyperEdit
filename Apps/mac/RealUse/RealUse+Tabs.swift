@@ -1109,7 +1109,7 @@ extension RealUse {
             var tLoad = 0.0, topLevel = 0
             await ctx.withRelaxedStalls(30_000) {
                 let t = CFAbsoluteTimeGetCurrent()
-                topLevel = FileTree.load(proj).count
+                topLevel = FileTree.list(proj).count
                 tLoad = ctx.elapsedMs(since: t)
             }
             let shown = m.showFileView
@@ -1125,7 +1125,7 @@ extension RealUse {
                 }
                 m.showFileView = shown; await ctx.settle(500)
             }
-            ctx.note(String(format: "reading the folder tree alone (FileTree.load, %d top-level entries): %.0f ms; the same switches with the file view hidden: ", topLevel, tLoad) + "\(hidden.map { Int($0) }) ms")
+            ctx.note(String(format: "reading the folder alone (FileTree.list, %d top-level entries): %.0f ms; the same switches with the file view hidden: ", topLevel, tLoad) + "\(hidden.map { Int($0) }) ms")
             ctx.snap("folders")
             ctx.tallyNote()
         },
