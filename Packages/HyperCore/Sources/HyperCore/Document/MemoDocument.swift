@@ -63,6 +63,9 @@ public final class MemoDocument: NSObject, ObservableObject, NSTextStorageDelega
     private var fileGeneration = 0
     /// load/reload 의 전체 교체 중에는 저장소 변경 알림을 '사용자 편집' 으로 치지 않는다 (0 보다 크면 교체 중)
     private var programmaticReplaceDepth = 0
+    /// load/reload 가 저장소 내용을 통째로 바꾸는 중인가. 그동안 텍스트 뷰가 알리는 선택 변경(캐럿이 문서 끝으로 밀린다)은 사용자의 것이 아니다 —
+    /// 편집기는 이때의 선택을 '직전 캐럿'으로 기억하지 않는다 (밖에서 바뀐 파일을 다시 읽은 뒤 읽던 자리로 돌아가기 위해)
+    public var isReplacingContent: Bool { programmaticReplaceDepth > 0 }
     /// 마지막 load/reload 이후 실제 문자 편집(저장소 알림 기준)이 있었는가. 없으면 뷰가 보내는 textDidChange() 는 무시한다 —
     /// macOS 27 의 undo 경로 보정으로 전체 교체 직후에도 뷰가 didChangeText 를 한 번 더 부르는데, 그 때문에 새로 연 문서가 dirty 가 되면 안 된다.
     private var editedSinceLoad = false

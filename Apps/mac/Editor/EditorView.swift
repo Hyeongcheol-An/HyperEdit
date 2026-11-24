@@ -962,7 +962,7 @@ struct EditorView: NSViewRepresentable {
         private func selectionDidChangeImpl() {
             guard let tv = textView else { return }
             let sel = tv.selectedRange()
-            lastSelection = sel
+            if !document.isReplacingContent { lastSelection = sel }   // 다시 읽기가 캐럿을 문서 끝으로 밀어 둔 것은 기억하지 않는다 (handleReload 가 직전 자리로 되돌린다)
             let isActive = session.isActive(self)   // split: 상태바·미리보기·위치 저장은 활성 편집기만
             if isActive { model.updateCaret(range: sel) }
             // 현재 줄 하이라이트: 이전/현재 줄 영역만 다시 그림 (전체 needsDisplay 는 TextKit 2 서피스 재합성을 유발)
