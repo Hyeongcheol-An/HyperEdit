@@ -9,8 +9,9 @@ struct HyperEditApp: App {
 
     init() {
         // 스크린샷·셀프테스트 실행은 사용자 설정(테마·패널·마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다 (`--ephemeral` 은 수동 테스트 실행용)
-        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--ephemeral") || Bench.enabled {
-            AppDefaults.useEphemeral()
+        // `--ephemeral-suite <name>` 은 여러 자동화 인스턴스를 동시에 띄울 때 서로의 설정·스냅샷·기본 문서 폴더가 섞이지 않게 한다
+        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--ephemeral") || Bench.enabled || RealUse.enabled {
+            AppDefaults.useEphemeral(suiteName: LaunchOptions.value("--ephemeral-suite") ?? "hyperedit.automation")
         }
     }
 

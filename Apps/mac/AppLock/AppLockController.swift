@@ -133,7 +133,7 @@ final class AppLockController: ObservableObject {
 
     /// 자동화 실행은 시작 잠금을 하지 않는다 (테스트가 명시적으로 건다). `--locked` 는 스크린샷용 강제 시작 잠금
     static var isAutomationRun: Bool {
-        SelfTest.enabled || SelfTest.openEnabled || Bench.enabled || LaunchOptions.has("--snapshot") || LaunchOptions.has("--quit-after-launch")
+        SelfTest.enabled || SelfTest.openEnabled || Bench.enabled || RealUse.enabled || LaunchOptions.has("--snapshot") || LaunchOptions.has("--quit-after-launch")
     }
 
     init(model: AppModel, authenticator: Authenticator? = nil) {

@@ -88,7 +88,13 @@ final class GutterView: NSView {
         Perf.measure("GutterView.draw", threshold: 2) { drawImpl(dirtyRect) }
     }
 
+    /// 실사용 하네스(--realuse): 마지막 그리기에서 번호를 그린 줄과 y (거터 좌표) — 본문 조각과 높이가 맞는지 비교한다
+    static var captureRows = false
+    private(set) var debugRows: [(line: Int, y: CGFloat)] = []
+
     private func drawImpl(_ dirtyRect: NSRect) {
+        var capturedRows: [(line: Int, y: CGFloat)] = []
+        defer { if Self.captureRows { debugRows = capturedRows } }
         if surfaceAlpha >= 1 {   // appearance: 반투명이면 컨테이너 레이어가 배경을 맡는다
             bgColor.setFill()
             bounds.fill()
@@ -131,6 +137,7 @@ final class GutterView: NSView {
             let line = index.lineNumber(forUTF16Offset: offset)
             let firstLineHeight = frag.textLineFragments.first?.typographicBounds.height ?? frame.height
             let y = yInTextView - visible.minY
+            if Self.captureRows { capturedRows.append((line, y)) }
             if line == caretLine, tv.selectedRange().length == 0 {
                 // 편집기의 현재 줄 강조가 거터까지 이어지도록 같은 색으로 행을 칠한다
                 (self.surfaceAlpha < 1 ? self.lineHighlightColor.withAlphaComponent(self.surfaceAlpha) : self.lineHighlightColor).setFill()   // appearance

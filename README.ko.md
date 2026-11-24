@@ -203,6 +203,7 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
 | `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui findquery replace save`. `scripts/bench.sh` 가 감싸서 실행 |
+| `--realuse [--realuse-only <scenarios>] [--realuse-out <dir>] [--quit]` · `--ephemeral-suite <name>` | 실사용 시뮬레이션: 키·입력기·스크롤 휠·마우스 이벤트를 실제 창에 보내고 걸음마다 불변식(레이아웃 틈·겹침, 뷰포트, 캐럿, 거터 행, 그려진 잉크, 메인 스레드 정지)을 검사하며 PNG 를 남긴다 — [CONTRIBUTING.md](CONTRIBUTING.md) 참고. `scripts/realuse.sh` 가 감싸서 실행, `--ephemeral-suite` 는 동시에 도는 자동화 실행을 서로 격리 |
 | `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성

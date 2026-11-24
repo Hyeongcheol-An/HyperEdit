@@ -163,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppModel.current?.log(copy.map { String(localized: "Save failed on quit — emergency copy written to \($0.path)") }
                               ?? String(localized: "Save failed on quit — no emergency copy could be written"), isError: true)
         // 자동화 실행(셀프테스트·벤치·스크린샷)은 묻지 않고 종료한다
-        if SelfTest.enabled || Bench.enabled || LaunchOptions.has("--snapshot") { return .terminateNow }
+        if SelfTest.enabled || Bench.enabled || RealUse.enabled || LaunchOptions.has("--snapshot") { return .terminateNow }
         let alert = NSAlert()
         alert.alertStyle = .critical
         alert.messageText = String(localized: "The document could not be saved")

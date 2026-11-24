@@ -203,6 +203,7 @@ Useful for screenshots, automation and debugging. Pass them after `open -n Hyper
 | `--debug-perf [--debug-perf-log <path>]` | Log timings and main-thread stalls over 120 ms |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | Diagnostics: log window creation during launch to stderr (and a file) / log Markdown preview renders and navigation / skip theme and font attribute application |
 | `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | Performance benchmark on a generated corpus (2 KB–28 MB); writes JSON + Markdown with PASS/FAIL budgets — see [docs/performance.md](docs/performance.md). Phases: `idle open memory scroll search outline theme typing findui findquery replace save`. `scripts/bench.sh` wraps it |
+| `--realuse [--realuse-only <scenarios>] [--realuse-out <dir>] [--quit]` · `--ephemeral-suite <name>` | Real-use simulation: sends key, input-method, scroll-wheel and mouse events to the real window and checks invariants after every step (layout gaps and overlaps, viewport, caret, gutter rows, drawn ink, main-thread stalls), with PNG snapshots — see [CONTRIBUTING.md](CONTRIBUTING.md). `scripts/realuse.sh` wraps it; `--ephemeral-suite` isolates concurrent automation runs |
 | `--quit-after-launch [--bench-launch-log <file>]` | Quit ~0.1 s after the first window and append launch milestones (process start → window) to the log |
 
 ## Project layout
