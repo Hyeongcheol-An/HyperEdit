@@ -137,6 +137,12 @@ HyperEdit/
 - TextKit 2 본문은 GPU 서피스로 합성되어 `cacheDisplay(in:to:)`로는 캡처되지 않는다. 화면 검증(`--snapshot`)은 **ScreenCaptureKit**으로 실제 창을 캡처한다(화면 녹화 권한 필요).
 - 선택이 바뀔 때 전체 `needsDisplay`를 켜면 서피스 재합성이 일어난다. 현재 줄 강조는 이전·현재 줄 두 영역만 무효화한다.
 - `NSTextContentStorage.textStorage`를 파일마다 갈아끼우면 TextKit 2 레이아웃 질의(`endEditing`·`scrollRangeToVisible`·거터 그리기)가 전환을 반복할수록 2 KB 문서에서도 50 ms대로 퇴화한다. 문서 객체와 스토리지를 유지한 채 전체 범위 `replaceCharacters`로 내용만 바꾸면 정상 편집 경로라 수 ms다.
+- **배치 전·그리는 중의 레이아웃 질의는 조각 프레임을 옮긴다**(macOS 27 실측, 실사용 하네스 2026-11-24). `enumerateTextLayoutFragments(.ensuresLayout)`·`textLayoutFragment(for: CGPoint)`·`caretRect` 가 뷰포트 위의 아직 배치하지 않은 문단을 배치하면 그 아래 조각들의 프레임이 통째로 옮겨지는데, 이미 화면에 올린 조각 뷰는 다시 놓이지 않는다 — 글자는 옛 자리에 보이고 줄 번호·접기 표식·클릭 판정은 새 자리를 따른다(모두 접기 뒤 9~36 pt). 그리기 경로는 질의 앞뒤로 뷰포트 마지막 조각의 y 를 견줘 움직였으면 다음 턴에 `needsLayout` 을 건다(`HyperTextView.guardingViewport`). 스크롤 직후의 첫 줄 질의(`publishFirstVisibleLine`)는 밀린 배치를 먼저 끝낸다 — 그러지 않으면 쉬었다가 위로 굴리는 첫 걸음이 20~100 pt 덜 가거나 거꾸로 간다.
+- **스크롤이 일어나지 않은 `scrollRangeToVisible` 뒤에는 `viewportRange` 가 빈 범위다**(방향키로 캐럿만 옮긴 경우). 보이는 범위를 그 값으로 정하던 검색 강조가 다시 그려지는 줄마다 지워졌다 — 배치된 조각을 직접 세고(`laidOutCharacterRange`), 범위가 비면 뷰포트를 한 번 더 배치한다.
+- **끝으로 점프하면 스크롤 위치가 줄어든 문서 높이를 넘긴 채 남는다**(`layout()` 한 번 안에서 문서 높이가 +93,412 → −48 로 바뀌고 위치 보정은 되돌려진다). 마지막 줄 아래에 60~306 pt 의 빈 띠가 생기고 다음 휠에서 그만큼 튄다 — 배치 뒤와 `scrollRangeToVisible` 뒤에 클립 뷰가 허용하는 범위로 되돌린다(`constrainScrollToDocumentEnd`; 트랙패드 제스처 중에는 탄성을 살리려고 건드리지 않는다).
+- **문서 좌표로 스크롤을 검증하면 안 된다.** TextKit 2 는 스크롤할 때마다 추정 높이를 실측으로 바꾸며 `visibleRect.minY` 와 문서 높이를 수십 pt 씩 다시 잡는다. 화면에서의 이동은 닻 문단의 화면 y 로 잰다(실사용 하네스의 `checkContentMoved`).
+- **거터·상태바의 줄 번호는 편집마다 증분 갱신되는 줄 인덱스로**(`MemoDocument.liveLineIndex`). 입력이 멈춘 250 ms 뒤에 다시 세는 발행용 `lineIndex` 로 그리면 Enter·줄 합치기 뒤 치는 동안 내내 번호가 한 줄 어긋난다.
+- 접을 때 선택이 숨은 줄에 남으면 그 상태로 친 글자가 보이지 않는 선택을 지운다 — 통째로 숨는 선택은 머리 줄 끝 캐럿으로, 한쪽만 숨으면 보이는 자리까지 당긴다(`FoldController`).
 
 ### 한글 폭 보정
 - AppKit은 캐스케이드 리스트에 지정한 폴백 폰트의 **크기를 무시한다**(실측). 그래서 한글 런마다 `.font` 속성으로 ×1.2 폰트를 직접 지정한다.
@@ -169,6 +175,15 @@ HyperEdit/
 
 ### 파일 트리 클릭
 - 더블탭+싱글탭 제스처 조합은 싱글 클릭 반응이 더블클릭 판정 대기(0.5 s) 뒤에야 오고, 파일은 더블클릭해야만 열렸다. 한 번 클릭(또는 방향키 선택)으로 바로 여는 방식으로 바꿨다.
+- SwiftUI `List` + `OutlineGroup` 은 모델이 무엇을 발행하든 수천 행을 다시 구성·비교한다: 항목 5,300개 폴더에서 탭 전환 1.6~3.4 s, 하단 패널 토글 1.5 s(실사용 하네스 2026-11-24). `NSOutlineView`(`Panels/FileOutlineView.swift`)로 바꾸고, 폴더는 한 단계씩 백그라운드에서 읽고(하위 폴더는 펼칠 때), 본 폴더마다 아웃라인 뷰를 기억해 탭으로 돌아오면 다시 끼우기만 한다 — 60~90 ms.
+- 문서 전환의 발행이 SwiftUI 에 반영되기 전에 `List` 의 데이터를 바꾸면(목록 다시 읽기) 표가 자기 대리자 호출 안에서 다시 읽혀 "reentrant operation in its NSTableView delegate" 경고가 난다. 목록 갱신은 뷰 갱신 밖(다음 턴)에서 한다.
+
+### 자동화 실행 (셀프테스트·하네스)
+- 터미널·IDE 가 앞에 있을 때 앱을 띄우면 macOS 가 새 앱을 **활성화**한다. 셀프테스트가 5~8분 동안 앞에서 돌며 키 입력을 받았다(2026-11-24: 10번 중 9번). `AppDelegate.selfTestStaysInBackground` — 활성화되면 즉시 `NSApp.deactivate()` 하고 창을 맨 뒤로 보낸다(`--selftest-foreground` 로 예전처럼). 실사용 하네스는 처음부터 그렇게 돈다.
+- `.nonactivatingPanel` 을 `makeKeyAndOrderFront` 하면 앱이 비활성이어도 키 입력이 그 패널로 간다(Quick Append 의 설계). 뒤에서 도는 셀프테스트는 패널을 키로 만들지 않고 텍스트 뷰에 직접 넣는다.
+- 비활성 + 가려진 창은 2~3분 뒤 **App Nap** 에 걸려 타이머가 늦게 깨고 CPU 우선순위가 깎인다 — 시간을 재는 검사가 몇 배 느려지고 순서를 바꾸면 느려지는 검사도 바뀐다. 실행 내내 `ProcessInfo.beginActivity(.userInitiatedAllowingIdleSystemSleep, .latencyCritical)` 로 막는다.
+- 하네스 창의 높이는 화면에 따라 달라진다(외장 모니터 1128 pt, 내장 화면 972 pt). 시나리오는 창 높이에 기대면 안 된다.
+- `gh pr merge --delete-branch` 는 그 브랜치를 체크아웃한 **git 워크트리를 통째로 지운다.** 머지 전에 워크트리를 `git checkout --detach` 해 둔다.
 
 ### 서명·공증
 - 공증 통과 조건: hardened runtime, timestamp 서명, 그리고 **Release 구성에 `CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO`**. 이것이 없으면 `get-task-allow` 엔타이틀먼트가 주입되어 공증이 거절된다(실제 거절 사례). `scripts/make-dmg.sh`는 서명 뒤 엔타이틀먼트를 검사해 남아 있으면 실패시킨다.
