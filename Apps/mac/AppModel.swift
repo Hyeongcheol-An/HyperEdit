@@ -312,6 +312,7 @@ final class AppModel: ObservableObject {
         reportGrammarLoad()   // grammar: 건너뛴 문법 파일을 출력 패널에
         applyLaunchOptions()
         _ = appLock   // applock: 여기서 만든다 — 첫 ContentView.body 평가 중에 만들어지면 시작 잠금의 isLocked/log 변경이 뷰 업데이트 안에서 일어난다 (코드 리뷰)
+        ExternalOpen.modelReady()   // Finder·Dock·명령줄로 넘어온 파일이 모델보다 먼저 와 있으면 지금 연다 (잠금이 정해진 뒤에 — 잠겨 있으면 풀릴 때까지 미룬다)
     }
 
     private func bind() {
@@ -638,6 +639,44 @@ final class AppModel: ObservableObject {
         let resolved = url.resolvingSymlinksInPath()
         guard switchDocument(to: resolved) else { return }   // 떠나는 파일을 지킬 수 없으면 열지 않는다 (탭도 만들지 않는다)
         noteActiveTab()   // 처음 여는 파일이면 여기서 탭이 맨 끝에 생긴다
+    }
+
+    /// 밖에서 넘어온 파일들을 탭으로 연다 — Finder 의 "다음으로 열기", Dock 아이콘에 끌어다 놓기, `open -a HyperEdit <파일>`, 명령줄의 맨 인자
+    /// (ExternalOpen.swift 가 열어도 되는 때를 골라 부른다). 모두 탭으로 만들고 **마지막 것**을 보여 준다. 탭은 경로일 뿐이라(지난 세션의 탭과 같다) 보여 줄
+    /// 파일만 읽는다. 이미 열린 파일은 그 탭을 쓰고, 이미 보고 있는 파일이면 다시 읽지 않는다.
+    /// 폴더·없는 파일·텍스트가 아닌 파일은 열지 않고 출력 패널에 적는다 — 없는 경로를 열면 빈 파일이 만들어지고, 텍스트가 아닌 파일을 사이드바처럼
+    /// 기본 앱으로 넘기면 이 앱이 그 파일의 기본 앱일 때 되돌아와 끝없이 돈다. 스크립트가 모는 실행은 자기 폴더 밖의 파일도 열지 않는다.
+    /// 떠나는 탭을 저장하지도 비상 사본으로 남기지도 못하면 그 탭에 머문다(`switchDocument`) — 넘어온 파일들의 탭은 남아 있어 나중에 누르면 열린다.
+    /// 반환: 탭이 된(또는 이미 탭이던) 파일들
+    @discardableResult
+    func openExternal(_ urls: [URL]) -> [URL] {
+        var accepted: [URL] = []
+        for url in urls {
+            guard url.isFileURL else { continue }
+            let u = url.resolvingSymlinksInPath()
+            guard ExternalOpen.mayOpen(u) else {
+                // 스크립트가 모는 실행에 그 실행의 폴더 밖 파일이 넘어왔다 (ExternalOpen.mayOpen) — 개발자가 읽는 줄이라 번역하지 않는다
+                let line = "[automation] not opened — outside this run's folders: \(u.path)"
+                log(line, isError: true)
+                FileHandle.standardError.write((line + "\n").data(using: .utf8)!)
+                continue
+            }
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: u.path, isDirectory: &isDirectory) else {
+                log(String(localized: "Error: \(u.lastPathComponent + " — " + CocoaError(.fileNoSuchFile).localizedDescription)"), isError: true)
+                continue
+            }
+            guard !isDirectory.boolValue, TextFileDetector.isLikelyText(u) else {
+                log(String(localized: "Error: \(u.lastPathComponent + " — " + CocoaError(.fileReadCorruptFile).localizedDescription)"), isError: true)
+                continue
+            }
+            if !accepted.contains(u) { accepted.append(u) }
+        }
+        guard let last = accepted.last else { return [] }
+        let added = accepted.filter { !tabs.contains($0) }
+        if !added.isEmpty { tabs += added; persistSession() }
+        if last != document.url { activateTab(last) }
+        return accepted
     }
 
     /// 파일 검색 결과에서 열기: 로드 후 해당 줄로 (에디터 재바인딩 뒤에 점프)
@@ -1130,11 +1169,44 @@ final class CancelFlag: @unchecked Sendable {
 /// 명령줄 인자 조회 도우미 (개발·셀프테스트·스크린샷용)
 enum LaunchOptions {
     static func has(_ flag: String) -> Bool { CommandLine.arguments.contains(flag) }
-    static func value(_ flag: String) -> String? {
-        let a = CommandLine.arguments
-        guard let i = a.firstIndex(of: flag), i + 1 < a.count else { return nil }
-        return a[i + 1]
+
+    /// 값을 받는 옵션 — 바로 뒤의 인자가 그 값이다. 여기 없는 `--옵션` 은 값이 없다 (`--ephemeral`·`--quit`·`--realuse` …).
+    /// `value(_:)` 는 여기 있는 옵션에만 값을 돌려준다: 새 옵션을 목록에 넣지 않으면 그 옵션이 아예 먹지 않아 바로 드러난다 (빠진 채 동작하면 그 값이
+    /// 명령줄의 "열 파일"로 읽힌다 — `files(in:)`). 마지막 줄의 다섯은 `value` 를 거치지 않고 인자 배열에서 직접 읽는다 (AppDelegate·SelfTest·Perf)
+    static let valueOptions: Set<String> = [
+        "--bench-commit", "--bench-launch-log", "--bench-only", "--bench-out", "--bottom", "--cursor", "--debug-preview-log", "--ephemeral-suite", "--file",
+        "--fold", "--goto", "--left", "--opacity", "--realuse-only", "--realuse-out", "--replace-with", "--ribbon", "--search", "--selftest-markers-big",
+        "--selftest-split-big", "--settings-height", "--snapshot-panel", "--snapshot-settings", "--snapshot-sheet", "--theme", "--window-height", "--window-width",
+        "--snapshot", "--snapshot-delay", "--selftest-out", "--debug-startup-log", "--debug-perf-log",
+    ]
+    /// 값이 있어도 없어도 되는 옵션과 그 값이 될 수 있는 것 — 뒤의 인자가 이 가운데 하나일 때만 값이다 (`--split a.md` 의 a.md 는 파일)
+    static let optionalValues: [String: Set<String>] = ["--split": Set(SplitMode.allCases.map(\.rawValue))]
+
+    static func value(_ flag: String, in arguments: [String] = CommandLine.arguments) -> String? {
+        guard let i = arguments.firstIndex(of: flag), i + 1 < arguments.count else { return nil }
+        if valueOptions.contains(flag) || optionalValues[flag]?.contains(arguments[i + 1]) == true { return arguments[i + 1] }
+        return nil
     }
+
+    /// 실행 인자를 가른다: 문서로 열 맨 인자(옵션도 옵션의 값도 아닌 것, 준 순서대로)와, 값으로 쓰인 인자가 어느 옵션의 것인지.
+    /// 한 줄표로 시작하는 인자(`-AppleLanguages (ko)`·`-ApplePersistenceIgnoreState YES`)는 시스템 옵션이고 늘 `-키 값` 쌍이다 (UserDefaults 의 인자 도메인)
+    static func parse(_ arguments: [String] = CommandLine.arguments) -> (files: [String], values: [(option: String, value: String)]) {
+        var files: [String] = [], values: [(option: String, value: String)] = []
+        var i = 1
+        while i < arguments.count {
+            let a = arguments[i]
+            let next = i + 1 < arguments.count ? arguments[i + 1] : nil
+            let takesNext: Bool
+            if a.hasPrefix("--") { takesNext = valueOptions.contains(a) || (next.map { optionalValues[a]?.contains($0) == true } ?? false) }
+            else if a.hasPrefix("-"), a.count > 1 { takesNext = true }
+            else { files.append(a); i += 1; continue }
+            if takesNext, let next { values.append((a, next)); i += 2 } else { i += 1 }
+        }
+        return (files, values)
+    }
+
+    /// 명령줄에서 문서로 열 맨 인자들 (`HyperEdit a.md --ephemeral b.md` → a.md, b.md)
+    static func files(in arguments: [String] = CommandLine.arguments) -> [String] { parse(arguments).files }
 }
 
 extension BookmarkStore {

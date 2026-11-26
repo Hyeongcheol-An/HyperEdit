@@ -7,14 +7,11 @@ struct HyperEditApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = AppModel()
 
-    /// 사용자의 것과 떨어져 도는 실행 — 정의는 AutomationRun.swift
-    static var isAutomationRun: Bool { AutomationRun.isIsolated }
-
     init() {
         // 사용자의 것과 떨어져 도는 실행(스크린샷·셀프테스트·벤치·실사용 하네스, 손으로 시험하는 `--ephemeral` — AutomationRun.swift)은 사용자 설정(테마·패널·
         // 마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다.
         // `--ephemeral-suite <name>` 은 여러 자동화 인스턴스를 동시에 띄울 때 서로의 설정·스냅샷·기본 문서 폴더가 섞이지 않게 한다
-        if Self.isAutomationRun {
+        if AutomationRun.isIsolated {
             AppDefaults.useEphemeral(suiteName: LaunchOptions.value("--ephemeral-suite") ?? "hyperedit.automation")
             // macOS 의 '저장된 창 상태'는 번들 ID 별이라 설치된 HyperEdit 과 모든 자동화 실행이 한 폴더를 같이 쓴다. 자동화 실행이 거기에 자기 창을 적으면
             // (실측: 시작 30초쯤 뒤 windows.plist · window_N.data · data.data) 사용자 앱의 상태를 덮어쓰고, 그 실행이 강제 종료되면 남은 상태를 다음에 뜨는
@@ -35,7 +32,10 @@ struct HyperEditApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 820)
-        .restorationBehavior(Self.isAutomationRun ? .disabled : .automatic)   // 자동화 실행의 창은 저장된 창 상태에 넣지 않는다 (init 의 주석)
+        // 창은 하나다 (모델·문서·편집기가 하나). SwiftUI 는 밖에서 온 열기 이벤트(Finder "다음으로 열기"·Dock·`open -a` → `application(_:open:)`)마다
+        // 이 장면의 창을 하나 더 만든다(실측) — 같은 모델에 편집기가 둘 붙는다. 그런 이벤트로는 창을 만들지 않고, 파일은 AppDelegate 가 탭으로 연다
+        .handlesExternalEvents(matching: [])
+        .restorationBehavior(AutomationRun.isIsolated ? .disabled : .automatic)   // 자동화 실행의 창은 저장된 창 상태에 넣지 않는다 (init 의 주석)
         .commands { EditorCommands(model: model) }
 
         Settings {

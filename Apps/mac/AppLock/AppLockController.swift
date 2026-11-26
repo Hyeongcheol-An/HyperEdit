@@ -131,9 +131,6 @@ final class AppLockController: ObservableObject {
     /// 셀프테스트·진단용: 잠긴 동안 닫은 메뉴 수
     private(set) var cancelledMenuCount = 0
 
-    /// 스크립트가 모는 실행 — 정의는 AutomationRun.swift
-    static var isAutomationRun: Bool { AutomationRun.isScripted }
-
     init(model: AppModel, authenticator: Authenticator? = nil) {
         self.model = model
         self.authenticator = authenticator ?? LocalAuthenticator()   // 기본 인자는 비격리 문맥이라 여기서 만든다
