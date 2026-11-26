@@ -1,4 +1,5 @@
 import AppKit
+import ObjectiveC
 
 // MARK: - 줄바꿈 끔 (가로 스크롤)
 // 줄바꿈을 끄면 텍스트 컨테이너의 폭을 무한으로 두고(`widthTracksTextView = false`) 텍스트 뷰를 가장 긴 줄만큼 넓혀 가로로 스크롤한다. TextKit 2 의 NSTextView 에
@@ -24,15 +25,26 @@ extension HyperTextView {
         isNoWrap ? NSPoint(x: textContainerInset.width, y: textContainerInset.height) : super.textContainerOrigin
     }
 
-    /// 뷰포트가 배치될 때마다(배치 패스든, 보던 곳을 되찾느라 직접 부른 `layoutViewport()` 든): 방금 놓인 줄이 지금까지의 폭보다 넓으면 텍스트 뷰를 넓힌다
-    override func textViewportLayoutControllerDidLayout(_ controller: NSTextViewportLayoutController) {
-        super.textViewportLayoutControllerDidLayout(controller)
-        if isNoWrap { fitNoWrapWidth() }
-    }
+    /// 뷰포트가 배치될 때마다(배치 패스든, 보던 곳을 되찾느라 직접 부른 `layoutViewport()` 든): 방금 놓인 줄이 지금까지의 폭보다 넓으면 텍스트 뷰를 넓힌다.
+    /// NSTextView 는 뷰포트 배치 컨트롤러의 delegate 지만, 그 메서드(`textViewportLayoutControllerDidLayout:`)가 SDK 에 선언된 것은 macOS 27 부터다 — 그 앞의
+    /// SDK 로는 Swift 의 `override` 가 컴파일되지 않는다(배포본은 러너의 Xcode 로 빌드한다). 그래서 재정의 대신 런타임에 이 클래스의 구현으로 얹는다:
+    /// NSTextView 의 구현을 부른 뒤 폭을 맞춘다. 줄바꿈을 처음 끌 때 한 번 건다 (beginNoWrap) — 그 전에는 할 일이 없다. 반환: 걸었는가
+    static let noWrapViewportHook: Bool = {
+        let selector = NSSelectorFromString("textViewportLayoutControllerDidLayout:")
+        guard let method = class_getInstanceMethod(NSTextView.self, selector) else { return false }
+        typealias Original = @convention(c) (AnyObject, Selector, NSTextViewportLayoutController) -> Void
+        let original = unsafeBitCast(method_getImplementation(method), to: Original.self)
+        let block: @convention(block) (AnyObject, NSTextViewportLayoutController) -> Void = { view, controller in
+            original(view, selector, controller)
+            MainActor.assumeIsolated { if let view = view as? HyperTextView, view.isNoWrap { view.fitNoWrapWidth() } }
+        }
+        return class_addMethod(HyperTextView.self, selector, imp_implementationWithBlock(block), method_getTypeEncoding(method))
+    }()
 
     /// 줄바꿈을 끈다: 이제부터 폭은 이 뷰가 정한다. 컨테이너·스크롤 뷰 설정은 부르는 쪽(EditorView.Coordinator.setWordWrap)이 이어서 한다
     func beginNoWrap() {
         guard !isNoWrap else { return }
+        _ = Self.noWrapViewportHook
         isNoWrap = true
         noWrapContentWidth = 0
     }
