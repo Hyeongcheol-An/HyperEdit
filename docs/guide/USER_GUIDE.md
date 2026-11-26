@@ -54,7 +54,7 @@ HyperEdit has no network code and no telemetry: it never phones home, and update
 HyperEdit opens `~/Documents/HyperEdit/notes.md`. If that file does not exist it is created with a short welcome text in your language — delete the text and start writing. The idea is that you keep one file and append to it, but nothing forces that:
 
 - **⌘N** creates a new empty text file (you choose the name and folder).
-- **⌘O** opens any other text file. The last opened file is remembered for the next launch.
+- **⌘O** opens any other text file. The last opened file is remembered for the next launch. Files handed to HyperEdit from outside — **Open With** in Finder, a file dropped on the Dock icon, or `open -a HyperEdit notes.md` in Terminal — open as tabs in the same window: several files at once get a tab each and the last one is shown, and a file that is already open just switches to its tab. A folder, or a file that is missing or not text, is not opened, and the Output panel says so. If HyperEdit is locked, the files open after you unlock it.
 - **File tabs.** Every open file gets a tab above the editor, as in UltraEdit: click to switch; ⌘W, the ×, a double-click or a middle-click closes a tab (unsaved edits are saved first). Closing the tab you are viewing moves to the tab on its left; double-clicking a tab you are not viewing closes it and leaves you on the one you were reading. Drag tabs to reorder; double-click the empty tab bar for a new file; right-click a tab for Close Other Tabs / Close Tabs to the Left or Right / Reopen Last Closed Tab (⇧⌘T) / Save and Close / Revert to Saved / Copy Path / Sort Tabs. ⇧⌘] / ⇧⌘[ step through the tabs, ⌃Tab returns to the tab you viewed last, and the ▾ at the right lists all open tabs; a tab's tooltip shows the full path, size and modification time. Each file keeps its caret, scroll position and folds while the app runs, but its undo history is cleared when you leave its tab. Up to 30 open tabs are restored on the next launch. Closing the last tab opens the default document, and a tab whose file has been deleted is removed when you click it.
 - **File › Open Default Document** takes you back to `notes.md`.
 - Binary files (images, PDFs, archives…) are never loaded into the editor; they open in their default app instead.
@@ -159,7 +159,7 @@ Click the chevron in the gutter or the `⋯ N lines` pill after a folded line to
 
 ## 13. Split editor
 
-**⌘\\** shows the same document in two editors, side by side; **View › Split › Split Stacked** puts them one above the other, and the Layout tab has the same buttons. Both views edit the same text and share one undo history — type in one, ⌘Z in the other — but scroll independently, so you can read one part of a file while writing in another. Commands, the status bar and the Markdown preview follow the editor you clicked last; **⌥⌘\\** moves the focus to the other one. The status bar shows **SPLIT** while the split is on; ⌘\\ again closes it.
+**⌘\\** shows the same document in two editors, side by side; **View › Split › Split Stacked** puts them one above the other, and the Layout tab has the same buttons. Both views edit the same text and share one undo history — type in one, ⌘Z in the other — but scroll independently, so you can read one part of a file while writing in another. Folds belong to the document, so folding or unfolding a region in one editor does the same in the other. Commands, the status bar and the Markdown preview follow the editor you clicked last; **⌥⌘\\** moves the focus to the other one. The status bar shows **SPLIT** while the split is on; ⌘\\ again closes it.
 
 ## 14. Quick Append
 
@@ -274,7 +274,8 @@ Nothing is written next to your documents, and nothing leaves your Mac.
 - Export writes the whole document only, without selection or multi-file export, page or font options, or a PDF table of contents.
 - Secret blocks are masked on screen only: the file, autosaves and snapshots are plain text, the mask bar shows how long each line is, and VoiceOver still reads the text. A secret fence must start at the left margin (indented less than four spaces, not inside a list item or quote), and a fenced block nested inside a secret block needs four backticks on the outer fence. App lock hides the window and its contents from VoiceOver; it does not encrypt anything.
 - Block comments do not nest, and files with classic Mac (CR-only) line endings are colored line by line. Inside a single paragraph longer than 20,000 characters the Block and Underline carets fall back to the standard bar caret.
-- Folds are kept per file only while the app runs and are not saved for the next launch; a mouse drag across a folded line still selects the hidden text.
+- Folds are kept per file only while the app runs and are not saved for the next launch; a mouse drag across a folded line still selects the hidden text. The two editors of a split always show the same folds.
+- With word wrap off, the horizontal scroll bar reaches as far as the widest line shown so far: it grows when a longer line scrolls into view, and coming back to a tab starts at the first column again.
 - Only the tab you are viewing is held in memory: leaving a tab clears that file's undo history, and no more than 30 open tabs are restored on the next launch.
 - Documents that are a single line of a megabyte or more are slow to open and move around in; Minify JSON warns before producing one.
 - Local files only; no cloud sync and no iOS app yet.
