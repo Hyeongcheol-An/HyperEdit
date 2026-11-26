@@ -35,7 +35,7 @@ enum RealUse {
     /// 모든 시나리오 (영역 파일들이 채운다)
     @MainActor static var scenarios: [Scenario] {
         coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios + fileViewScenarios + openScenarios
-            + isolationScenarios
+            + noWrapScenarios + isolationScenarios
     }
 
     /// 한 번만 돈다. ContentView 가 `.task` 로 부르므로 창이 하나 더 생기면 그 창이 하네스를 또 시작한다 — 시나리오가 창을 만드는 동작을 하면

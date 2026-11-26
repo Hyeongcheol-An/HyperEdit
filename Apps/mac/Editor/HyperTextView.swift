@@ -31,6 +31,14 @@ final class HyperTextView: NSTextView {
     var onBecomeActive: (() -> Void)?   // split
     private var lineChangeDepth = 0
 
+    // MARK: 줄바꿈 끔 (가로 스크롤) — 구현과 까닭은 HyperTextView+NoWrap.swift
+    /// 줄바꿈을 끈 상태인가. `beginNoWrap`/`endNoWrap`(EditorView.Coordinator.setWordWrap)만 바꾼다
+    var isNoWrap = false
+    /// 줄바꿈 끔에서 지금까지 잰 내용의 폭(가장 넓었던 줄 + 여백). 커지기만 한다 — 버리는 것은 `resetNoWrapWidth`, 글꼴에 맞춰 고치는 것은 `rescaleNoWrapWidth`
+    var noWrapContentWidth: CGFloat = 0
+    /// 다음 `scrollRangeToVisible` 이 범위 대신 보이게 할 칸 (줄바꿈 끔의 열 블록 머리 — `prepareNoWrapBlockHeadReveal`)
+    var noWrapRevealRect: NSRect?
+
     // MARK: 접기 훅 (FoldController 가 설치 — 이 뷰는 접힘 상태를 모른다. 그리기·이동 구현은 FoldController.swift 의 extension)   // fold
     /// 모든 편집(줄 수 변화 여부와 무관)을 편집 전 좌표로 알린다 — 접힘 오프셋 추적용. 보통 저장소 변경 직전(alreadyApplied == false)이고,
     /// shouldChangeText 를 거치지 않는 undo/redo 는 저장소가 바뀐 직후 사후 통지된다(alreadyApplied == true)
@@ -144,7 +152,10 @@ final class HyperTextView: NSTextView {
     }
 
     override func scrollRangeToVisible(_ range: NSRange) {
-        if !(caretStepDepth > 0 && revealCaretStep(range)) { super.scrollRangeToVisible(range) }
+        if isNoWrap { widenNoWrap(toShow: range) }   // 줄바꿈 끔: 대상이 지금의 폭 밖이면 먼저 넓힌다
+        if let cell = noWrapRevealRect { noWrapRevealRect = nil; scrollToVisible(cell) }   // 줄바꿈 끔의 열 블록: 범위(짧은 줄에서는 줄 끝) 대신 머리 칸을 보이게
+        else if !(caretStepDepth > 0 && revealCaretStep(range)) { super.scrollRangeToVisible(range) }
+        if isNoWrap { revealNoWrapCaretColumn(range) }   // AppKit 이 가장자리에서 한 걸음 늦게 따라올 때 캐럿이 가려지지 않게
         blockLayoutAnchor(dropRecord: false)   // 보이게 스크롤은 글을 옮기는 것이 목적이다 — AppKit 이 다음 배치 패스 안으로 미뤄 수행할 수도 있다
         // 멀리 뛰는 스크롤은 추정 좌표로 간다. 뒤따르는 배치 패스가 그 자리의 문단을 실측하며 문서 높이와 스크롤 위치를 다시 맞추는 사이, 조각은 맞추기 전의
         // 자리에 놓인 채 패스가 끝날 수 있다 (실측: 9,997줄 파일을 끝에서 열자 조각이 화면 위 −230…178 pt 에만 놓여 아래 204 pt 가 다음 스크롤까지 비었다 —
@@ -198,7 +209,7 @@ final class HyperTextView: NSTextView {
     /// 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)의 줄이 화면에 다 들어오게 가장 적게 스크롤한다. 반환: 처리했는가 (false 면 AppKit 에 맡긴다)
     private func revealCaretStep(_ range: NSRange) -> Bool {
         // 조합 중인 글자는 입력기가 다룬다 · 줄바꿈 끔은 가로 스크롤까지 AppKit 이 맡는다
-        guard !hasMarkedText(), !isHorizontallyResizable, let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
+        guard !hasMarkedText(), !isNoWrap, let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
         let clip = sv.contentView
         guard abs(clip.constrainBoundsRect(clip.bounds).minY - clip.bounds.minY) < 0.5 else { return false }   // 끝을 넘겨 당기는 중
         let sel = selectedRange()
@@ -1266,6 +1277,8 @@ final class HyperTextView: NSTextView {
     /// 자동 줄바꿈 상태에서 폭이 바뀌면(창·사이드바·분할·줄 번호·미리보기) 모든 문단이 다시 감긴다 — 보던 곳을 지킨다 (위의 beginReflow/endReflow).
     /// 줄바꿈이 꺼져 있으면 폭은 내용이 정하는 것이라(가장 긴 줄) 건드리지 않는다
     override func setFrameSize(_ newSize: NSSize) {
+        var newSize = newSize
+        if isNoWrap { newSize.width = noWrapFrameWidth }   // 줄바꿈 끔: 폭은 이 뷰가 정한다 — AppKit(배치 뒤의 크기 맞춤·클립 뷰를 따르는 autoresizing)이 주는 폭은 쓰지 않는다
         guard readingAnchorDepth == 0, abs(newSize.width - frame.width) > 0.5, textContainer?.widthTracksTextView == true, window != nil else {
             super.setFrameSize(newSize)   // 높이가 줄어 스크롤 위치가 문서 끝을 넘겼으면 layout() 의 constrainScrollToDocumentEnd 가 되돌린다
             return
@@ -1337,6 +1350,7 @@ final class HyperTextView: NSTextView {
             // 짧을 때 — NSTextView 가 selectedRanges 로는 전부 돌려주면서도 선택 강조를 한 줄도 그리지 않아, 고른 블록이 화면에 보이지 않는 채로 입력이 블록을 바꿨다
             super.setSelectedRanges(ranges.filter { $0.length > 0 }.map { NSValue(range: $0) }, affinity: .downstream, stillSelecting: false)
         }
+        prepareNoWrapBlockHeadReveal()   // 줄바꿈 끔의 열 블록이면 아래의 스크롤이 머리 칸을 향한다
         scrollRangeToVisible(ranges[p])
         needsDisplay = true
     }
