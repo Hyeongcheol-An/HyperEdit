@@ -35,7 +35,7 @@ enum RealUse {
     /// 모든 시나리오 (영역 파일들이 채운다)
     @MainActor static var scenarios: [Scenario] {
         coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios + fileViewScenarios + openScenarios
-            + noWrapScenarios + isolationScenarios
+            + noWrapScenarios + foldScenarios + isolationScenarios
     }
 
     /// 한 번만 돈다. ContentView 가 `.task` 로 부르므로 창이 하나 더 생기면 그 창이 하네스를 또 시작한다 — 시나리오가 창을 만드는 동작을 하면
@@ -556,7 +556,8 @@ final class RealUseContext {
         if let first = frags.first, first.minY > v.minY + lh, first.offset > 0 {
             issue("coverage", "\(why): viewport top \(Int(v.minY)) not covered — first fragment starts at \(Int(first.minY)) (offset \(first.offset))")
         }
-        if let last = frags.last, last.maxY < v.maxY - lh, last.offset + last.length < length {
+        // 문서 끝까지 닿는 접힘이 있으면 마지막으로 배치되는 문단은 그 접힘의 머리 줄이다 — 그 아래가 비는 것은 보이는 글이 거기서 끝나기 때문이다
+        if let last = frags.last, last.maxY < v.maxY - lh, last.offset + last.length < tv.foldedSpan?(length).map(\.location) ?? length {
             issue("coverage", "\(why): viewport bottom \(Int(v.maxY)) not covered — last fragment ends at \(Int(last.maxY)) (offset \(last.offset))")
         }
     }

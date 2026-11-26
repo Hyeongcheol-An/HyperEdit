@@ -47,7 +47,13 @@ final class ScrollMarkerView: NSView {
 
     override var isFlipped: Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
-    override func setFrameSize(_ newSize: NSSize) { super.setFrameSize(newSize); needsDisplay = true }
+    /// 컨테이너(EditorContainerView.layout)는 배치 패스마다 — 스크롤 걸음마다 두 번 — 같은 프레임을 다시 준다. 크기가 그대로면 다시 그릴 것이 없다
+    /// (실측: 무조건 다시 그리게 했을 때 휠 200걸음에 띠를 199번 그렸고, 접힘 15,000개인 문서에서는 그 한 번이 10 ms 를 넘어 걸음당 13.7 ms 였다)
+    override func setFrameSize(_ newSize: NSSize) {
+        let changed = newSize != frame.size
+        super.setFrameSize(newSize)
+        if changed { needsDisplay = true }
+    }
 
     /// 줄 수 갱신을 구독 (문서를 갈아끼우면 다시 부른다)
     /// 편집기가 닫힐 때: 모델·문서 구독 해제
@@ -66,7 +72,13 @@ final class ScrollMarkerView: NSView {
         needsDisplay = true
     }
 
-    override func draw(_ dirtyRect: NSRect) { Perf.measure("ScrollMarkerView.draw hits=\(model.searchHits.count)", threshold: 2) { drawImpl() } }
+    /// 그린 횟수 (실사용 하네스가 스크롤만으로는 다시 그려지지 않는지 본다)
+    private(set) var debugDrawCount = 0
+
+    override func draw(_ dirtyRect: NSRect) {
+        debugDrawCount += 1
+        Perf.measure("ScrollMarkerView.draw hits=\(model.searchHits.count)", threshold: 2) { drawImpl() }
+    }
 
     private func drawImpl() {
         guard model.showScrollMarkers, let sv = scrollView, let docView = sv.documentView, let doc = documentProvider() else { return }
@@ -85,7 +97,15 @@ final class ScrollMarkerView: NSView {
         // 접힌 머리 줄: 흐린 1pt 눈금 (오른쪽 절반)
         if let folds = foldLines?(), !folds.isEmpty {
             foldColor.setFill()
-            for l in folds { NSRect(x: 4, y: y(line: l), width: w - 5, height: 1).fill() }
+            // 접힘이 수천 개면 눈금 대부분이 앞 눈금과 같은 픽셀 줄에 놓인다 — 반 픽셀도 떨어지지 않은 것은 건너뛴다 (머리 줄은 오름차순이다)
+            let step = 0.5 / max(1, window?.backingScaleFactor ?? 2)
+            var last = -CGFloat.greatestFiniteMagnitude
+            for l in folds {
+                let yy = y(line: l)
+                if yy - last < step { continue }
+                last = yy
+                NSRect(x: 4, y: yy, width: w - 5, height: 1).fill()
+            }
         }
         // 검색 매치: 강조색 2pt 눈금 (오른쪽 절반), 최대 3000개
         if !model.searchHits.isEmpty {

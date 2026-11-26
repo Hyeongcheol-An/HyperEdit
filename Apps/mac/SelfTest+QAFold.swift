@@ -4,7 +4,7 @@ import HyperCore
 
 // 접기·스크롤바 마커·undo 사후 추적 QA (runFold 뒤에 돈다). 샘플 끝에 `qa-header:` 블록(자식 12줄 + 뒤 1줄)을 붙여 아래를 검사하고 원상복구한다.
 //  - 머리 줄 입력/붙여넣기, 머리 줄 삭제 뒤 프래그먼트 높이, 숨은 텍스트를 건드리는 모두 바꾸기, 검색(F3)·북마크(F2)로 접힘 안 진입,
-//    미리보기 firstVisibleLine, 자동 줄바꿈 토글 뒤 표식 사각형, 분할 보기(뷰별 접힘·보조에서 숨은 텍스트 편집·북마크 1회 이동·dirty),
+//    미리보기 firstVisibleLine, 자동 줄바꿈 토글 뒤 표식 사각형, 분할 보기(함께 쓰는 접힘·보조에서 숨은 텍스트 편집·북마크 1회 이동·dirty),
 //    모두 접기 멱등성, EOF 까지 닿는 접힘에서 ↓, 스크롤바 마커(3000+ 매치·가장자리 북마크·짧은 문서·테마·보조 편집기).
 //  - `--selftest-markers-big <path>`: 그 파일(사본!)을 열어 5000 매치 상태의 타이핑 지연과 마커 그리기 시간을 잰다.
 extension SelfTest {
@@ -32,17 +32,21 @@ extension SelfTest {
         }
         /// 접힘 상태 일관성: 첫 자식이 숨겨져 있으면 표식이 정확히 하나, 아니면 없다
         func consistent(_ firstChild: Int, in tv: HyperTextView? = nil) -> Bool { pillCount(in: tv) == (hidden(firstChild, in: tv) ? 1 : 0) }
-        /// 모든 레이아웃 프래그먼트의 높이가 양수인가 (접힘 해제 뒤 높이 0 고아 프래그먼트가 남지 않아야 한다)
-        func allFragmentsPositive(_ tv: HyperTextView?) -> (ok: Bool, zero: Int, total: Int) {
-            guard let tv, let lm = tv.textLayoutManager else { return (false, -1, -1) }
+        /// 펴고 난 뒤 모든 문단이 배치되는가: 조각 수 = 문단 수이고 높이 없는 조각이 없다. 숨은 문단은 조각이 아예 없으므로(콘텐츠 열거에서 빠진다) 높이 0 조각만
+        /// 세면 "펴고도 열거에서 빠진 채 남은 줄"이 보이지 않는다 — 문단 수와 견준다. (접힌 꼬리가 남기는 0.01 pt 표시용 문단도 높이 없는 것으로 센다)
+        func allFragmentsPositive(_ tv: HyperTextView?) -> (ok: Bool, zero: Int, total: Int, paragraphs: Int) {
+            guard let tv, let lm = tv.textLayoutManager else { return (false, -1, -1, -1) }
             lm.ensureLayout(for: lm.documentRange)
             var zero = 0, total = 0
             lm.enumerateTextLayoutFragments(from: lm.documentRange.location, options: [.ensuresLayout]) { f in
                 total += 1
-                if f.layoutFragmentFrame.height <= 0 { zero += 1 }
+                if f.layoutFragmentFrame.height < 2 { zero += 1 }
                 return true
             }
-            return (zero == 0 && total > 0, zero, total)
+            let ns = tv.string as NSString
+            var paragraphs = 0, at = 0
+            while at < ns.length { paragraphs += 1; at = NSMaxRange(ns.paragraphRange(for: NSRange(location: at, length: 0))) }
+            return (zero == 0 && total > 0 && total == paragraphs, zero, total, paragraphs)
         }
         func caretLineNow(_ tv: HyperTextView? = nil) -> Int {
             guard let tv = tv ?? activeTV() else { return -1 }
@@ -103,6 +107,27 @@ extension SelfTest {
         // 1. 머리 줄 끝·첫머리 입력 → 접힘 유지 (스캔 뒤에도)
         model.jump(toLine: H); await wait(200); model.send(.fold); await wait(200)
         check(hidden(H + 1) && hidden(H + 12) && !hidden(H + 13) && pillCount() == 1, "qa-fold: folded \(H + 1)–\(H + 12)")
+        // 숨김은 두 겹이다: 콘텐츠 스토리지의 재정의(FoldingContentStorage)가 건너뛰고, 재정의를 거치지 않는 열거에는 delegate 가 답한다. 재정의가 부른 쪽의 블록을
+        // 돌리는 동안에도 delegate 가 답해야 한다 — 블록 안에서 NSTextContentStorage 의 원래 구현으로 열거를 시작해 숨은 문단이 나오는지 본다
+        if let cs = activeTV()?.textContentStorage,
+           let original = class_getInstanceMethod(NSTextContentStorage.self, #selector(NSTextContentManager.enumerateTextElements(from:options:using:))) {
+            typealias Enumerate = @convention(c) (AnyObject, Selector, NSTextLocation?, UInt, @convention(block) (NSTextElement) -> Bool) -> NSTextLocation?
+            let enumerate = unsafeBitCast(method_getImplementation(original), to: Enumerate.self)
+            let selector = #selector(NSTextContentManager.enumerateTextElements(from:options:using:))
+            let start = cs.documentRange.location
+            var nested = 0, leaked = 0, asked = false
+            _ = cs.enumerateTextElements(from: start, options: []) { _ in
+                guard !asked else { return false }
+                asked = true
+                _ = enumerate(cs, selector, start, 0) { e in
+                    nested += 1
+                    if let r = e.elementRange, activeTV()?.isOffsetHidden?(cs.offset(from: start, to: r.location)) == true { leaked += 1 }
+                    return true
+                }
+                return false
+            }
+            check(nested > 0 && leaked == 0, "qa-fold: an enumeration started inside another enumeration's block still leaves out the hidden paragraphs (\(leaked) hidden of \(nested) enumerated)")
+        }
         model.send(.perform { tv in
             let r = LineIndex(nsString: tv.string as NSString).range(ofLine: H)
             tv.setSelectedRange(NSRange(location: NSMaxRange(r), length: 0)); tv.insertText(" tail-typed", replacementRange: tv.selectedRange())
@@ -146,7 +171,7 @@ extension SelfTest {
         check(pillCount() == 0 && !hidden(H) && lineText(H) == "    qa child 1", "qa-fold: ⇧⌘K on the header unfolds (line \(H) = '\(lineText(H))')")
         model.send(.unfoldAll); await wait(300)
         let frag1 = allFragmentsPositive(activeTV())
-        check(frag1.ok, "qa-fold: no zero-height fragments after header delete + unfold all (\(frag1.zero)/\(frag1.total))")
+        check(frag1.ok, "qa-fold: every paragraph is laid out after header delete + unfold all (\(frag1.total) fragments for \(frag1.paragraphs) paragraphs, \(frag1.zero) without height)")
         model.send(.undo); await wait(900)
         check(lineText(H) == "qa-header:" && lines() == H + 13 && pillCount() == 0, "qa-fold: undo restores the header line")
 
@@ -157,7 +182,7 @@ extension SelfTest {
         model.searchQuery = "qa child 5"; model.replaceText = "qa child FIVE"; model.replaceAll(); await wait(700)
         check(lineText(H + 5) == "    qa child FIVE" && !hidden(H + 1) && pillCount() == 0, "qa-fold: replace all touching hidden text unfolds (hidden=\(hidden(H + 1)))")
         let frag2 = allFragmentsPositive(activeTV())
-        check(frag2.ok, "qa-fold: no zero-height fragments after replace-all unfold (\(frag2.zero)/\(frag2.total))")
+        check(frag2.ok, "qa-fold: every paragraph is laid out after replace-all unfold (\(frag2.total) fragments for \(frag2.paragraphs) paragraphs, \(frag2.zero) without height)")
         model.send(.undo); await wait(300); model.send(.undo); await wait(700)
         check(lineText(H + 5) == "    qa child 5" && lineText(H + 13) == "qa-after" && pillCount() == 0, "qa-fold: undo ×2 restores both replacements")
         model.searchQuery = ""; model.replaceText = ""; model.runSearch(); await wait(200)
@@ -231,26 +256,45 @@ extension SelfTest {
               "qa-fold: go-to-end into an EOF fold unfolds it (offset \(caretOff), hidden=\(caretHidden), line \(caretLineNow())/\(lines()))")
         model.send(.unfoldAll); await wait(300)
         let frag3 = allFragmentsPositive(activeTV())
-        check(frag3.ok && pillCount() == 0, "qa-fold: unfold all → no zero-height fragments (\(frag3.zero)/\(frag3.total))")
+        check(frag3.ok && pillCount() == 0, "qa-fold: unfold all → every paragraph is laid out (\(frag3.total) fragments for \(frag3.paragraphs) paragraphs, \(frag3.zero) without height)")
 
-        // 11. 분할 보기: 접힘은 뷰별, 보조에서 숨은 텍스트 편집 → 주 편집기가 펼침, 텍스트 손상 없음
+        // 11. 분할 보기: 접힘은 문서 단위(두 편집기가 함께 쓴다), 보조에서 숨은 줄로 들어가 편집 → 양쪽이 펼쳐짐, 텍스트 손상 없음
         model.setSplit(.vertical); await wait(800)
         guard let pTV = session.primary?.textView, let sTV = session.secondary?.textView, pTV !== sTV else {
             check(false, "qa-fold: split did not produce two editors"); return
         }
         session.activeEditorID = session.primary?.id
         model.jump(toLine: H); await wait(200); model.send(.fold); await wait(300)
-        check(hidden(H + 1, in: pTV) && !hidden(H + 1, in: sTV) && pillCount(in: pTV) == 1 && pillCount(in: sTV) == 0,
-              "qa-split-fold: folding in the primary does not fold the secondary (per-view folds)")
-        check(container(session.secondary)?.gutter.foldMarker?(lineStart(H), { lineStart(H + 1) }) == .foldable, "qa-split-fold: secondary gutter shows the region as foldable")
+        check(hidden(H + 1, in: pTV) && hidden(H + 1, in: sTV) && pillCount(in: pTV) == 1 && pillCount(in: sTV) == 1,
+              "qa-split-fold: folding in the primary folds the secondary too (folds belong to the document)")
+        check(container(session.secondary)?.gutter.foldMarker?(lineStart(H), { lineStart(H + 1) }) == .folded, "qa-split-fold: secondary gutter shows the region as folded")
+        // 보조 편집기에서 접힘 위에 한 줄을 넣는다: 같은 편집이 두 편집기 양쪽에서 통지된다(보조는 shouldChangeText 로, 주는 저장소 알림으로 — FoldStore.textWillChange).
+        // 접힘은 한 번만, 정확히 한 줄 옮겨져야 한다. 주 편집기의 undo · 보조 편집기의 redo 뒤에도
+        func foldAt(_ first: Int, in tv: HyperTextView) -> Bool {
+            hidden(first, in: tv) && hidden(first + 11, in: tv) && !hidden(first - 1, in: tv) && !hidden(first + 12, in: tv) && pillCount(in: tv) == 1
+        }
+        session.activeEditorID = session.secondary?.id
+        sTV.breakUndoCoalescing()
+        sTV.insertText("X\n", replacementRange: NSRange(location: lineStart(H), length: 0)); await wait(400)
+        check(lineText(H) == "X" && foldAt(H + 2, in: pTV) && foldAt(H + 2, in: sTV),
+              "qa-split-fold: a line inserted above the fold from the secondary moves it down by exactly one line in both editors (primary \(foldAt(H + 2, in: pTV)), secondary \(foldAt(H + 2, in: sTV)))")
+        session.activeEditorID = session.primary?.id
+        model.send(.undo); await wait(500)
+        check(lineText(H) == "qa-header:" && foldAt(H + 1, in: pTV) && foldAt(H + 1, in: sTV), "qa-split-fold: undo from the primary moves the fold back by exactly one line in both editors")
+        session.activeEditorID = session.secondary?.id
+        model.send(.redo); await wait(500)
+        check(lineText(H) == "X" && foldAt(H + 2, in: pTV) && foldAt(H + 2, in: sTV), "qa-split-fold: redo from the secondary moves the fold down again, once")
+        model.send(.undo); await wait(500)
+        check(lineText(H) == "qa-header:" && lines() == H + 13 && foldAt(H + 1, in: pTV) && foldAt(H + 1, in: sTV), "qa-split-fold: undo from the secondary puts the fold back")
         session.activeEditorID = session.secondary?.id
         sTV.breakUndoCoalescing()
         sTV.setSelectedRange(NSRange(location: lineStart(H + 3) + 4, length: 0))
         sTV.insertText("ZZ", replacementRange: sTV.selectedRange()); await wait(400)
         check(lineText(H + 3) == "    ZZqa child 3", "qa-split-fold: typing in the secondary edits the shared text (\(lineText(H + 3)))")
-        check(!hidden(H + 1, in: pTV) && pillCount(in: pTV) == 0, "qa-split-fold: editing hidden text from the secondary unfolds the primary")
+        check(!hidden(H + 1, in: pTV) && pillCount(in: pTV) == 0 && !hidden(H + 1, in: sTV) && pillCount(in: sTV) == 0,
+              "qa-split-fold: putting the caret on a hidden line in the secondary and typing unfolds both editors")
         let fragP = allFragmentsPositive(pTV)
-        check(fragP.ok, "qa-split-fold: primary has no zero-height fragments after the remote unfold (\(fragP.zero)/\(fragP.total))")
+        check(fragP.ok, "qa-split-fold: primary lays out every paragraph after the remote unfold (\(fragP.total) fragments for \(fragP.paragraphs) paragraphs, \(fragP.zero) without height)")
         model.send(.undo); await wait(400)
         check(lineText(H + 3) == "    qa child 3", "qa-split-fold: undo from the secondary restores the text")
 

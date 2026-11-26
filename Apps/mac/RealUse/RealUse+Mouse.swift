@@ -1145,8 +1145,15 @@ extension RealUse {
                        "↓×4 from header 15 with everything folded: caret on line \(ctx.liveLine(ctx.caret)) (expected \(RealUse.foldHeader(17))), hidden=\(ctx.hidden(ctx.caret))")
             ctx.checkCaretVisible("↓ over folds")
             ctx.at("unfold all keeps the caret line in view")
+            let caretY = ctx.caretLineScreenY()
             ctx.model.send(.unfoldAll); await ctx.settle(200)
             ctx.checkAllD("unfold all"); ctx.checkInk("unfold all"); ctx.checkCaretVisible("unfold all"); ctx.snap("unfold-all")
+            // 캐럿 줄은 화면의 같은 높이에 남는다 (맨 위 줄을 지키면 그 사이의 접힘이 펴지며 캐럿 줄이 화면 아래로 밀려난다)
+            if let y0 = caretY {
+                let y1 = ctx.caretLineScreenY()
+                ctx.note("unfold all: the caret line was at y \(String(format: "%.1f", y0)), now \(y1.map { String(format: "%.1f", $0) } ?? "off screen")")
+                if let y1, abs(y1 - y0) > 2 { ctx.issue("viewport-jump", "unfold all: the caret line was on screen at y \(String(format: "%.1f", y0)) and should stay there, but it is now at y \(String(format: "%.1f", y1))") }
+            } else { ctx.issue("other", "unfold all: the caret line was not on screen before the command (the step cannot measure)") }
 
             // 캐럿이 숨지 않는 자리(머리 줄·구역 사이 빈 줄)에 있으면 모두 접기가 캐럿도 스크롤도 건드리지 않는다 — 그때도 화면의 글자가 레이아웃과 같은 자리에 있어야 한다
             for (what, line, col) in [("a section header", h15, 5), ("the blank line between sections", h15 + 7, 0), ("a header again after scrolling", RealUse.foldHeader(9), 2)] {
