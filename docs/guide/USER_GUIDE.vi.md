@@ -54,7 +54,7 @@ HyperEdit không có mã mạng và không có telemetry: nó không bao giờ t
 HyperEdit mở `~/Documents/HyperEdit/notes.md`. Nếu tệp đó chưa tồn tại, nó được tạo với một đoạn chào mừng ngắn bằng ngôn ngữ của bạn — hãy xóa đoạn đó và bắt đầu viết. Ý tưởng là bạn giữ một tệp và cứ thêm vào, nhưng không có gì bắt buộc điều đó:
 
 - **⌘N** tạo một tệp văn bản trống mới (bạn chọn tên và thư mục).
-- **⌘O** mở bất kỳ tệp văn bản nào khác. Tệp mở gần nhất được ghi nhớ cho lần khởi chạy sau.
+- **⌘O** mở bất kỳ tệp văn bản nào khác. Tệp mở gần nhất được ghi nhớ cho lần khởi chạy sau. Các tệp được chuyển cho HyperEdit từ bên ngoài — **Mở bằng** trong Finder, tệp thả lên biểu tượng trên Dock, hoặc `open -a HyperEdit notes.md` trong Terminal — được mở thành tab trong cùng một cửa sổ: nhiều tệp cùng lúc thì mỗi tệp có một tab và tệp cuối cùng được hiện, còn tệp đã mở sẵn thì chỉ chuyển sang tab của nó. Thư mục, tệp không tồn tại hoặc tệp không phải văn bản sẽ không được mở, và bảng Đầu ra sẽ báo điều đó. Nếu HyperEdit đang khóa, các tệp được mở sau khi bạn mở khóa.
 - **Tab tệp.** Mỗi tệp đang mở có một tab phía trên trình soạn thảo, như UltraEdit: nhấp để chuyển; ⌘W, dấu ×, nhấp đúp hoặc nhấp chuột giữa để đóng tab (chỉnh sửa chưa lưu được lưu trước). Đóng tab bạn đang xem sẽ chuyển sang tab bên trái nó; nhấp đúp vào một tab bạn không xem sẽ đóng tab đó, còn bạn vẫn ở lại tab đang đọc. Kéo tab để sắp xếp lại; nhấp đúp vào chỗ trống trên thanh tab để tạo tệp mới; nhấp chuột phải vào tab để dùng Đóng các tab khác / Đóng các tab bên trái / Đóng các tab bên phải / Mở lại tab vừa đóng (⇧⌘T) / Lưu và đóng / Khôi phục bản đã lưu / Sao chép đường dẫn / Sắp xếp tab. ⇧⌘] / ⇧⌘[ chuyển lần lượt qua các tab, ⌃Tab quay về tab bạn xem gần nhất, và ▾ ở bên phải liệt kê mọi tab đang mở; chú giải công cụ của tab hiện đường dẫn đầy đủ, kích thước và thời gian sửa đổi. Mỗi tệp giữ vị trí con trỏ, vị trí cuộn và các vùng thu gọn trong khi ứng dụng đang chạy, nhưng lịch sử hoàn tác của tệp bị xóa khi bạn rời tab của nó. Tối đa 30 tab đang mở được khôi phục ở lần khởi chạy sau. Đóng tab cuối cùng sẽ mở tài liệu mặc định, và tab có tệp đã bị xóa sẽ bị gỡ khi bạn nhấp vào nó.
 - **Tệp › Mở tài liệu mặc định** đưa bạn về `notes.md`.
 - Tệp nhị phân (ảnh, PDF, tệp nén…) không bao giờ được nạp vào trình soạn thảo; chúng mở bằng ứng dụng mặc định.
@@ -159,7 +159,7 @@ Nhấp chevron ở lề hoặc viên `⋯ N dòng` sau dòng đã thu gọn đ�
 
 ## 13. Chia đôi khung soạn thảo
 
-**⌘\\** hiện cùng một tài liệu trong hai khung soạn thảo cạnh nhau; **Hiển thị › Chia đôi › Chia trên dưới** đặt chúng trên dưới, và tab Bố cục có các nút tương tự. Cả hai khung chỉnh sửa cùng một văn bản và dùng chung một lịch sử hoàn tác — gõ ở khung này, ⌘Z ở khung kia — nhưng cuộn độc lập, nên bạn có thể đọc một phần của tệp trong khi viết ở phần khác. Các lệnh, thanh trạng thái và xem trước Markdown theo khung bạn nhấp gần nhất; **⌥⌘\\** chuyển tiêu điểm sang khung kia. Thanh trạng thái hiện **SPLIT** khi đang chia đôi; ⌘\\ lần nữa để đóng.
+**⌘\\** hiện cùng một tài liệu trong hai khung soạn thảo cạnh nhau; **Hiển thị › Chia đôi › Chia trên dưới** đặt chúng trên dưới, và tab Bố cục có các nút tương tự. Cả hai khung chỉnh sửa cùng một văn bản và dùng chung một lịch sử hoàn tác — gõ ở khung này, ⌘Z ở khung kia — nhưng cuộn độc lập, nên bạn có thể đọc một phần của tệp trong khi viết ở phần khác. Vùng thu gọn thuộc về tài liệu, nên thu gọn hoặc mở rộng một vùng ở khung này thì khung kia cũng thay đổi theo. Các lệnh, thanh trạng thái và xem trước Markdown theo khung bạn nhấp gần nhất; **⌥⌘\\** chuyển tiêu điểm sang khung kia. Thanh trạng thái hiện **SPLIT** khi đang chia đôi; ⌘\\ lần nữa để đóng.
 
 ## 14. Thêm nhanh
 
@@ -274,7 +274,8 @@ Không có gì được ghi cạnh tài liệu của bạn, và không có gì r
 - Xuất chỉ ghi toàn bộ tài liệu, không có xuất vùng chọn hay nhiều tệp, không có tùy chọn trang hay phông chữ, và không có mục lục PDF.
 - Khối bí mật chỉ được che trên màn hình: tệp, bản tự động lưu và bản chụp đều là văn bản thuần, thanh che cho thấy độ dài của từng dòng, và VoiceOver vẫn đọc được văn bản. Hàng rào secret phải bắt đầu ở lề trái (thụt lề dưới bốn dấu cách, không nằm trong mục danh sách hay trích dẫn), và một khối rào lồng trong khối bí mật cần bốn dấu backtick ở hàng rào ngoài. Khóa ứng dụng ẩn cửa sổ và nội dung của nó khỏi VoiceOver; nó không mã hóa gì cả.
 - Chú thích khối không lồng nhau được, và tệp dùng kết thúc dòng kiểu Mac cổ điển (chỉ CR) được tô màu theo từng dòng. Trong một đoạn văn dài hơn 20.000 ký tự, con trỏ Khối và Gạch dưới trở về con trỏ thanh tiêu chuẩn.
-- Vùng thu gọn chỉ được giữ theo từng tệp trong khi ứng dụng đang chạy và không được lưu cho lần khởi chạy sau; kéo chuột qua dòng đã thu gọn vẫn chọn văn bản bị ẩn.
+- Vùng thu gọn chỉ được giữ theo từng tệp trong khi ứng dụng đang chạy và không được lưu cho lần khởi chạy sau; kéo chuột qua dòng đã thu gọn vẫn chọn văn bản bị ẩn. Hai khung soạn thảo khi chia đôi luôn hiện cùng các vùng thu gọn.
+- Khi tắt ngắt dòng, thanh cuộn ngang chỉ với tới dòng rộng nhất đã từng được hiện: phạm vi này tăng lên khi một dòng dài hơn cuộn vào màn hình, và khi quay lại một tab thì lại bắt đầu từ cột đầu tiên.
 - Chỉ tab bạn đang xem được giữ trong bộ nhớ: rời một tab sẽ xóa lịch sử hoàn tác của tệp đó, và không quá 30 tab đang mở được khôi phục ở lần khởi chạy sau.
 - Tài liệu chỉ có một dòng dài từ một megabyte trở lên mở và di chuyển chậm; Rút gọn JSON cảnh báo trước khi tạo ra dòng như vậy.
 - Chỉ tệp cục bộ; chưa có đồng bộ đám mây và chưa có ứng dụng iOS.

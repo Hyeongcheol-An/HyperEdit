@@ -45,7 +45,7 @@ shasum -a 256 -c SHA256SUMS
 
 ### 첫 실행
 
-HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 짧은 환영 문서로 새로 만듭니다. ⌘N으로 이름과 폴더를 골라 빈 텍스트 파일을 새로 만들 수 있고, ⌘O로 다른 텍스트 파일을 열 수 있으며, 마지막으로 연 파일은 다음 실행 때 기억됩니다. 바이너리 파일(이미지·PDF·압축 파일 등)은 에디터로 불러오지 않고 기본 앱으로 엽니다.
+HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 짧은 환영 문서로 새로 만듭니다. ⌘N으로 이름과 폴더를 골라 빈 텍스트 파일을 새로 만들 수 있고, ⌘O로 다른 텍스트 파일을 열 수 있으며, 마지막으로 연 파일은 다음 실행 때 기억됩니다. 밖에서 넘긴 파일 — Finder의 **다음으로 열기**, Dock 아이콘에 끌어다 놓은 파일, 터미널의 `open -a HyperEdit notes.md` — 은 같은 창의 탭으로 열립니다: 여러 개를 한꺼번에 넘기면 파일마다 탭이 생기고 마지막 파일이 보이며, 이미 열려 있는 파일이면 그 탭으로 갑니다. 폴더·없는 경로·텍스트가 아닌 파일은 열지 않고 출력 패널에 알리며, HyperEdit가 잠겨 있으면 잠금을 푼 뒤에 열립니다. 바이너리 파일(이미지·PDF·압축 파일 등)은 에디터로 불러오지 않으며, ⌘O나 사이드바에서 고르면 기본 앱으로 엽니다.
 
 > 인터페이스는 11개 언어 — 영어·한국어·중국어(간체)·일본어·베트남어·힌디어·독일어·프랑스어·스페인어·포르투갈어·아랍어(글은 오른쪽에서 왼쪽, 창 배치는 좌→우 고정) — 로 제공되며 기본은 시스템 언어를 따릅니다. **설정(⌘,) › 언어** 에서 다른 언어를 고르고 **지금 재실행** 을 누르면 바뀌고, 이 선택은 시스템 설정 › 일반 › 언어 및 지역 › 응용 프로그램 과 같은 값을 씁니다. **도움말 › 사용자 가이드** 는 현재 언어의 [사용자 가이드](docs/guide/USER_GUIDE.ko.md)를 엽니다. 번역은 `l10n/ui.<언어>.json` 에 있으며 수정 기여를 환영합니다.
 
@@ -58,7 +58,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - **접기(⌥⌘← / ⌥⌘→, 모두 접기·펼치기 ⌥⇧⌘← / ⌥⇧⌘→):** 어떤 줄은 그 아래 더 깊이 들여쓴 줄들을 접고(빈 줄 무시), 마크다운 `#` 헤딩은 같거나 높은 레벨의 다음 헤딩 직전까지 접으며(펜스 코드 블록도 접힘), 코드에서 `{`, `[`, `(` 로 끝나는 줄은 닫는 괄호 줄까지 접습니다. 거터의 화살표나 `⋯ N lines` 표식을 클릭해도 접고 펼칩니다. 캐럿이 접힌 줄로 들어가면(찾기, 줄 이동, 북마크, 실행 취소) 자동으로 펼쳐지고, ↑ / ↓ 는 접힌 구간을 건너뜁니다. 접힘은 편집을 따라갑니다 — 머리 줄 안의 입력, 위쪽 줄 삽입·삭제, 실행 취소 — 그리고 세션 동안 유지됩니다.
 - **스크롤바 마커:** 편집기 오른쪽 가장자리 12 pt 띠에 검색 매치(강조색 눈금), 북마크(경고색), 캐럿 줄, 접힌 머리 줄을 상대 위치로 표시합니다. 문서가 한 화면에 들어가면 숨겨집니다. 보기 메뉴 → 스크롤바 마커, 또는 레이아웃 탭 접기 그룹.
 - F7은 `## 2026-10-30 (금) 14:05` 같은 타임스탬프 헤딩을 삽입합니다. 요일은 시스템 로케일을 따릅니다(영어 환경이면 `(Fri)`).
-- **편집기 분할(⌘\\)** — 같은 문서를 두 편집기로 좌우 또는 상하로 나란히 봅니다(보기 › 분할, 레이아웃 탭). 두 뷰는 같은 텍스트와 하나의 undo 스택을 공유하지만(한쪽에서 입력, 다른 쪽에서 ⌘Z) 스크롤은 따로 하고, 명령·상태바·마크다운 미리보기는 마지막으로 클릭한 뷰를 따라갑니다. ⌥⌘\\ 로 다른 분할로 포커스를 옮기며, 켜져 있는 동안 상태바에 **SPLIT**이 표시됩니다.
+- **편집기 분할(⌘\\)** — 같은 문서를 두 편집기로 좌우 또는 상하로 나란히 봅니다(보기 › 분할, 레이아웃 탭). 두 뷰는 같은 텍스트와 하나의 undo 스택을 공유하지만(한쪽에서 입력, 다른 쪽에서 ⌘Z) 스크롤은 따로 합니다. 접힘은 문서에 속하므로 한쪽에서 접거나 펼치면 다른 쪽도 똑같이 바뀝니다. 명령·상태바·마크다운 미리보기는 마지막으로 클릭한 뷰를 따라갑니다. ⌥⌘\\ 로 다른 분할로 포커스를 옮기며, 켜져 있는 동안 상태바에 **SPLIT**이 표시됩니다.
 - **빠른 추가(⇧⌘N, 다른 앱에서는 ⌃⌥N):** HyperEdit를 활성화하지 않는 작은 떠 있는 창입니다. 메모를 쓰고 ⌘↩를 누르면 문서 끝에 덧붙여지고(기본으로 타임스탬프 헤딩 포함) 바로 저장되며 undo 한 번으로 되돌릴 수 있습니다. 창은 숨겨지고 포커스는 쓰던 앱으로 돌아갑니다. Esc로 닫으면 쓰던 글은 다음에 이어집니다. 전역 단축키(끔 / ⌃⌥N / ⌃⌥Space / ⌃⇧Space / ⌃⌥⌘N)는 설정에서 고르며 손쉬운 사용 권한이 필요 없습니다.
 - **구문 색(⌃⌘H)** — 파일 확장자로 언어를 고르고 상태바에 표시합니다. 메모·마크다운은 일부러 가벼운 규칙만 — URL, ISO 날짜·시각, `#` 헤딩, `[제목]` 줄, 목록 기호와 `[ ]` / `[x]` 체크박스, `#태그`, `키:` 라벨, `**굵게**`, `` `코드` ``, `⇒ → ->` 화살표 — 를 칠하고, 코드 20여 종(Swift, Python, JavaScript/TypeScript, JSON, 셸, YAML, HTML/XML, CSS, C/C++/Objective-C, Go, Rust, SQL, Ruby, Java/Kotlin, TOML, INI)은 주석·문자열·숫자·키워드·함수·타입 이름을 칠합니다. 색은 테마의 `syntax` 팔레트에서 오고 TextKit 2 렌더링 속성으로 보이는 줄에만 입히므로 파일·undo·타이핑 속도에 영향이 없습니다. 블록 주석(`/* */`, `<!-- -->`), 여러 줄 문자열(Swift·Python 의 `"""`, JavaScript 템플릿 리터럴, Go raw 문자열, Rust `r#"…"#`), 마크다운 펜스 코드 블록은 닫힐 때까지 모든 줄이 색을 유지하고 — 펜스는 정보 문자열의 언어로 칠합니다 — 여는/닫는 기호를 입력하면 아래 줄이 바로 다시 칠해집니다. 줄별 상태 표 덕에 3만 4천 줄 파일도 약 10 ms, 키 입력당 비용은 체감되지 않습니다.
 - **사용자 정의 문법:** `~/Library/Application Support/HyperEdit/grammars/` 에 `*.json` 파일(1 MB 이하)을 두면 언어를 추가하거나 내장 언어를 덮어쓸 수 있습니다 — 이름, 확장자·파일 이름, 주석 기호, 문자열 구분자, 키워드 목록. HyperEdit 가 첫 실행 때 `example.json` 과 스키마를 설명하는 README 와 함께 폴더를 만들고, **파일 › 문법 폴더 열기…** 가 Finder 에서 열며, **파일 › 문법 다시 읽기** 로 재실행 없이 반영되며, 상태바에 문법 이름이 보이고 주석 토글(⌘/)도 그 기호를 씁니다.
@@ -70,7 +70,7 @@ HyperEdit는 `~/Documents/HyperEdit/notes.md`를 엽니다. 파일이 없으면 
 - 렌더링에는 Apple의 [swift-markdown](https://github.com/swiftlang/swift-markdown)(Apache-2.0)을 씁니다. 미리보기가 켜져 있으면 상태바에 **MD**가 표시됩니다.
 
 ### 리본과 패널
-- 리본 탭 **홈 / 편집 / 레이아웃 / 고급 / 창**, UltraEdit식 파일 탭 줄(연 파일마다 탭: 클릭 전환, ⌘W·×·더블클릭·가운데 클릭으로 닫기, 드래그 정렬, 우클릭으로 다른 탭 모두 닫기 / 왼쪽·오른쪽 탭 닫기 / 마지막으로 닫은 탭 다시 열기 / 저장 후 닫기 / 저장된 내용으로 되돌리기 / 경로 복사 / 탭 정렬, ⇧⌘] / ⇧⌘[·⌃Tab 전환, 실행 중에는 파일마다 캐럿·스크롤 위치·접힘 유지, 다음 실행 때 30개까지 복원)과 새 문서(⌘N)·열기(⌘O) 버튼, 빠른 실행 저장 / 실행 취소 / 다시 실행.
+- 리본 탭 **홈 / 편집 / 레이아웃 / 고급 / 창**, UltraEdit식 파일 탭 줄(연 파일마다 탭: 클릭 전환, ⌘W·×·더블클릭·가운데 클릭으로 닫기, 드래그 정렬, 우클릭으로 다른 탭 모두 닫기 / 왼쪽·오른쪽 탭 닫기 / 마지막으로 닫은 탭 다시 열기 / 저장 후 닫기 / 저장된 내용으로 되돌리기 / 경로 복사 / 탭 정렬, ⇧⌘] / ⇧⌘[·⌃Tab 전환, Finder·Dock·명령줄로 연 파일도 탭으로, 실행 중에는 파일마다 캐럿·스크롤 위치·접힘 유지, 다음 실행 때 30개까지 복원)과 새 문서(⌘N)·열기(⌘O) 버튼, 빠른 실행 저장 / 실행 취소 / 다시 실행.
 - **사이드바(⌘1)** — **파일**(현재 파일 폴더의 트리, 한 번 클릭으로 열기), **아웃라인**(⌘3: `##` 헤딩, `[제목]` 줄, `가./나.` 항목, `1)` 번호 항목. 필터 상자와 현재 항목 강조. 코드 주석처럼 보이는 `# …` 줄은 제외), **타임라인**(⌘4: `## YYYY-MM-DD (요일) HH:MM` 타임스탬프 헤딩과 날짜로 시작하는 느슨한 줄을 월별로 묶어 최신순 표시).
 - **하단 패널(⌘2)** — **찾기 결과**, **북마크**, **출력** 로그.
 
@@ -184,8 +184,8 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 
 | 인자 | 효과 |
 |---|---|
-| `--file <path>` | 기억된 파일 대신 이 파일을 연다 |
-| `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
+| `--file <path>` | 기억된 파일 대신 이 파일을 연다. 옵션이 아닌 맨 인자도 옵션들 사이 어디에 있든 탭으로 연다(`HyperEdit a.md --ephemeral b.md`) |
+| `--snapshot <png> [--snapshot-delay s] [--snapshot-activate] [--quit]` · `--snapshot-panel <png>` · `--window-width <pt>` | ScreenCaptureKit으로 창을 PNG로 캡처(화면 녹화 권한 필요). `--snapshot-panel`은 `--quick-append`로 띄운 빠른 추가 창을 따로 찍는다. 스냅샷 실행은 스크립트가 모는 다른 실행처럼 뒤에서 돌므로 창이 — 그리고 떠 있지 않고 다른 창들 뒤에 놓이는 그 패널이 — 비활성 모양으로 찍힌다. 쓰는 중의 모양은 `--snapshot-activate`(앱을 먼저 앞으로 가져온다). 스냅샷 실행은 폭을 주지 않으면 1280 pt 창을 쓴다 |
 | `--selftest [--selftest-out <txt>] [--quit]` · `--selftest-split-big <file>` · `--show-snippet-picker` · `--show-macro-recording` · `--snapshot-sheet <png>` | 임시 파일에서 내장 셀프테스트(약 700개 검사)를 뒤에서 실행(앱이 포커스를 돌려주고 창을 뒤에 둔다 — 앞에서 돌리려면 `--selftest-foreground`). 사용자 문서는 건드리지 않음. `--selftest-split-big`은 지정한 파일에 입력했다가 되돌리며 분할 편집기 타이핑 지연을 재는 검사를 추가한다(사본에서만). `--show-snippet-picker`는 스크린샷용으로 스니펫 삽입 창을 띄운 채 둔다. `--selftest-open`은 가리킨 파일을 수정하는 파일 전환 벤치 — 사본에서만. `--selftest-markers-big <file>`은 그 파일(사본)에 5,000개 매치를 만들어 타이핑 지연과 스크롤바 마커 그리기 시간을 잰다 |
 | `--theme <id>` · `--follow-system-theme` | `palettes.json`의 팔레트 id로 시작, 예: `hyper-dark` / 시스템 외형 따르기로 시작 |
 | `--ribbon <home\|edit\|layout\|advanced\|window>` | 리본 탭 선택 |
@@ -199,18 +199,18 @@ scripts/make-dmg.sh                                    # DMG (+ 자격 증명이
 | `--cursor <bar\|block\|underline>` · `--no-cursor-blink` · `--opacity <0.5~1.0>` · `--blur` | 그 캐럿 스타일 / 깜빡임 끄고 / 그 창 투명도 / 반투명 창 뒤 블러로 시작 |
 | `--reveal-secrets` | 모든 비밀 블록을 드러낸 상태로 시작(자동 재마스킹 없음) |
 | `--locked` | 잠긴 상태로 시작(스크린샷용). 실제 인증기를 쓰므로 잠금 해제 버튼을 누르기 전에는 프롬프트가 뜨지 않으며, 자동화 실행은 이 인자 없이는 잠긴 채 시작하지 않음 |
-| `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법·북마크)과 임시 기본 문서 폴더를 쓴다 — 수동 테스트용 |
+| `--ephemeral` | 이번 실행만 휘발성 설정(테마·패널·마지막 파일·스니펫·매크로·문법·북마크)과 임시 기본 문서 폴더를 쓴다 — 수동 테스트용. 셀프테스트·벤치·스냅샷·실사용 시뮬레이션 실행과 마찬가지로 저장된 창 상태와 창 프레임 저장값을 읽지도 쓰지도 않는다(macOS 는 둘 다 번들 ID 별로 두므로, 그러지 않으면 테스트 빌드가 설치된 앱과 같은 것을 쓴다). 그 실행들과 달리 사람이 쓰는 실행이다: 앞으로 나오고, 밖에서 넘긴 파일을 어느 폴더의 것이든 받는다 |
 | `--debug-perf [--debug-perf-log <path>]` | 구간 시간과 120 ms 이상 메인 스레드 정지 기록 |
 | `--debug-startup [--debug-startup-log <file>]` · `--debug-preview-log <file>` · `--debug-no-apply` | 진단용: 실행 중 창 생성 과정을 stderr(와 파일)에 기록 / 마크다운 미리보기 렌더·탐색 기록 / 테마·폰트 속성 적용 생략 |
-| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui findquery replace save`. `scripts/bench.sh` 가 감싸서 실행 |
-| `--realuse [--realuse-only <scenarios>] [--realuse-out <dir>] [--quit]` · `--ephemeral-suite <name>` | 실사용 시뮬레이션: 키·입력기·스크롤 휠·마우스 이벤트를 실제 창에 보내고 걸음마다 불변식(레이아웃 틈·겹침, 뷰포트, 캐럿, 거터 행, 그려진 잉크, 메인 스레드 정지)을 검사하며 PNG 를 남긴다 — [CONTRIBUTING.md](CONTRIBUTING.md) 참고. `scripts/realuse.sh` 가 감싸서 실행, `--ephemeral-suite` 는 동시에 도는 자동화 실행을 서로 격리 |
+| `--bench [--bench-out <json>] [--bench-strict] [--bench-only <phases>] [--bench-commit <sha>] [--bench-foreground] [--quit]` | 생성한 말뭉치(2 KB~28 MB)로 성능 벤치마크. 예산별 PASS/FAIL 이 있는 JSON + Markdown 을 쓴다 — [docs/performance.md](docs/performance.md) 참고. 단계: `idle open memory scroll search outline theme typing findui findquery replace save`. 셀프테스트처럼 뒤에서 실행하고(앱이 포커스를 돌려주고 창을 뒤에 둔다) `--bench-foreground` 를 주면 앞에서 돈다. 어느 쪽으로 돌았는지는 결과에 남는다(JSON 의 `mode`, 표의 `Run:` 줄) — 뒤에서 잰 값은 뒤에서 잰 값과만 견준다. `scripts/bench.sh` 가 감싸서 실행(거기서는 `--foreground`) |
+| `--realuse [--realuse-only <scenarios>] [--realuse-out <dir>] [--quit]` · `--ephemeral-suite <name>` | 실사용 시뮬레이션: 키·입력기·스크롤 휠·마우스 이벤트를 실제 창에 보내고 걸음마다 불변식(레이아웃 틈·겹침, 뷰포트, 캐럿, 거터 행, 그려진 잉크, 메인 스레드 정지)을 검사하며 PNG 를 남긴다 — [CONTRIBUTING.md](CONTRIBUTING.md) 참고. `scripts/realuse.sh` 가 감싸서 실행, `--ephemeral-suite` 는 동시에 도는 자동화 실행을 서로 격리. 스크립트가 모는 다른 실행(셀프테스트·벤치·스냅샷)처럼 macOS 가 활성화할 때마다 물러나고, 빠른 추가 전역 단축키를 시스템에 등록하지 않으며, 밖에서 넘어온 파일은 자기 픽스처만 연다 — 그 밖은 `[automation] not opened — outside this run's folders: <경로>` 로 거절한다 |
 | `--quit-after-launch [--bench-launch-log <file>]` | 첫 창이 뜨고 약 0.1 s 뒤 종료하며 실행 이정표(프로세스 시작 → 창)를 로그에 덧붙인다 |
 
 ## 저장소 구성
 
 ```
-Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), Export/, AppLock/, Bench.swift, SelfTest*.swift
-  Editor/            AppKit 편집기: HyperTextView(TextKit 2, 캐럿 스타일), GutterView, EditorSession(분할), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
+Apps/mac/            SwiftUI 셸: 리본, 패널, 설정, 메뉴(HyperEditApp.swift, MacroUI.swift, SecretsUI.swift, GrammarUI.swift, Appearance.swift), ExternalOpen.swift(Finder·Dock·명령줄로 넘어온 파일), AutomationRun.swift(스크립트가 모는 실행·떨어져 도는 실행의 판정), Export/, AppLock/, Bench.swift, SelfTest*.swift, RealUse/
+  Editor/            AppKit 편집기: HyperTextView(TextKit 2, 캐럿 스타일; +NoWrap 은 줄바꿈 끔), EditorScrollView(줄 기준 스크롤바 손잡이), GutterView, EditorSession(분할), FoldController, SecretController, ScrollMarkerView, SnippetSession, MacroRecorder
   QuickAppend/       비활성화 NSPanel, 컨트롤러, Carbon 전역 단축키
   Panels/ Markdown/  사이드바·하단 패널, SnippetPickerView · WKWebView 마크다운 미리보기
 Packages/HyperCore/  엔진(문서, 줄 인덱스, 검색, 텍스트 도구, 주석 토글, JSON 정리, 스니펫, 매크로 모델, 빠른 추가 조합, 열 블록 수학, 아웃라인/타임라인, 접기 스캐너, 비밀 블록 스캐너, 여러 줄 상태 추적·사용자 문법을 포함한 구문 문법, HTML 내보내기, 테마, 폰트, 마크다운 → HTML, 언어별 환영문) + 단위 테스트 261개
@@ -236,7 +236,8 @@ Config/              Version.xcconfig(semantic-release 가 관리) · Signing.xc
 - 매크로는 키보드 편집만 기록합니다(마우스·선택·멀티 커서 단계 없음). 즉석 계산과 열 맞춤은 산술식과 탭 / 파이프 표에만 동작합니다(변수·단위·날짜 계산 없음). 주석 토글은 줄 단위이고(블록 주석 선택 없음), JSON 정리에는 정렬·스키마 기능이 없습니다.
 - 스니펫·매크로·사용자 문법은 JSON 파일(Application Support의 `snippets.json`, `macros/macros.json`, `grammars/*.json`)로 편집합니다. GUI 편집기는 없습니다.
 - 내보내기는 문서 전체만(선택 영역·여러 파일·용지·글꼴 옵션·PDF 목차 없음). 비밀 블록은 화면에서만 가리며 파일·자동 저장·스냅샷은 평문이고, 가림막 길이로 줄 길이는 보이며, VoiceOver 는 텍스트를 그대로 읽습니다. 비밀 펜스는 왼쪽 여백에서 시작해야 합니다(목록·인용 안은 인식하지 않음). 앱 잠금은 창을 가리고 입력을 막을 뿐 파일을 암호화하지 않습니다. 블록 주석은 중첩되지 않고, 2만 자가 넘는 문단 안에서는 블록·밑줄 캐럿 대신 막대 캐럿이 보입니다.
-- 접힘은 앱이 실행되는 동안에만 파일별로 유지되고(다음 실행까지 저장하지 않음), 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
+- 접힘은 앱이 실행되는 동안에만 파일별로 유지되고(다음 실행까지 저장하지 않음), 분할한 두 편집기는 늘 같은 접힘을 보이며, 접힌 머리 줄을 지나는 마우스 드래그 선택에는 숨은 텍스트가 포함됩니다.
+- 자동 줄바꿈을 끄면 가로 스크롤 막대의 범위는 지금까지 화면에 나온 가장 긴 줄까지입니다: 더 긴 줄이 화면에 들어오면 넓어지고, 탭으로 돌아오면 다시 처음 열에서 시작합니다.
 - 메모리에는 보고 있는 탭의 파일만 있습니다. 탭을 떠나면 그 파일의 실행 취소 기록이 비워지고, 다음 실행 때 복원되는 탭은 30개까지입니다.
 - 빠른 추가의 전역 단축키는 시스템 핫키 API를 쓰므로, 시스템 설정 › 키보드에서 입력 소스 전환이 켜져 있으면 ⌃Space / ⌃⌥Space 변형은 아무 알림 없이 시스템에 밀립니다. 대신 ⌃⌥N 이나 ⌃⌥⌘N 을 고르세요.
 
