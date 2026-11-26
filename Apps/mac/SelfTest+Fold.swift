@@ -19,14 +19,15 @@ extension SelfTest {
             model.send(.perform { tv in h = tv.isOffsetHidden?(off) ?? false })
             return h
         }
-        func fragmentHeight(_ line: Int) -> CGFloat {
-            var out: CGFloat = -1
+        /// 그 줄의 조각 높이. 조각이 없으면 nil (숨은 문단은 콘텐츠 열거에서 빠진다), 물어볼 수 없었으면 -1 — 둘을 가른다
+        func fragmentHeight(_ line: Int) -> CGFloat? {
+            var out: CGFloat? = -1
             let off = lineStart(line)
             model.send(.perform { tv in
                 guard let lm = tv.textLayoutManager, let cs = tv.textContentStorage,
                       let loc = cs.location(cs.documentRange.location, offsetBy: off) else { return }
                 lm.ensureLayout(for: NSTextRange(location: loc))
-                out = lm.textLayoutFragment(for: loc)?.layoutFragmentFrame.height ?? -1
+                out = lm.textLayoutFragment(for: loc)?.layoutFragmentFrame.height
             })
             return out
         }
@@ -67,8 +68,9 @@ extension SelfTest {
         model.send(.fold); await wait(300)
         check(hidden(header + 1) && hidden(header + 15) && !hidden(header) && !hidden(header + 16),
               "fold: hides lines \(header + 1)–\(header + 15) (header and after-block stay visible)")
-        check(fragmentHeight(header + 3) == 0 && fragmentHeight(header) > 0,
-              "fold: TextKit 2 fragment of a hidden line is zero-height (header \(fragmentHeight(header)), hidden \(fragmentHeight(header + 3)))")
+        // 숨은 문단은 콘텐츠 열거에서 빠져 조각이 없다 (문서의 마지막 문단만 열거에 남아 높이 0 조각이 되는데, 이 블록 뒤에는 after-block 줄이 있다)
+        check(fragmentHeight(header + 3) == nil && (fragmentHeight(header) ?? 0) > 0,
+              "fold: a hidden line has no TextKit 2 layout fragment (header \(fragmentHeight(header).map { "\($0)" } ?? "none"), hidden \(fragmentHeight(header + 3).map { "\($0)" } ?? "none"))")
         check(pillCount() == 1 && gutterMarker(header) == .folded, "fold: one ⋯ pill, gutter shows ▸")
         model.send(.perform { tv in (tv.enclosingScrollView?.superview as? EditorContainerView)?.gutter.display() })
         check(model.caretLine == header, "fold: caret stays on the header (line \(model.caretLine))")

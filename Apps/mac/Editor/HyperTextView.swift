@@ -45,9 +45,13 @@ final class HyperTextView: NSTextView {
     var onTextWillChange: ((_ edits: [(NSRange, String)], _ alreadyApplied: Bool) -> Void)?
     /// 접힘이 하나라도 있는가 — 없으면 그리기에서 레이아웃 질의를 건너뛴다
     var hasFolds: (() -> Bool)?
+    /// 닫힌 접힘이 없어도 되돌리기·다시 실행의 사후 편집 통지(onTextWillChange)가 필요한가 — 접기 후보와 다시 배치할 범위가 그 편집만큼 옮겨져야 한다
+    var tracksUndoEdits: (() -> Bool)?
     var isOffsetHidden: ((Int) -> Bool)?
     /// 오프셋을 숨기고 있는 (겹침을 합친) 구간 [hiddenStart, hiddenEnd)
     var foldedSpan: ((Int) -> NSRange?)?
+    /// 그 오프셋들을 숨기고 있는 접힘을 편다 (캐럿 걸음이 닿을 숨은 글자 — openFoldsInReach)
+    var openFolds: (([Int]) -> Void)?
     var foldPills: ((_ visibleRange: NSRange) -> [FoldPill])?
     var onFoldPillClick: ((_ hiddenStart: Int) -> Void)?
     var foldPillTextColor = NSColor.secondaryLabelColor
@@ -205,6 +209,9 @@ final class HyperTextView: NSTextView {
     }()
     private var caretStepDepth = 0
     private var selectionBeforeCaretStep = NSRange(location: 0, length: 0)
+    /// 선택을 늘리는 걸음이 마지막으로 옮긴 끝(머리)과 그때의 선택 — 다음 걸음이 출발하는 끝이다 (FoldController.swift 의 rememberCaretStepHead · openFoldsInReach).
+    /// 캐럿 걸음 밖에서 선택이 놓이면(마우스·찾기·편집·프로그램) 버린다 (setSelectedRanges)
+    var caretStepHead: (selection: NSRange, head: Int)?
 
     /// 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)의 줄이 화면에 다 들어오게 가장 적게 스크롤한다. 반환: 처리했는가 (false 면 AppKit 에 맡긴다)
     private func revealCaretStep(_ range: NSRange) -> Bool {
@@ -1073,7 +1080,7 @@ final class HyperTextView: NSTextView {
 
     /// `preferCaret`: 캐럿 줄이 화면에 보이고 있으면 맨 위 줄 대신 그 줄을 닻으로 삼는다. 캐럿 근처에서 일하던 중에 맨 위 줄을 지키면, 다시 감기며 그 사이의
     /// 줄 수가 달라져 캐럿이 화면 밖으로 밀려난다 (실측: 긴 문단 문서에서 줄바꿈을 켜자 캐럿이 화면 아래 1,135 pt). 캐럿이 화면 밖이면(읽는 중) 맨 위 줄을 지킨다.
-    /// 접기·펴기는 맨 위(머리) 줄을 기준으로 하므로 끈다
+    /// 접기와 한 영역 펴기는 맨 위(머리) 줄을 기준으로 하므로 끈다 (모두 펴기는 켠다 — FoldController)
     func captureReadingAnchor(preferCaret: Bool = true) -> ReadingAnchor? {
         guard window != nil, let clip = enclosingScrollView?.contentView, let cs = textContentStorage, let length = textStorage?.length, length > 0 else { return nil }
         let top = clip.bounds.minY, originY = textContainerOrigin.y
@@ -1135,11 +1142,11 @@ final class HyperTextView: NSTextView {
         //    (실측: 줄 이동이 화면 1/3 높이 127.3 pt 에 맞춘 줄을 다음 패스가 164.1 pt 로 옮겼다).
         //  · 전체 속성 재적용(글자 크기·테마)·폭 변화는 저장소 편집으로 통지되므로 닻이 다음 패스를 쉰다. 그런데 그 패스가 위쪽 문단을 실측하며 좌표를 옮기면
         //    방금 맞춘 줄이 화면에서 사라진다 (실측: 접힌 1.3 MB 메모에서 ⌘= 뒤의 패스가 좌표를 46,011 pt 옮겨 맨 위 줄이 12707 → 11595 번째 줄로 바뀌었다)
-        // 접힌 문서에서는 넘기지 않는다: 접힌 문단은 배치되기 전까지 보통 줄 높이로 어림되므로 패스마다 좌표가 수만 pt 씩 바뀌고, 닻이 그것을 따라 되돌리는 동안
-        // 뷰포트를 거듭 배치해 정지가 길어진다 (실측, 전체 묶음: 접힌 메모의 글자 크기·사이드바 걸음 네 개의 정지 행 44 → 106, 그러고도 캐럿 줄이 36.5 pt 어긋났다)
+        // 접힌 문서도 같다 — 접힌 문단은 콘텐츠 열거에서 빠져 높이 어림에 들어가지 않는다 (FoldController.swift). 높이 0 조각으로 숨기던 때에는 패스마다 좌표가
+        // 수만 pt 씩 바뀌어 접힌 문서에서는 넘기지 않았었다
         defer {
             readingAnchorDepth -= 1
-            if hasFolds?() != true { layoutRecord = makeLayoutRecord(); layoutAnchorBlocked = false }
+            layoutRecord = makeLayoutRecord(); layoutAnchorBlocked = false
         }
         func scroll(to y: CGFloat) { clip.scroll(to: NSPoint(x: clip.bounds.minX, y: y)); sv.reflectScrolledClipView(clip) }
         var usedEstimate = false, usedProportion = false, exactMoves = 0
@@ -1239,8 +1246,8 @@ final class HyperTextView: NSTextView {
     }
 
     /// 문서 전체의 레이아웃을 무효화하는 변화의 앞뒤에 짝으로 부른다: 닻을 잡고(그 사이의 폭 변화는 따로 처리하지 않는다) → 되돌린다
-    func beginPreservingReadingPosition() -> ReadingAnchor? {
-        let anchor = captureReadingAnchor(preferCaret: false)   // 접기·펴기: 맨 위(머리) 줄 기준
+    func beginPreservingReadingPosition(preferCaret: Bool = false) -> ReadingAnchor? {
+        let anchor = captureReadingAnchor(preferCaret: preferCaret)   // 접기: 맨 위(머리) 줄 기준 · 모두 펴기: 캐럿 줄이 보이고 있으면 그 줄
         readingAnchorDepth += 1
         return anchor
     }
@@ -1250,8 +1257,8 @@ final class HyperTextView: NSTextView {
         if let anchor { restoreReadingAnchor(anchor) }
     }
 
-    func preservingReadingPosition(_ body: () -> Void) {
-        let anchor = beginPreservingReadingPosition()
+    func preservingReadingPosition(preferCaret: Bool = false, _ body: () -> Void) {
+        let anchor = beginPreservingReadingPosition(preferCaret: preferCaret)
         body()
         endPreservingReadingPosition(anchor)
     }
@@ -1313,6 +1320,7 @@ final class HyperTextView: NSTextView {
 
     override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
         super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+        if caretStepDepth == 0 { caretStepHead = nil }   // fold: 걸음이 놓은 선택이 아니다 — 어느 끝이 머리인지 모른다
         if undoInProgress { selectionMovedByUndo = true }
         if !settingSelectionProgrammatically, multi != nil { multi = nil }
         invalidateCurrentLineBand()   // 현재 줄 띠: 옛 자리(장부)와 새 자리를 다시 그린다
@@ -1331,7 +1339,8 @@ final class HyperTextView: NSTextView {
         applyNativeSelection(ranges, primary: b.headIsBottom ? ranges.count - 1 : 0)
     }
 
-    func setMulti(_ ranges: [NSRange]) {
+    /// `reveal`: 머리 캐럿을 보이게 스크롤한다. false 면 캐럿만 놓고 화면은 그대로 둔다 (접기가 숨은 캐럿을 머리 줄로 옮길 때 — FoldController.moveCaretOutOfFolds)
+    func setMulti(_ ranges: [NSRange], reveal: Bool = true) {
         // 낡은 검색 결과 등 문서 밖 범위는 버린다
         let len = (string as NSString).length
         let sorted = ranges.filter { $0.location >= 0 && NSMaxRange($0) <= len }.sorted { $0.location < $1.location }
@@ -1341,7 +1350,7 @@ final class HyperTextView: NSTextView {
             return
         }
         multi = MultiSelection(ranges: sorted, block: nil)
-        applyNativeSelection(sorted, primary: sorted.count - 1)
+        applyNativeSelection(sorted, primary: sorted.count - 1, reveal: reveal)
     }
 
     func clearMulti() {
@@ -1358,7 +1367,7 @@ final class HyperTextView: NSTextView {
         setSelectedRange(NSRange(location: min(off, ns.length), length: 0))
     }
 
-    private func applyNativeSelection(_ ranges: [NSRange], primary: Int) {
+    private func applyNativeSelection(_ ranges: [NSRange], primary: Int, reveal: Bool = true) {
         settingSelectionProgrammatically = true
         defer { settingSelectionProgrammatically = false }
         let p = max(0, min(primary, ranges.count - 1))
@@ -1370,9 +1379,10 @@ final class HyperTextView: NSTextView {
             // 짧을 때 — NSTextView 가 selectedRanges 로는 전부 돌려주면서도 선택 강조를 한 줄도 그리지 않아, 고른 블록이 화면에 보이지 않는 채로 입력이 블록을 바꿨다
             super.setSelectedRanges(ranges.filter { $0.length > 0 }.map { NSValue(range: $0) }, affinity: .downstream, stillSelecting: false)
         }
+        needsDisplay = true
+        guard reveal else { return }
         prepareNoWrapBlockHeadReveal()   // 줄바꿈 끔의 열 블록이면 아래의 스크롤이 머리 칸을 향한다
         scrollRangeToVisible(ranges[p])
-        needsDisplay = true
     }
 
     // MARK: - 줄 수 변화 통지
@@ -1437,7 +1447,7 @@ final class HyperTextView: NSTextView {
         onTextWillChange = nil; onLinesWillChange = nil; needsLineTracking = { false }
         tracksUntrackedLineChanges = false
         matchHighlights = []   // search
-        hasFolds = nil; isOffsetHidden = nil; foldedSpan = nil; foldPills = nil; onFoldPillClick = nil
+        hasFolds = nil; tracksUndoEdits = nil; isOffsetHidden = nil; foldedSpan = nil; openFolds = nil; foldPills = nil; onFoldPillClick = nil
         hasMasks = nil; isOffsetMasked = nil; secretHitTest = nil; onDidCopySecret = nil   // secrets
         snippetProvider = nil; macroSink = nil
         onBecomeActive = nil; onMultiChange = nil; onDidMoveToWindow = nil
@@ -1509,7 +1519,9 @@ final class HyperTextView: NSTextView {
         if !matchHighlights.isEmpty, ts.editedRange.location != NSNotFound { shiftMatchHighlights(edited: ts.editedRange, delta: ts.changeInLength) }
         // 추적되지 않은 편집은 undo/redo 이거나 프로그램적 전체 교체(파일 열기·다시 읽기)다. 접힘이 없고 undo 도 아니면 할 일이 없다 —
         // 여기서 교체 문자열을 복사하면 8 MB 문서를 열 때마다 8 MB 를 복사하게 된다.
+        // 되돌리기 묶음의 앞 편집이 마지막 접힘을 편 뒤의 편집, 접힘이 없는 문서의 되돌리기도 전한다 (접기 후보·다시 배치할 범위 — tracksUndoEdits)
         let foldsActive = (hasFolds?() ?? false) || (hasMasks?() ?? false)   // secrets: 비밀 범위도 undo/redo 뒤 옮겨야 한다
+            || (undoInProgress && (tracksUndoEdits?() ?? false))
         guard foldsActive || undoInProgress else { return }
         let edited = ts.editedRange
         guard edited.location != NSNotFound else { return }
@@ -1687,9 +1699,13 @@ final class HyperTextView: NSTextView {
         // 단일 캐럿 Tab: 캐럿 앞 단어가 스니펫 트리거면 펼친다 (아니면 일반 Tab)
         if selector == #selector(NSResponder.insertTab(_:)), !hasMulti, expandSnippetAtCaret() { return }
         let caretStep = Self.caretStepCommands.contains(selector)   // 가장자리를 넘으면 필요한 만큼만 민다 (revealCaretStep)
+        if caretStep, hasFolds?() == true { openFoldsInReach(of: selector) }   // fold: 걸음이 닿을 숨은 줄은 먼저 편다 (AppKit 의 걸음은 닫힌 접힘을 넘어간다)
         if caretStep { caretStepDepth += 1; selectionBeforeCaretStep = selectedRange() }
         super.doCommand(by: selector)
         if caretStep { caretStepDepth -= 1 }
+        let stepped = caretStep ? selectedRange() : NSRange()   // fold: AppKit 이 놓은 선택 (아래에서 고치기 전)
+        if caretStep, !hasMulti, hasFolds?() == true { stepIntoFold(after: selector, from: selectionBeforeCaretStep) }   // fold: 접힌 구간을 말없이 건너뛰지 않게
+        if caretStep { rememberCaretStepHead(from: selectionBeforeCaretStep, stepped: stepped) }   // fold: 다음 ⇧ 걸음이 어느 끝에서 출발하는지 (openFoldsInReach)
         if snippetSession != nil, selector.description.hasPrefix("move") { snippetCaretMoved() }
     }
 

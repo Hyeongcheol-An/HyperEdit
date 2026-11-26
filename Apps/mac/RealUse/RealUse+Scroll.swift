@@ -170,7 +170,9 @@ extension RealUseContext {
         // 문서 높이는 정수 pt, 스크롤 위치는 화면 픽셀(0.5 pt) 격자라 1 pt 까지는 어긋날 수 있다(실측 0.6)
         if abs(v.maxY - docH) > 1 { issue("viewport-jump", "\(why): expected the very end but the viewport bottom is \(String(format: "%.1f", v.maxY)) of document height \(String(format: "%.1f", docH))") }
         guard let last = viewportFragments().last else { return }
-        if last.offset + last.length < length { issue("coverage", "\(why): at the end but the last laid-out paragraph ends at offset \(last.offset + last.length) of \(length)") }
+        // 문서 끝까지 닿는 접힘이 있으면 마지막으로 보이는 문단은 그 접힘의 머리 줄이다 (숨은 줄은 배치되지 않는다)
+        let end = tv.foldedSpan?(length).map(\.location) ?? length
+        if last.offset + last.length < end { issue("coverage", "\(why): at the end but the last laid-out paragraph ends at offset \(last.offset + last.length) of \(end)") }
         else {
             let band = v.maxY - last.maxY
             let inset = tv.textContainerInset.height

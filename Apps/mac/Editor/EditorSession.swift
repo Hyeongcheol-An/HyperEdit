@@ -17,7 +17,7 @@ enum EditorRole { case primary, secondary }
 /// - 명령(`EditorCommand`)·캐럿 상태는 마지막으로 포커스/클릭된 '활성' 편집기 기준. 아직 없으면 주 편집기.
 @MainActor
 final class EditorSession: ObservableObject {
-    let contentStorage = NSTextContentStorage()
+    let contentStorage: NSTextContentStorage = FoldingContentStorage()   // fold: 접힌 구간을 건너뛰며 열거한다 (FoldController.swift)
     let undoManager = UndoManager()
     /// 마지막으로 포커스/클릭된 편집기 — 명령·캐럿 상태는 이 편집기 기준
     var activeEditorID: UUID?
