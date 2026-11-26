@@ -975,7 +975,7 @@ struct EditorView: NSViewRepresentable {
             var result = TextTools.alignColumns(lines, separator: sep).joined(separator: "\n")
             if hadNewline { result += "\n" }
             guard result != original else { return }
-            tv.insertText(result, replacementRange: range)
+            tv.replaceForTool(range, with: result)
             tv.setSelectedRange(NSRange(location: range.location, length: (result as NSString).length))
             model.log(String(localized: "Aligned \(lines.count) lines"))
         }
@@ -989,7 +989,7 @@ struct EditorView: NSViewRepresentable {
             let out = f(text.components(separatedBy: "\n"))
             var result = out.joined(separator: "\n")
             if hadNewline && !result.isEmpty { result += "\n" }
-            tv.insertText(result, replacementRange: range)
+            tv.replaceForTool(range, with: result)
             tv.setSelectedRange(NSRange(location: range.location, length: (result as NSString).length))
         }
 
@@ -1002,7 +1002,7 @@ struct EditorView: NSViewRepresentable {
                 if ns.substring(with: r).hasSuffix("\n") { r.length -= 1 }
             }
             let result = f(ns.substring(with: r))
-            tv.insertText(result, replacementRange: r)
+            tv.replaceForTool(r, with: result)
             tv.setSelectedRange(NSRange(location: r.location, length: (result as NSString).length))
         }
 

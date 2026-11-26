@@ -828,7 +828,7 @@ extension RealUse {
             await ctx.settle(300)
         },
 
-        // 접힌 영역(높이 0 조각)이 있는 문서에서의 스크롤
+        // 접힌 영역(숨은 문단은 열거에서 빠진다)이 있는 문서에서의 스크롤
         Scenario(name: "scroll-folded") { ctx in
             ctx.logWindowState()
             await ctx.withRelaxedStalls { await ctx.open(.notes, name: "folded.md") }
