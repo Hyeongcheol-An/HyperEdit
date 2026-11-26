@@ -60,6 +60,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 깎여, 시간을 재는 검사(매크로 100회·타이핑 지연·유휴 잠금)가 몇 배 느리게 재진다 (2026-11-24 실측: 막지 않은 실행에서 8건 실패)
     private var backgroundActivity: NSObjectProtocol?
 
+    /// Finder 의 "다음으로 열기"·Dock 아이콘에 끌어다 놓기·`open -a HyperEdit <파일>` 로 넘어온 파일 → 탭으로 연다 (ExternalOpen.swift).
+    /// 앱이 꺼져 있다가 뜨는 경우에는 `applicationDidFinishLaunching` 보다 먼저, 창이 생기기 전에 불린다 (모델은 그보다 먼저 만들어져 있다)
+    func application(_ application: NSApplication, open urls: [URL]) { ExternalOpen.receive(urls) }
+
+    /// 명령줄의 맨 인자(`HyperEdit <파일>`): AppKit 은 이것을 위의 URL 경로가 아니라 이 옛 경로로, 인자마다 한 번씩 넘긴다 (실측 macOS 27).
+    /// AppKit 의 판정은 이 앱의 옵션과 어긋나므로(옵션의 값이 섞여 오고, 파일이 빠진다) 맨 인자는 실행 인자에서 직접 가려 연다 — 여기서는 어긋난 것만
+    /// 적는다 (`ExternalOpen.receive(commandLine:)`)
+    func application(_ sender: NSApplication, openFiles filenames: [String]) {
+        ExternalOpen.receive(commandLine: filenames)
+        sender.reply(toOpenOrPrint: .success)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
         if Self.automationStaysInBackground {

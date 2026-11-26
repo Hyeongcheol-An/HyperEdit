@@ -34,7 +34,7 @@ enum RealUse {
 
     /// 모든 시나리오 (영역 파일들이 채운다)
     @MainActor static var scenarios: [Scenario] {
-        coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios + fileViewScenarios
+        coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios + fileViewScenarios + openScenarios
             + isolationScenarios
     }
 
@@ -66,6 +66,8 @@ enum RealUse {
         ctx.log("launch: app active=\(NSApp.isActive) window key=\(ctx.window.isKeyWindow) visible=\(ctx.window.isVisible) occluded=\(!ctx.window.occlusionState.contains(.visible)) frame=\(ctx.window.frame)")
         // 저장된 창 상태(번들 ID 공용)를 건드리지 않는 실행인가 — 앱이 등록한 기본값에 더해 scripts/realuse.sh 가 인자로도 넘긴다
         ctx.log("launch: saved window state ignored=\(UserDefaults.standard.bool(forKey: "ApplePersistenceIgnoreState")) (given as an argument: \(UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)["ApplePersistenceIgnoreState"] != nil))")
+        // 어느 언어로 도는가 — `scripts/realuse.sh … -- -AppleLanguages '("ar")'` 가 정말 먹었는지 (인자가 안 먹으면 조용히 시스템 언어로 돈다)
+        ctx.log("launch: language=\(Bundle.main.preferredLocalizations.first ?? "?") (AppleLanguages given as an argument: \(UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)["AppleLanguages"] != nil))")
         GutterView.captureRows = true
         ctx.startStallMonitor()
         await ctx.calibrate()
