@@ -796,6 +796,125 @@ extension RealUse {
             await ctx.withRelaxedStalls { await saved.restore(ctx) }
         },
 
+        // 줄바꿈 끔에서 편집이 선택을 남길 때 (스니펫의 자리표시자): 선택 전체가 보이는 열에 와야 한다 — 시작만 보이고 끝이 오른쪽 가장자리 밖에 남으면 안 된다.
+        // 그리고 오른쪽 가장자리를 넘어가는 한글 조합: 조합 중인 음절이 키마다 보여야 한다
+        Scenario(name: "nowrap-snippet") { ctx in
+            let saved = ViewDefaults(ctx)
+            await ctx.open(text: "# snippet, word wrap off\n\n\n\nlast line\n", name: "nowrap-snippet.md")
+            await ctx.setWrap(false, "five-line document")
+            let provider = ctx.tv.snippetProvider
+            // 첫 줄이 길고(자리표시자가 그 끝에 있다) 마지막 줄이 짧은 스니펫: 펼친 직후의 캐럿(끝)은 처음 열에 있어 가로로 움직일 까닭이 없다
+            ctx.tv.snippetProvider = { trigger in trigger == "wide" ? SnippetTemplate.render("KEY: ${1:placeholder text here}\nend$0") : provider?(trigger) }
+            @MainActor func restore() async { ctx.tv.snippetProvider = provider; await ctx.withRelaxedStalls { await saved.restore(ctx) } }
+            let cw = ctx.tv.charWidth
+            let cols = Int((ctx.visible.width - 2 * ctx.tv.textContainerInset.width) / cw)
+            ctx.note(String(format: "the editor shows %d columns (%.1f pt wide, %.2f pt per character)", cols, ctx.visible.width, cw))
+
+            ctx.at("snippet placeholder across the right edge")
+            guard cols > 30, await ctx.clickCaret(ctx.lineStart(3), "the empty third line") else { await restore(); return }
+            // 트리거가 오른쪽 가장자리에서 일곱 칸 못 미친 곳에서 끝나게 채운다: 펼치면 "KEY: " 뒤의 자리표시자(21자)가 가장자리에 걸친다 (앞의 여섯 자만 보인다)
+            await ctx.type(String(repeating: "a", count: cols - 12) + " ", turnEvery: 8); await ctx.typeKeys("wide"); await ctx.quiesce()
+            if ctx.visible.minX > 0.5 { ctx.issue("other", "typing up to seven columns before the right edge already scrolled the view to x \(Int(ctx.visible.minX))") }
+            await ctx.press(.tab); await ctx.quiesce()
+            let sel = ctx.tv.selectedRange()
+            if sel.length != 21 { ctx.issue("snippet", "wide + Tab should select the 21-character placeholder, the selection is {\(sel.location), \(sel.length)}") }
+            else if let a = ctx.tv.caretRect(at: sel.location), let b = ctx.tv.caretRect(at: NSMaxRange(sel)) {
+                let v = ctx.visible
+                ctx.note(String(format: "the placeholder is selected at x %.0f…%.0f; the view shows x %.0f…%.0f", a.minX, b.maxX, v.minX, v.maxX))
+                if a.minX < v.minX - 1 || b.maxX > v.maxX + 1 {
+                    ctx.issue("hscroll", String(format: "the snippet's first placeholder is selected at x %.0f…%.0f but the view shows x %.0f…%.0f — part of the selection is off screen", a.minX, b.maxX, v.minX, v.maxX))
+                }
+            }
+            ctx.checkAll("snippet placeholder selected"); ctx.snap("placeholder")
+            // 자리표시자를 채우고 Tab: 캐럿은 둘째 줄의 "end" 뒤 — 보이는 열로 돌아온다
+            await ctx.typeKeys("v"); await ctx.press(.tab); await ctx.quiesce()
+            ctx.checkCaretInView("Tab to the snippet's final position"); ctx.checkAll("Tab to the snippet's final position")
+
+            // 한글 조합이 오른쪽 가장자리를 넘는다: 조합 단계마다(자모 하나가 키 하나) 조합 중인 음절과 캐럿이 보이는 열에 있어야 한다
+            ctx.at("compose Hangul across the right edge")
+            await ctx.hscrollBy(-100_000); await ctx.settle(60)
+            guard await ctx.clickCaret(ctx.lineStart(5), "the head of the fifth line") else { await restore(); return }
+            await ctx.type(String(repeating: "b", count: cols - 4), turnEvery: 8); await ctx.quiesce()
+            var hidden = 0, stages = 0
+            for ch in "한글 조합이 가장자리를 넘어간다" {
+                guard ("가"..."힣").contains(ch) else { await ctx.typeKeys(String(ch)); continue }
+                for st in RealUseContext.hangulStages(ch) {
+                    ctx.tv.setMarkedText(st, selectedRange: NSRange(location: (st as NSString).length, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+                    await ctx.turn(); await ctx.pumpEvent(); await ctx.quiesce()
+                    stages += 1
+                    let marked = ctx.tv.markedRange(), v = ctx.visible
+                    guard marked.location != NSNotFound, let a = ctx.tv.caretRect(at: marked.location), let b = ctx.tv.caretRect(at: NSMaxRange(marked)) else { continue }
+                    if a.minX < v.minX - 1 || b.maxX > v.maxX + 1 || b.minY < v.minY - 1 || b.maxY > v.maxY + 1 {
+                        hidden += 1
+                        if hidden == 1 { ctx.issue("caret-hidden", String(format: "composing “%@”: the syllable is at x %.0f…%.0f but the view shows x %.0f…%.0f", st, a.minX, b.maxX, v.minX, v.maxX)) }
+                    }
+                }
+                await ctx.commitComposition(ch)
+            }
+            await ctx.quiesce()
+            ctx.note("composed Hangul across the right edge: \(stages) composing stages, the syllable was off screen in \(hidden)")
+            ctx.checkCaretInView("composed Hangul past the right edge"); ctx.checkAll("composed Hangul past the right edge")
+            if ctx.visible.minX < 1 { ctx.issue("hscroll", "composing past the right edge did not scroll the view sideways (x \(Int(ctx.visible.minX)))") }
+            ctx.snap("composed")
+            await restore()
+        },
+
+        // 항상 보이는 스크롤 막대(레거시)에서는 화면보다 넓은 줄이 처음 들어오는 순간 가로 막대가 생기고 보이는 높이가 그만큼 줄어든다.
+        // 그 순간에도 캐럿 줄은 온전히 보여야 한다 — 방금 생긴 가로 막대 밑에 잘리면 안 된다 (↓ 로 넓은 줄이 들어올 때, 맨 아랫줄에서 치는 줄이 폭을 넘을 때)
+        Scenario(name: "nowrap-legacy-scroller") { ctx in
+            let saved = ViewDefaults(ctx)
+            let style0 = ctx.scroll.scrollerStyle
+            // 넓은 줄은 200번·400번 줄뿐이다 — 뷰포트는 화면 밖 위아래도 조금 배치하므로 넓은 줄이 멀리 있어야 가로 막대 없이 시작한다
+            let text = (1...600).map { i in i == 200 || i == 400 ? "\(i) " + String(repeating: "a line wider than the editor ", count: 12) + "END" : "\(i) short" }.joined(separator: "\n") + "\n"
+            await ctx.open(text: text, name: "nowrap-legacy.md")
+            ctx.scroll.scrollerStyle = .legacy
+            await ctx.setWrap(false, "600-line document, legacy scrollers")
+            ctx.model.jump(toLine: 150); await ctx.settle(400)
+            ctx.hstate("at line 150"); ctx.note(String(format: "visible height %.1f", ctx.visible.height))
+            if ctx.scroll.horizontalScroller?.isHidden == false { ctx.note("the horizontal scroller is already shown before the wide line comes in — the moment it appears cannot be seen in this run") }
+            @MainActor func caretWhole(_ why: String) -> Bool {
+                guard let r = ctx.tv.caretRect(at: ctx.caret) else { return true }
+                let v = ctx.visible
+                if r.minY < v.minY - 0.5 || r.maxY > v.maxY + 0.5 {
+                    ctx.issue("caret-hidden", String(format: "%@: the caret line y %.1f…%.1f is cut by the visible area %.1f…%.1f (height %.1f, horizontal scroller %@)", why, r.minY, r.maxY, v.minY, v.maxY, v.height,
+                                                     ctx.scroll.horizontalScroller?.isHidden == false ? "shown" : "hidden"))
+                    return false
+                }
+                return true
+            }
+            // ↓ 로 내려간다: 200번 줄(넓은 줄)이 뷰포트에 들어오는 걸음에서 폭이 넓어진다
+            ctx.at("↓ until a wide line comes in")
+            if let f = ctx.edgeParagraph(bottom: true), await ctx.clickCaret(f.offset, "the head of the bottom line") {
+                var h = ctx.visible.height
+                for i in 1...64 {
+                    await ctx.press(.down); await ctx.quiesce()
+                    if abs(ctx.visible.height - h) > 0.5 { ctx.note(String(format: "↓ %d (line %d): the visible height went from %.1f to %.1f", i, ctx.liveLine(ctx.caret), h, ctx.visible.height)); h = ctx.visible.height }
+                    if !caretWhole("↓ \(i) (line \(ctx.liveLine(ctx.caret)))") { break }
+                }
+                ctx.hstate("after ↓"); ctx.checkAll("after ↓")
+                ctx.snap("down")
+            }
+            // 맨 아랫줄에서 친다: 치는 줄이 문서에서 가장 넓은 줄이 되는 순간
+            ctx.at("type a line wider than anything on the bottom line")
+            ctx.model.jump(toLine: 300); await ctx.settle(400)
+            await ctx.withRelaxedStalls { ctx.model.wordWrap = true; await ctx.settle(300); ctx.model.wordWrap = false; await ctx.settle(300) }   // 잰 폭을 버린다 (가로 막대 없이 시작)
+            ctx.model.jump(toLine: 300); await ctx.settle(400)
+            await ctx.hscrollBy(-100_000); await ctx.settle(60)
+            ctx.hstate("before typing")
+            if await ctx.clickEndOfBottomLine("the end of the bottom line") {
+                var h = ctx.visible.height
+                for i in 1...16 {
+                    await ctx.typeKeys(" wider and wider"); await ctx.quiesce()
+                    if abs(ctx.visible.height - h) > 0.5 { ctx.note(String(format: "typing %d: the visible height went from %.1f to %.1f", i, h, ctx.visible.height)); h = ctx.visible.height }
+                    if !caretWhole("typing \(i) on the bottom line") { break }
+                }
+                ctx.hstate("after typing"); ctx.checkCaretInView("typed a wide line on the bottom line"); ctx.checkAll("typed a wide line on the bottom line")
+                ctx.snap("typed")
+            }
+            ctx.scroll.scrollerStyle = style0
+            await ctx.withRelaxedStalls { await saved.restore(ctx) }
+        },
+
         // 4 MB 로그, 줄바꿈 끔: 열기·휠·처음과 끝·Page Up/Down·클릭·타이핑·찾기 점프 — 멈추지 않고, 휠 델타만큼 움직인다
         Scenario(name: "nowrap-log") { ctx in
             let saved = ViewDefaults(ctx)

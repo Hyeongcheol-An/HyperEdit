@@ -377,6 +377,9 @@ final class RealUseContext {
             cg?.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: Double(points))
         }
         guard let cg else { return nil }
+        // 수정키를 비운다. source 없이 만든 CGEvent 의 flags 는 만드는 순간의 수정키 상태다 — 사용자가 다른 앱에서 ⇧ 를 누르고 있을 때 만든 줄 휠은 AppKit 이
+        // 가로 스크롤로 바꿔(⇧ + 휠) 세로로는 한 칸도 가지 않는다 (실측: flags 에 ⇧ 를 넣은 줄 휠 한 칸 → deltaX −1 · deltaY 0 · 이동 0 pt. 픽셀 휠과 ⌥·⌃·⌘ 는 그대로 간다)
+        cg.flags = []
         cg.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
         cg.setIntegerValueField(.scrollWheelEventMomentumPhase, value: momentum)
         // 편집기 한가운데를 가리키는 위치 (전역 좌표: 왼쪽 위 원점)

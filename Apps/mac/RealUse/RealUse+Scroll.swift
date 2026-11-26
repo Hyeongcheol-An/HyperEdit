@@ -314,14 +314,39 @@ extension RealUse {
             ctx.logWindowState()
             await ctx.withRelaxedStalls { await ctx.open(.notes, name: "linewheel.md") }
             ctx.model.jump(toLine: 8000); await ctx.settle(400)
+            // 줄 휠 한 칸은 scrollWheel 안에서 반영되지 않는다: AppKit 이 살아 있는 스크롤을 시작하고(willStartLiveScroll) 다음 화면 주기에 한 번에 옮긴 뒤(실측 8~19 ms 뒤)
+            // 100 ms 뒤에 끝낸다(didEndLiveScroll). 가끔 한 칸이 — 때로는 잇달아 몇 칸이 — 통째로 안 먹는 실행이 있었다(같은 조건 6회 중 2회, 이어진 44회에서는 0회,
+            // 편집기 코드와 창이 가려졌는지에 상관없이). 줄 휠 이벤트가 ⇧ 를 달고 오면 그렇게 된다(가로 스크롤로 바뀐다) — 합성 이벤트는 이제 수정키를 비우고 만든다
+            // (RealUseContext.scrollEvent). 다시 나오면 가를 수 있게, 안 움직인 칸에서는 알림이 왔는지·2초 안에 늦게라도 반영되는지·그때 눌려 있던 수정키를 문제에 함께 적는다
+            var liveStarts = 0, liveEnds = 0
+            let liveTokens = [NSScrollView.willStartLiveScrollNotification, NSScrollView.didEndLiveScrollNotification].map { name in
+                NotificationCenter.default.addObserver(forName: name, object: ctx.scroll, queue: nil) { n in
+                    MainActor.assumeIsolated { if n.name == NSScrollView.willStartLiveScrollNotification { liveStarts += 1 } else { liveEnds += 1 } }
+                }
+            }
+            defer { liveTokens.forEach { NotificationCenter.default.removeObserver($0) } }
+            /// 줄 휠 `n` 칸을 보내고 기다린다. 반환: 클립 뷰가 꿈쩍도 안 했으면 그 사정 (알림 수 · 늦게 반영됐는가 · 창이 가려져 있는가), 움직였으면 nil
+            @MainActor func notch(_ n: Int32, settle ms: UInt64) async -> String? {
+                let clip = ctx.scroll.contentView
+                let y0 = clip.bounds.minY, s0 = liveStarts, e0 = liveEnds
+                let held = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)   // 사용자가 지금 누르고 있는 수정키 (이 실행 밖의 것)
+                await ctx.wheelLines(n); await ctx.settle(ms)
+                guard abs(clip.bounds.minY - y0) < 0.01 else { return nil }
+                let t0 = CFAbsoluteTimeGetCurrent()
+                while abs(clip.bounds.minY - y0) < 0.01, CFAbsoluteTimeGetCurrent() - t0 < 2 { try? await Task.sleep(nanoseconds: 50_000_000) }
+                let late = abs(clip.bounds.minY - y0) >= 0.01
+                return "the clip view did not move; live scroll notifications for this event: \(liveStarts - s0) start, \(liveEnds - e0) end; "
+                    + (late ? String(format: "it moved %.0f pt %.0f ms later", clip.bounds.minY - y0, (CFAbsoluteTimeGetCurrent() - t0) * 1000) : "it did not move in the next 2 s")
+                    + "; window occluded=\(!ctx.window.occlusionState.contains(.visible)); modifier keys held when it was sent: 0x\(String(held.rawValue, radix: 16))"
+            }
             ctx.at("line wheel")
             var net: CGFloat = 0
             var perLine: [CGFloat] = []
             for n: Int32 in [1, 1, 3, -3, -1, -1, 5, -5, -2, 2] {
                 let a = ctx.anchor(nearScreenY: n > 0 ? 320 : 100)
-                await ctx.wheelLines(n); await ctx.settle(250)
+                let stuck = await notch(n, settle: 250)
                 guard let m = ctx.moved(since: a) else { ctx.issue("scroll-delta", "line wheel \(n): the reference paragraph left the screen (more than \(Int(ctx.visible.height / 2)) pt for \(abs(n)) notches?)"); continue }
-                if abs(m) < 1 || (m > 0) != (n > 0) { ctx.issue("scroll-delta", "line wheel \(n): content moved \(String(format: "%.1f", m)) pt (wrong direction or nothing)") }
+                if abs(m) < 1 || (m > 0) != (n > 0) { ctx.issue("scroll-delta", "line wheel \(n): content moved \(String(format: "%.1f", m)) pt (wrong direction or nothing)" + (stuck.map { " — " + $0 } ?? "")) }
                 net += m
                 perLine.append(m / CGFloat(n))
                 ctx.checkAll("line wheel \(n)")
@@ -335,8 +360,9 @@ extension RealUse {
             var ups: [CGFloat] = []
             for i in 1...10 {
                 let a = ctx.anchor(nearScreenY: 120)
-                await ctx.wheelLines(-1); await ctx.settle(150)
+                let stuck = await notch(-1, settle: 150)
                 if let m = ctx.moved(since: a) { ups.append(m) } else { ctx.issue("scroll-delta", "notch up #\(i) from the end: the reference paragraph left the screen") }
+                if let stuck { ctx.note("notch up #\(i) from the end: " + stuck) }
                 ctx.checkAll("notch up #\(i)")
             }
             ctx.note("notches up from the end: " + ups.map { String(format: "%.1f", $0) }.joined(separator: ", "))
@@ -836,5 +862,5 @@ extension RealUse {
             await ctx.restedSteps("after Unfold All")
             ctx.snap("unfolded")
         },
-    ] + scrollStateScenarios
+    ] + scrollStateScenarios + scrollEdgeScenarios + scrollTrackpadScenarios + scrollKnobScenarios
 }

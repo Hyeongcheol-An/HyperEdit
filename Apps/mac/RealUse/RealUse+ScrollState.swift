@@ -100,6 +100,7 @@ extension RealUse {
     @MainActor static let scrollStateScenarios: [Scenario] = [
         // 한 문서에서 2,000 문단 넘게: 조각을 버리는 걸음에서도 휠을 굴린 만큼만 움직이고, 같은 만큼 올라오면 처음이다. Page Down/Up 도 같은 쪽
         Scenario(name: "scroll-long-run") { ctx in
+            let issues0 = ctx.issues.count   // 이 시나리오에서 난 문제만 센다 — 앞 시나리오가 남긴 문제(정지 한 번의 행 묶음 등)로 걸음을 건너뛰지 않게
             ctx.logWindowState()
             await ctx.withRelaxedStalls { await ctx.open(.notes, name: "longrun.md") }
             ctx.setFragmentCacheLimit()
@@ -129,7 +130,7 @@ extension RealUse {
                 if let m = ctx.moved(since: a) { amounts.append(m) } else { ctx.issue("scroll-delta", "Page Down #\(i): the paragraph at the bottom edge of the previous page is not on screen any more (top line \(top0) → \(ctx.topLine()))") }
                 if ctx.topLine() <= top0 { ctx.issue("scroll-delta", "Page Down #\(i): top line went from \(top0) to \(ctx.topLine())") }
                 ctx.checkLayout("Page Down #\(i)")
-                if ctx.issues.count > 12 { break }
+                if ctx.issues.count - issues0 > 12 { break }
             }
             if let mn = amounts.min(), let mx = amounts.max(), mx - mn > 2 { ctx.issue("scroll-delta", "Page Down moved by \(String(format: "%.1f", mn))…\(String(format: "%.1f", mx)) pt — pages should be the same size") }
             ctx.logFragmentCache("after 40 pages")

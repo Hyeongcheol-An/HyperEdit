@@ -201,6 +201,7 @@ final class MacroRecorder: ObservableObject {
         var reason: String?
         let t0 = CFAbsoluteTimeGetCurrent()
         var lastYield = t0
+        tv.isReplayingMacro = true   // 걸음마다 캐럿을 따라 스크롤하지 않는다 — 화면을 갱신할 때(아래의 양보)와 끝에서 한 번씩 (HyperTextView.revealCaretAfterReplaySteps)
         loop: for i in 0..<times {
             let editsBefore = edits, selBefore = tv.selectedRange()
             for step in macro.steps {
@@ -215,15 +216,17 @@ final class MacroRecorder: ObservableObject {
                 reason = String(localized: "nothing changed"); result.stoppedEarly = true; break
             }
             if i + 1 < times, CFAbsoluteTimeGetCurrent() - lastYield > 0.05 {
+                tv.revealCaretAfterReplaySteps()
                 try? await Task.sleep(nanoseconds: 1_000_000)
                 lastYield = CFAbsoluteTimeGetCurrent()
             }
         }
+        tv.isReplayingMacro = false
         observer?.cancel()
         um?.endUndoGrouping()
         um?.groupsByEvent = groupsByEvent
         result.ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
-        tv.scrollRangeToVisible(tv.selectedRange())
+        tv.revealCaretAfterReplaySteps()
 
         let summary = String(localized: "Macro played ×\(result.iterations) · \(result.steps) steps · \(Int(result.ms.rounded())) ms")
         if result.stoppedEarly, let reason {

@@ -530,6 +530,288 @@ extension RealUse {
                 await saved.restore(ctx)
             }
         },
+        // 긴 문서의 끝을 보다가 그보다 짧은(그래도 큰) 문서로 넘어간다 — 탭 전환·파일 열기. 내용은 같은 저장소에서 통째로 바뀌는데 스크롤 위치는 앞 문서의
+        // 것이라 새 문서의 끝 너머다. 그 자리에서 뷰포트가 배치되면 TextKit 2 가 문서를 처음부터 끝까지 배치한다: 전환이 수 초 멈추고, 그 뒤로는 문서 전체에
+        // 구문 색 렌더링 속성이 깔려 있어 큰 편집마다 맞춤법 검사기가 그것을 훑는다 (셀프테스트의 JSON 정리가 150 ms 에서 3.1 s 가 됐다)
+        Scenario(name: "layout-switch-shorter") { ctx in
+            keepAwakeForTiming()
+            let long = (0..<24_000).map { String(format: "2026-01-01 12:%02d INFO 로그 줄 %06d 한글 텍스트 https://example.com/%d\tcol\t%d", $0 % 60, $0, $0, $0) }.joined(separator: "\n")
+            func element(_ i: Int) -> String { "{\"id\":\(i),\"name\":\"항목 \(i) 한글 이름\",\"tags\":[\"a\",\"b\",\"c\"],\"score\":\(Double(i) / 7),\"nested\":{\"ok\":true,\"none\":null,\"note\":\"line\\nbreak\"}}" }
+            let json = "[\n" + (0..<12_000).map(element).joined(separator: ",\n") + "\n]"
+            var longURL: URL?
+            await ctx.withRelaxedStalls(20_000) { longURL = await ctx.open(text: long, name: "switch-long.txt") }
+            guard let longURL else { return }
+            /// 문서를 열고 화면이 가라앉을 때까지의 시간, 그리고 그 뒤 조각 표의 항목 수 (문서 전체가 배치됐으면 문단 수만큼이다)
+            @MainActor func openTimed(_ name: String, _ why: String) async -> (ms: Double, fragments: Int) {
+                let url = ctx.dir.appendingPathComponent(name)
+                try? json.write(to: url, atomically: true, encoding: .utf8)
+                let before = ctx.fragmentCache?.count ?? 0
+                var ms = 0.0
+                await ctx.withRelaxedStalls(60_000) {
+                    let t0 = CFAbsoluteTimeGetCurrent()
+                    ctx.model.open(url: url)
+                    for _ in 0..<3 { await ctx.turn(); ctx.window.layoutIfNeeded(); ctx.window.displayIfNeeded() }
+                    ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                    await ctx.settle(500)
+                }
+                ctx.tv.window?.makeFirstResponder(ctx.tv)
+                let added = (ctx.fragmentCache?.count ?? 0) - before
+                ctx.note(String(format: "%@: opening the 12,002-line document took %.0f ms; the fragment table grew by %d entries", why, ms, added))
+                return (ms, added)
+            }
+            // 견줄 기준: 앞 문서의 처음을 보던 채로 연다
+            ctx.at("from the top of the long document")
+            await ctx.key(.up, [.command]); await ctx.settle(300)
+            let fromTop = await openTimed("switch-short-a.json", "from the top of the 24,000-line document")
+            ctx.checkAll("opened from the top"); ctx.checkInk("opened from the top")
+            // 앞 문서의 끝을 보던 채로 연다
+            ctx.at("from the end of the long document")
+            await ctx.withRelaxedStalls(20_000) { ctx.model.activateTab(longURL); await ctx.settle(700) }
+            await ctx.key(.down, [.command]); await ctx.settle(400)
+            ctx.expectBottom("the long document at its end")
+            let fromEnd = await openTimed("switch-short-b.json", "from the end of the 24,000-line document")
+            ctx.checkAll("opened from the end"); ctx.checkInk("opened from the end"); ctx.checkCaretVisible("opened from the end")
+            ctx.snap("opened-from-the-end")
+            // 같은 문서를 여는 일이다 — 앞 문서의 어디를 보고 있었는지가 시간에 보이면 안 된다 (실측: 문서 전체를 배치하면 2 s 를 넘는다)
+            if fromEnd.ms > fromTop.ms * 2 + 200 {
+                ctx.issue("stall", String(format: "opening a 12,002-line document took %.0f ms when the previous document was scrolled to its end, %.0f ms when it was at its top", fromEnd.ms, fromTop.ms), snap: false)
+            }
+            if fromEnd.fragments > 4_000 { ctx.issue("other", "opening a 12,002-line document from the end of a longer one laid out \(fromEnd.fragments) paragraphs — the whole document", snap: false) }
+            // 그 상태에서의 큰 편집: 문서 전체를 바꾸는 JSON 정리
+            ctx.at("format JSON after the switch")
+            var ms = 0.0
+            await ctx.withRelaxedStalls(60_000) {
+                let t0 = CFAbsoluteTimeGetCurrent()
+                ctx.model.textTool(.formatJSON)
+                ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                await ctx.pumpEvent(); await ctx.settle(400)
+            }
+            ctx.note(String(format: "format JSON on the document opened from the end of the longer one: %.0f ms", ms))
+            // 실측: 150~170 ms. 문서 전체가 배치돼 있으면 3 s
+            if ms > 900 { ctx.issue("slow", String(format: "format JSON on a 12,002-line document took %.0f ms after it was opened from the end of a longer document (budget 900 ms)", ms), snap: false) }
+            if !ctx.text.hasPrefix("[\n  {\n    \"id\": 0,") { ctx.issue("text", "format JSON after the switch: the result does not start with the pretty-printed first element") }
+            // 탭으로 돌아갔다 오기: 읽던 곳이 되살아난다 (긴 문서는 끝, 짧은 문서는 정리한 뒤의 처음)
+            ctx.at("back and forth")
+            await ctx.withRelaxedStalls(20_000) { ctx.model.activateTab(longURL); await ctx.settle(700) }
+            ctx.expectBottom("back on the long document"); ctx.checkAll("back on the long document"); ctx.checkInk("back on the long document")
+            await ctx.withRelaxedStalls(20_000) { ctx.model.activateTab(ctx.dir.appendingPathComponent("switch-short-b.json")); await ctx.settle(700) }
+            ctx.expectTop("back on the formatted document"); ctx.checkAll("back on the formatted document"); ctx.checkInk("back on the formatted document")
+            ctx.snap("end")
+        },
+        // 같은 전환을 분할 보기에서: 보조 편집기가 긴 문서의 끝을, 주 편집기가 처음을 보고 있다 — 스크롤 위치를 처음으로 돌리는 일은 편집기마다 해야 한다
+        Scenario(name: "layout-switch-shorter-split") { ctx in
+            keepAwakeForTiming()
+            let saved = ViewDefaults(ctx)
+            let long = (0..<24_000).map { String(format: "2026-01-01 12:%02d INFO 로그 줄 %06d 한글 텍스트 https://example.com/%d\tcol\t%d", $0 % 60, $0, $0, $0) }.joined(separator: "\n")
+            func element(_ i: Int) -> String { "{\"id\":\(i),\"name\":\"항목 \(i) 한글 이름\",\"tags\":[\"a\",\"b\",\"c\"],\"score\":\(Double(i) / 7),\"nested\":{\"ok\":true,\"none\":null,\"note\":\"line\\nbreak\"}}" }
+            let json = "[\n" + (0..<12_000).map(element).joined(separator: ",\n") + "\n]"
+            var longURL: URL?
+            await ctx.withRelaxedStalls(20_000) { longURL = await ctx.open(text: long, name: "split-switch-long.txt") }
+            guard let longURL else { return }
+            await ctx.withRelaxedStalls(20_000) { ctx.model.setSplit(.vertical); await ctx.settle(800) }
+            guard let ptv = ctx.model.session.primary?.textView, let stv = ctx.model.session.secondary?.textView, ptv !== stv else {
+                ctx.issue("other", "the split did not produce two editors"); await saved.restore(ctx); return
+            }
+            @MainActor func fragments(_ tv: HyperTextView) -> Int {
+                guard let lm = tv.textLayoutManager, let iv = class_getInstanceVariable(NSTextLayoutManager.self, "_textLayoutFragmentTable"),
+                      let table = object_getIvar(lm, iv) as? NSMapTable<AnyObject, AnyObject> else { return 0 }
+                return table.count
+            }
+            @MainActor func openTimed(_ name: String, _ why: String) async -> (ms: Double, primary: Int, secondary: Int) {
+                let url = ctx.dir.appendingPathComponent(name)
+                try? json.write(to: url, atomically: true, encoding: .utf8)
+                let p0 = fragments(ptv), s0 = fragments(stv)
+                var ms = 0.0
+                await ctx.withRelaxedStalls(60_000) {
+                    let t0 = CFAbsoluteTimeGetCurrent()
+                    ctx.model.open(url: url)
+                    for _ in 0..<3 { await ctx.turn(); ctx.window.layoutIfNeeded(); ctx.window.displayIfNeeded() }
+                    ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                    await ctx.settle(600)
+                }
+                let p = fragments(ptv) - p0, s = fragments(stv) - s0
+                ctx.note(String(format: "%@: opening the 12,002-line document took %.0f ms; fragment tables grew by %d (primary) and %d (secondary)", why, ms, p, s))
+                return (ms, p, s)
+            }
+            // 견줄 기준: 두 편집기 모두 긴 문서의 처음
+            ctx.at("split: both editors at the top of the long document")
+            ctx.window.makeFirstResponder(stv); await ctx.settle(100)
+            await ctx.key(.up, [.command]); await ctx.settle(300)
+            ctx.window.makeFirstResponder(ptv); await ctx.settle(100)
+            await ctx.key(.up, [.command]); await ctx.settle(300)
+            let fromTop = await openTimed("split-switch-short-a.json", "split, both editors at the top")
+            // 보조 편집기는 긴 문서의 끝, 주 편집기는 처음
+            ctx.at("split: the secondary editor at the end of the long document")
+            await ctx.withRelaxedStalls(20_000) { ctx.model.activateTab(longURL); await ctx.settle(800) }
+            ctx.window.makeFirstResponder(stv); await ctx.settle(100)
+            await ctx.key(.down, [.command]); await ctx.settle(500)
+            let atEnd = stv.visibleRect.maxY > stv.frame.height - 2
+            ctx.window.makeFirstResponder(ptv); await ctx.settle(100)
+            await ctx.key(.up, [.command]); await ctx.settle(300)
+            ctx.note(String(format: "before the switch: secondary y %.0f of %.0f (at the end: %@), primary y %.0f", stv.visibleRect.minY, stv.frame.height, atEnd ? "yes" : "no", ptv.visibleRect.minY))
+            if !atEnd || stv.visibleRect.minY < 1000 { ctx.issue("other", "could not put the secondary editor at the end of the long document") }
+            let fromEnd = await openTimed("split-switch-short-b.json", "split, the secondary editor at the end")
+            if fromEnd.ms > fromTop.ms * 2 + 200 {
+                ctx.issue("stall", String(format: "split: opening a 12,002-line document took %.0f ms when the secondary editor was at the end of the previous document, %.0f ms when both were at its top", fromEnd.ms, fromTop.ms), snap: false)
+            }
+            if fromEnd.secondary > 4_000 || fromEnd.primary > 4_000 {
+                ctx.issue("other", "split: opening a 12,002-line document laid out \(fromEnd.primary) (primary) / \(fromEnd.secondary) (secondary) paragraphs — a whole document", snap: false)
+            }
+            ctx.checkAll("split: opened with the secondary at the end"); ctx.checkInk("split: opened with the secondary at the end")
+            ctx.snap("opened")
+            await ctx.withRelaxedStalls(20_000) { await saved.restore(ctx) }
+        },
+        // 분할 보기에서 한 편집기가 문서를 통째로 바꾼다 (모두 선택 + 주석 토글): 다른 편집기는 보던 곳에 남아야 한다. 통째 교체는 그 편집기에도 통지되지만
+        // 다시 읽기가 아니다 — '문서 끝 너머' 탐침이 화면을 끝에서 세 화면 위로 옮겨 놓으면 뒤에서 되살려 줄 것(다시 읽기의 보던 곳 되살리기)이 없다
+        Scenario(name: "layout-split-sibling-tool") { ctx in
+            keepAwakeForTiming()
+            let saved = ViewDefaults(ctx)
+            let lines = (0..<24_000).map { String(format: "2026-01-01 12:%02d INFO 로그 줄 %06d 한글 텍스트 https://example.com/%d\tcol\t%d", $0 % 60, $0, $0, $0) }.joined(separator: "\n")
+            await ctx.withRelaxedStalls(20_000) { await ctx.open(text: lines, name: "split-sibling.txt") }
+            await ctx.withRelaxedStalls(20_000) { ctx.model.setSplit(.vertical); await ctx.settle(800) }
+            guard let ptv = ctx.model.session.primary?.textView, let stv = ctx.model.session.secondary?.textView, ptv !== stv else {
+                ctx.issue("other", "the split did not produce two editors"); await saved.restore(ctx); return
+            }
+            @MainActor func fragments(_ tv: HyperTextView) -> Int {
+                guard let lm = tv.textLayoutManager, let iv = class_getInstanceVariable(NSTextLayoutManager.self, "_textLayoutFragmentTable"),
+                      let table = object_getIvar(lm, iv) as? NSMapTable<AnyObject, AnyObject> else { return 0 }
+                return table.count
+            }
+            /// 그 편집기의 화면 맨 위에 걸친 줄 (그려 둔 뷰포트에서 — 배치를 일으키지 않는다)
+            @MainActor func topLine(_ tv: HyperTextView) -> Int? {
+                tv.firstVisibleParagraphAnchor().map { LineIndex(nsString: tv.string as NSString).lineNumber(forUTF16Offset: $0.offset) }
+            }
+            for place in ["in the middle", "at the end"] {
+                ctx.at("the other editor \(place)")
+                /// 다른 편집기(보조)를 그 자리에 두고 포커스는 주 편집기에 (주 편집기는 문서 처음)
+                @MainActor func putOther() async {
+                    ctx.window.makeFirstResponder(stv); await ctx.settle(100)
+                    if place == "at the end" { await ctx.key(.down, [.command]); await ctx.settle(500) }
+                    else { ctx.model.jump(toLine: 12_000); await ctx.settle(500); await ctx.scrollBy(300); await ctx.settle(200) }
+                    ctx.window.makeFirstResponder(ptv); await ctx.settle(100)
+                }
+                await putOther()
+                await ctx.key(.up, [.command]); await ctx.settle(300)
+                // 통째 편집 넷: 주석(길어진다) → 되돌리기(짧아진다) → 다시 실행(길어진다) → 주석 풀기(짧아진다). 줄 수는 그대로다
+                for what in ["comment", "undo", "redo", "uncomment"] {
+                    if place == "at the end" { await putOther() }   // 끝을 보던 편집기는 걸음마다 다시 끝에 둔다
+                    let before = topLine(stv), wasAtEnd = stv.visibleRect.maxY >= stv.frame.height - 2, y0 = stv.visibleRect.minY, f0 = fragments(stv)
+                    if what == "comment" || what == "uncomment" {
+                        // 모두 선택은 준비 걸음이다 — 통째 되돌리기·다시 실행 바로 뒤에는 이것만으로 1.4 s 가 걸릴 때가 있다(주 편집기 쪽: 도구의 되돌리기 경로가 남긴
+                        // 상태, 이 시나리오가 보는 것이 아니다). 정지로 세지 않고 시간만 적는다
+                        let t0 = CFAbsoluteTimeGetCurrent()
+                        await ctx.withRelaxedStalls(20_000) { await ctx.selectAll(); await ctx.settle(100) }
+                        let ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000 - 100
+                        if ms > 250 { ctx.note(String(format: "select all before the whole-document %@ took %.0f ms", what, ms)) }
+                    }
+                    var ms = 0.0, after = 0.0
+                    await ctx.withRelaxedStalls(60_000) {
+                        let t0 = CFAbsoluteTimeGetCurrent()
+                        switch what {
+                        case "undo": await ctx.undo()
+                        case "redo": await ctx.redo()
+                        default: ctx.model.textTool(.toggleComment)
+                        }
+                        ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                        for _ in 0..<3 { await ctx.turn(); ctx.window.layoutIfNeeded(); ctx.window.displayIfNeeded() }
+                        after = (CFAbsoluteTimeGetCurrent() - t0) * 1000 - ms
+                        await ctx.pumpEvent(); await ctx.settle(500)
+                    }
+                    let now = topLine(stv), atEnd = stv.visibleRect.maxY >= stv.frame.height - 2, added = fragments(stv) - f0
+                    ctx.note(String(format: "whole-document %@ in the primary editor: the other editor's top line %@ → %@ (y %.0f → %.0f of %.0f), at the end %@ → %@; the edit took %.0f ms, the screen settled %.0f ms later, its fragment table grew by %d entries",
+                                    what, before.map { "\($0)" } ?? "?", now.map { "\($0)" } ?? "?", y0, stv.visibleRect.minY, stv.frame.height,
+                                    wasAtEnd ? "yes" : "no", atEnd ? "yes" : "no", ms, after, added))
+                    if place == "at the end" {
+                        if !wasAtEnd { ctx.issue("other", "could not put the other editor at the end of the document before the whole-document \(what)") }
+                        else if !atEnd {
+                            ctx.issue("viewport-jump", "the other editor was at the end of the document; after the primary editor's whole-document \(what) \(Int(stv.frame.height - stv.visibleRect.maxY)) pt of the end are below its screen (top line \(before ?? -1) → \(now ?? -1))")
+                        }
+                    } else if let b = before, let n = now, abs(n - b) > 1 {
+                        ctx.issue("viewport-jump", "the other editor was reading line \(b); after the primary editor's whole-document \(what) its top line is \(n)")
+                    }
+                    // 편집 자체의 시간은 여기서 보지 않는다 (도구·되돌리기의 몫) — 그 뒤 화면이 가라앉는 시간과 다른 편집기가 배치한 양을 본다
+                    if after > 500 { ctx.issue("stall", String(format: "split, whole-document %@ with the other editor %@: the screen needed %.0f ms to settle (budget 500 ms)", what, place, after), snap: false) }
+                    if added > 4_000 { ctx.issue("other", "split, whole-document \(what): the other editor laid out \(added) paragraphs — the whole document", snap: false) }
+                }
+                if ctx.text.length != (lines as NSString).length { ctx.issue("text", "after comment, undo, redo, uncomment the document has \(ctx.text.length) units, expected \((lines as NSString).length)") }
+                ctx.checkAll("split, the other editor \(place)"); ctx.checkInk("split, the other editor \(place)")
+                ctx.snap(place == "at the end" ? "sibling-at-the-end" : "sibling-in-the-middle")
+            }
+            await ctx.withRelaxedStalls(20_000) { await saved.restore(ctx) }
+        },
+        // 큰 파일의 끝을 보는 중에 그 파일이 밖에서 더 짧게(그래도 크게) 다시 쓰인다 — git checkout, 잘린 로그, 다른 도구의 되돌리기. 같은 문서라 스크롤 위치를
+        // 처음으로 돌리는 길(문서 전환)을 지나지 않는다: 옛 위치는 새 내용의 끝 너머이고, 다시 읽은 뒤의 첫 배치가 그 자리에서 돌면 문서 전체가 배치된다
+        Scenario(name: "layout-reload-shorter") { ctx in
+            keepAwakeForTiming()
+            func element(_ i: Int) -> String { "{\"id\":\(i),\"name\":\"항목 \(i) 한글 이름\",\"tags\":[\"a\",\"b\",\"c\"],\"score\":\(Double(i) / 7),\"nested\":{\"ok\":true,\"none\":null,\"note\":\"line\\nbreak\"}}" }
+            func json(_ n: Int) -> String { "[\n" + (0..<n).map(element).joined(separator: ",\n") + "\n]" }
+            let long = json(24_000), short = json(12_000)
+            var opened: URL?
+            await ctx.withRelaxedStalls(20_000) { opened = await ctx.open(text: long, name: "reload-shorter.json") }
+            guard let url = opened else { return }
+            /// 파일을 밖에서 다시 쓰고 다시 읽는다: 화면이 가라앉을 때까지의 시간과 그 뒤 조각 표의 항목 수 (문서 전체가 배치됐으면 문단 수만큼 는다)
+            @MainActor func reloadTimed(_ text: String, _ why: String) async -> (ms: Double, fragments: Int) {
+                try? text.write(to: url, atomically: true, encoding: .utf8)
+                let before = ctx.fragmentCache?.count ?? 0
+                var ms = 0.0
+                await ctx.withRelaxedStalls(60_000) {
+                    let t0 = CFAbsoluteTimeGetCurrent()
+                    ctx.model.reloadFromDisk()
+                    for _ in 0..<3 { await ctx.turn(); ctx.window.layoutIfNeeded(); ctx.window.displayIfNeeded() }
+                    ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                    await ctx.settle(700)
+                }
+                let added = (ctx.fragmentCache?.count ?? 0) - before
+                ctx.note(String(format: "%@: reloading took %.0f ms; the fragment table grew by %d entries; %d lines, top line %d", why, ms, added, ctx.doc.lineIndex.lineCount, ctx.topLine()))
+                return (ms, added)
+            }
+            // 견줄 기준: 문서의 처음을 보던 채로 짧아진다
+            ctx.at("shortened while viewing the top")
+            await ctx.key(.up, [.command]); await ctx.settle(300)
+            let fromTop = await reloadTimed(short, "shortened to 12,002 lines while viewing the top")
+            if ctx.doc.lineIndex.lineCount != 12_002 { ctx.issue("text", "the file was rewritten with 12,002 lines but the editor holds \(ctx.doc.lineIndex.lineCount)"); return }
+            ctx.expectTop("shortened while viewing the top"); ctx.checkAll("shortened while viewing the top"); ctx.checkInk("shortened while viewing the top")
+            // 다시 길어진다 (덧붙여진 것과 같다 — 보던 곳 그대로)
+            ctx.at("grown back while viewing the top")
+            _ = await reloadTimed(long, "grown back to 24,002 lines while viewing the top")
+            ctx.expectTop("grown back while viewing the top"); ctx.checkAll("grown back while viewing the top")
+            // 문서의 끝을 보던 채로 짧아진다
+            ctx.at("shortened while viewing the end")
+            await ctx.key(.down, [.command]); await ctx.settle(500)
+            ctx.expectBottom("the long document at its end")
+            let fromEnd = await reloadTimed(short, "shortened to 12,002 lines while viewing the end")
+            ctx.checkAll("shortened while viewing the end"); ctx.checkInk("shortened while viewing the end"); ctx.checkCaretVisible("shortened while viewing the end")
+            ctx.snap("shortened-at-the-end")
+            // 같은 내용을 다시 읽는 일이다 — 어디를 보고 있었는지가 시간에 보이면 안 된다 (실측: 문서 전체를 배치하면 수 초)
+            if fromEnd.ms > fromTop.ms * 2 + 200 {
+                ctx.issue("stall", String(format: "reloading the file after it shrank to 12,002 lines took %.0f ms when the view was at its end, %.0f ms when it was at its top", fromEnd.ms, fromTop.ms), snap: false)
+            }
+            if fromEnd.fragments > 4_000 { ctx.issue("other", "reloading the shortened file while viewing its end laid out \(fromEnd.fragments) paragraphs — the whole document", snap: false) }
+            // 그 상태에서의 큰 편집 (문서 전체에 렌더링 속성이 깔려 있으면 맞춤법 검사기가 그것을 훑는다)
+            ctx.at("format JSON after the reload")
+            var ms = 0.0
+            await ctx.withRelaxedStalls(60_000) {
+                let t0 = CFAbsoluteTimeGetCurrent()
+                ctx.model.textTool(.formatJSON)
+                ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                await ctx.pumpEvent(); await ctx.settle(400)
+            }
+            ctx.note(String(format: "format JSON on the reloaded document: %.0f ms", ms))
+            if ms > 900 { ctx.issue("slow", String(format: "format JSON on a 12,002-line document took %.0f ms after the file was reloaded shorter (budget 900 ms)", ms), snap: false) }
+            await ctx.withRelaxedStalls(60_000) { await ctx.undo(); await ctx.settle(500) }
+            // 가운데를 읽던 중에 짧아진다 (읽던 줄은 새 내용에도 있다): 읽던 줄이 그대로 맨 위에 남는다
+            ctx.at("shortened while reading the middle")
+            _ = await reloadTimed(long, "grown back to 24,002 lines")
+            await ctx.look(atLine: 9_000, wheel: 300)
+            let reading = ctx.place()
+            let fromMiddle = await reloadTimed(short, "shortened to 12,002 lines while reading line 9,000")
+            ctx.checkSamePlace(reading, "shortened while reading the middle", tolLines: 1)
+            ctx.checkAll("shortened while reading the middle"); ctx.checkInk("shortened while reading the middle")
+            if fromMiddle.ms > fromTop.ms * 2 + 200 {
+                ctx.issue("stall", String(format: "reloading the shortened file took %.0f ms when the view was in its middle, %.0f ms when it was at its top", fromMiddle.ms, fromTop.ms), snap: false)
+            }
+            ctx.snap("end")
+        },
         // 접기: 모두 접으면 보던 줄을 품은 머리 줄이 화면 맨 위에 오고, 모두 펴면 그 머리 줄이 그대로 맨 위에 남는가
         Scenario(name: "layout-fold") { ctx in
             let saved = ViewDefaults(ctx)
