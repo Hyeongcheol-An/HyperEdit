@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import HyperCore
 
 // 셀프테스트: 파일 탭 (UltraEdit 식) — 열기/전환/내용·보기 위치 유지/다음·이전/최근 순서/순서 바꾸기·정렬/닫기/다시 열기/세션 저장/사라진 파일
@@ -150,5 +151,94 @@ extension SelfTest {
         model.closeTabs(in: dir)
         try? FileManager.default.removeItem(at: dir)
         check(model.document.url == base, "tabs: back on \(base.lastPathComponent)")
+        await runTabDrag(model: model, check: check, log: log)
+    }
+
+    /// 탭 끌어 순서 바꾸기의 양 끝(`TabDrag`): 전용 형식의 선언 · 끌 때 나가는 것 · 놓였을 때의 순서 변경. 실제 끌기 세션은 열지 않는다(실제 마우스를 따라간다) —
+    /// 끌 때 만들어지는 provider 를 그대로 놓는 쪽에 건넨다. SwiftUI 가 하는 부분(끌기 시작, 어느 탭 위인지 판정, 끄는 동안의 모양)은 여기서 볼 수 없다
+    @MainActor
+    static func runTabDrag(model: AppModel, check: (Bool, String) -> Void, log: (String) -> Void) async {
+        func wait(_ ms: UInt64) async { pumpEvent(); try? await Task.sleep(nanoseconds: ms * 1_000_000) }
+        /// provider 들을 `target` 탭 위에 놓고 처리가 끝날 때까지 기다린다 (경로는 비동기로 읽힌다)
+        func drop(_ providers: [NSItemProvider], on target: URL) async -> (accepted: Bool, moved: Bool) {
+            await withCheckedContinuation { c in
+                let accepted = TabDrag.drop(providers, on: target, model: model) { moved in c.resume(returning: (true, moved)) }
+                if !accepted { c.resume(returning: (false, false)) }
+            }
+        }
+        let fm = FileManager.default
+        let base = model.document.url
+        let dir = fm.temporaryDirectory.appendingPathComponent("hyperedit-tabdrag-\(UUID().uuidString.prefix(8))", isDirectory: true)
+        do { try fm.createDirectory(at: dir, withIntermediateDirectories: true) } catch { check(false, "tab drag: cannot create samples: \(error)"); return }
+        func make(_ name: String) -> URL {
+            let u = dir.appendingPathComponent(name)
+            try? "\(name)\n".write(to: u, atomically: true, encoding: .utf8)
+            return u.resolvingSymlinksInPath()
+        }
+        let d1 = make("d1.md"), d2 = make("d2.md"), d3 = make("d3.md"), ko = make("탭 끌기 — 한글 이름.md")
+        for u in [d1, d2, d3, ko] { model.open(url: u); await wait(200) }
+        let n0 = model.tabs.count - 4
+        func slice() -> [URL] { Array(model.tabs.dropFirst(n0)) }
+        func label(_ list: [URL]) -> String { list.map { $0 == ko ? "ko" : $0.deletingPathExtension().lastPathComponent }.joined(separator: " ") }
+        guard n0 >= 1, slice() == [d1, d2, d3, ko], model.document.url == ko else { check(false, "tab drag: four sample tabs open (\(label(slice())))"); return }
+
+        // 형식 선언: 전용 형식이 Info.plist 에 내보내는 형식으로 선언돼 있다 (선언이 없으면 UTType(exportedAs:) 는 임시 형식이 돼 다른 프로세스·재실행 사이에 같다는 보장이 없다)
+        let id = "io.github.hyeongcheol-an.hyperedit.tab"
+        let declared = (Bundle.main.object(forInfoDictionaryKey: "UTExportedTypeDeclarations") as? [[String: Any]])?.first { $0["UTTypeIdentifier"] as? String == id }
+        check(UTType.hyperEditTab.identifier == id && ((declared?["UTTypeConformsTo"] as? [String]) ?? []).contains("public.data"),
+              "tab drag: the tab type is declared in Info.plist as an exported type conforming to public.data (\(declared == nil ? "missing" : "found"))")
+        log("tab drag: UTType \(id) declared to the system: \(UTType.hyperEditTab.isDeclared), dynamic: \(UTType.hyperEditTab.isDynamic)")
+        check(!UTType.hyperEditTab.conforms(to: .text) && !UTType.hyperEditTab.conforms(to: .url), "tab drag: the tab type is neither text nor a URL")
+
+        // 끌 때 나가는 것: 전용 형식 하나뿐 — 글·URL 로는 읽을 수 없다(편집기 위에 놓아도 경로가 삽입되지 않는다). 내용은 탭의 경로(UTF-8)
+        let dragged = TabDrag.provider(for: ko)
+        check(dragged.registeredTypeIdentifiers == [id] && !dragged.canLoadObject(ofClass: NSString.self) && !dragged.canLoadObject(ofClass: NSURL.self)
+              && !dragged.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) && !dragged.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier),
+              "tab drag: a dragged tab carries only the tab type (\(dragged.registeredTypeIdentifiers))")
+        let payload: Data? = await withCheckedContinuation { c in _ = dragged.loadDataRepresentation(forTypeIdentifier: id) { data, _ in c.resume(returning: data) } }
+        check(payload.flatMap { String(data: $0, encoding: .utf8) } == ko.path, "tab drag: the payload is the tab's path, also for a non-ASCII name (\(payload?.count ?? -1) bytes)")
+
+        // 놓기: 끌어온 탭이 놓인 탭의 자리로 간다 — 왼쪽에서 오면 그 탭 뒤, 오른쪽에서 오면 앞. 활성 탭은 바뀌지 않고 세션에 순서가 저장된다
+        var r = await drop([TabDrag.provider(for: d1)], on: d3)
+        check(r.accepted && r.moved && slice() == [d2, d3, d1, ko], "tab drag: a tab dropped on a tab to its right takes that place (\(label(slice())))")
+        r = await drop([TabDrag.provider(for: ko)], on: d2)
+        check(r.accepted && r.moved && slice() == [ko, d2, d3, d1], "tab drag: a tab dropped on a tab to its left takes that place (\(label(slice())))")
+        check(model.document.url == ko && (AppDefaults.store.stringArray(forKey: AppModel.openDocumentsKey) ?? []) == model.tabs.map(\.path),
+              "tab drag: reordering keeps the active tab and saves the order (\(model.document.url.lastPathComponent))")
+        // 맨 앞 · 맨 뒤 (다른 파일의 탭들까지 포함한 줄 전체에서)
+        if let first = model.tabs.first, let last = model.tabs.last {
+            r = await drop([TabDrag.provider(for: last)], on: first)
+            check(r.moved && model.tabs.first == last && model.tabs.count == n0 + 4, "tab drag: the last tab dropped on the first becomes the first (\(model.tabs.first?.lastPathComponent ?? "-"))")
+            if let end = model.tabs.last {
+                r = await drop([TabDrag.provider(for: last)], on: end)
+                check(r.moved && model.tabs.last == last && model.tabs.first == first, "tab drag: the first tab dropped on the last becomes the last (\(model.tabs.last?.lastPathComponent ?? "-"))")
+            }
+        }
+        // 아무것도 바꾸지 않는 놓기: 자기 자신 위 · 탭이 아닌 경로 · 그 사이 닫힌 탭 위 · UTF-8 이 아닌 내용
+        let order = model.tabs
+        r = await drop([TabDrag.provider(for: d2)], on: d2)
+        check(r.accepted && !r.moved && model.tabs == order, "tab drag: a tab dropped on itself stays where it is")
+        r = await drop([TabDrag.provider(for: dir.appendingPathComponent("not-a-tab.md"))], on: d2)
+        check(r.accepted && !r.moved && model.tabs == order, "tab drag: a path that is not a tab moves nothing")
+        r = await drop([TabDrag.provider(for: d1)], on: dir.appendingPathComponent("closed-meanwhile.md"))
+        check(!r.moved && model.tabs == order, "tab drag: a drop on a tab that is gone moves nothing")
+        let garbage = NSItemProvider()
+        garbage.registerDataRepresentation(forTypeIdentifier: id, visibility: .ownProcess) { done in done(Data([0xFF, 0xFE, 0xFD]), nil); return nil }
+        r = await drop([garbage], on: d2)
+        check(r.accepted && !r.moved && model.tabs == order, "tab drag: a payload that is not a path moves nothing")
+        // 다른 형식(편집기에서 끌어온 글, Finder 의 파일)은 받지 않는다. 섞여 있으면 탭 형식만 쓴다
+        r = await drop([NSItemProvider(object: d1.path as NSString)], on: d2)
+        let textRefused = !r.accepted && model.tabs == order
+        r = await drop([NSItemProvider(object: d1 as NSURL)], on: d2)
+        check(textRefused && !r.accepted && model.tabs == order, "tab drag: text and file URLs dropped on a tab are refused")
+        r = await drop([], on: d2)
+        check(!r.accepted, "tab drag: a drop with nothing in it is refused")
+        r = await drop([NSItemProvider(object: d3.path as NSString), TabDrag.provider(for: d3)], on: d2)
+        check(r.accepted && r.moved && model.tabs != order && Set(model.tabs) == Set(order), "tab drag: among mixed items the tab one is used")
+
+        model.activateTab(base); await wait(300)
+        model.closeTabs(in: dir)
+        try? fm.removeItem(at: dir)
+        check(model.document.url == base && model.tabs.count == n0, "tab drag: back on \(base.lastPathComponent)")
     }
 }

@@ -140,12 +140,7 @@ struct DocumentTab: View {
                 Button("By Modification Date") { model.sortTabs(by: .modified) }
             }
         }
-        .onDrag {
-            let provider = NSItemProvider()
-            let path = Data(url.path.utf8)
-            provider.registerDataRepresentation(forTypeIdentifier: UTType.hyperEditTab.identifier, visibility: .ownProcess) { done in done(path, nil); return nil }
-            return provider
-        }
+        .onDrag { TabDrag.provider(for: url) }
         .onDrop(of: [.hyperEditTab], delegate: DocumentTabDrop(model: model, target: url))
     }
 }
@@ -157,13 +152,36 @@ struct DocumentTabDrop: DropDelegate {
 
     func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
 
-    func performDrop(info: DropInfo) -> Bool {
-        guard let item = info.itemProviders(for: [.hyperEditTab]).first else { return false }
-        _ = item.loadDataRepresentation(forTypeIdentifier: UTType.hyperEditTab.identifier) { data, _ in
-            guard let data, let path = String(data: data, encoding: .utf8) else { return }
+    func performDrop(info: DropInfo) -> Bool { TabDrag.drop(info.itemProviders(for: [.hyperEditTab]), on: target, model: model) }
+}
+
+/// 탭 끌기의 양 끝 — 끌 때 나가는 것과 놓였을 때 하는 일. 끌기 자체(끌기 시작·놓을 자리 판정)는 SwiftUI 의 몫이고 실제 마우스를 따라가므로 자동으로
+/// 시험할 수 없다. 그 사이를 오가는 것(형식·경로 인코딩·순서 바꾸기)은 뷰 밖인 여기에 두어 셀프테스트가 왕복을 시험한다 (SelfTest+Tabs.swift)
+enum TabDrag {
+    /// 이 탭을 끌 때 나가는 것: 탭의 경로(UTF-8)를 탭 전용 형식 하나로만, 이 프로세스 안에서만 보이게 싣는다
+    static func provider(for url: URL) -> NSItemProvider {
+        let provider = NSItemProvider()
+        let path = Data(url.path.utf8)
+        provider.registerDataRepresentation(forTypeIdentifier: UTType.hyperEditTab.identifier, visibility: .ownProcess) { done in done(path, nil); return nil }
+        return provider
+    }
+
+    /// 끌어온 것이 `target` 탭 위에 놓였다: 끌어온 탭을 그 탭의 자리로 옮긴다 (왼쪽에서 오면 그 탭의 뒤, 오른쪽에서 오면 앞 — `AppModel.moveTab`).
+    /// 반환: 받았는가 = 탭 형식을 실은 것이 있는가 (자기 자신 위에 놓거나 그 사이 닫힌 탭이면 받되 아무것도 바꾸지 않는다).
+    /// 경로는 비동기로 읽으므로 순서는 조금 뒤 메인 스레드에서 바뀐다 — `completion`(시험용)은 그 뒤에 불리며 순서가 바뀌었는지를 받는다
+    @discardableResult
+    static func drop(_ providers: [NSItemProvider], on target: URL, model: AppModel, completion: (@MainActor (Bool) -> Void)? = nil) -> Bool {
+        let type = UTType.hyperEditTab.identifier
+        guard let item = providers.first(where: { $0.hasItemConformingToTypeIdentifier(type) }) else { return false }
+        _ = item.loadDataRepresentation(forTypeIdentifier: type) { data, _ in
+            let path = data.flatMap { String(data: $0, encoding: .utf8) }
             DispatchQueue.main.async {
-                guard let src = model.tabs.first(where: { $0.path == path }), src != target, let to = model.tabs.firstIndex(of: target) else { return }
-                model.moveTab(src, to: to)
+                MainActor.assumeIsolated {
+                    guard let path, let src = model.tabs.first(where: { $0.path == path }), src != target, let to = model.tabs.firstIndex(of: target) else { completion?(false); return }
+                    let before = model.tabs
+                    model.moveTab(src, to: to)
+                    completion?(model.tabs != before)
+                }
             }
         }
         return true

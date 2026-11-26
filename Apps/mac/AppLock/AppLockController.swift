@@ -131,10 +131,8 @@ final class AppLockController: ObservableObject {
     /// 셀프테스트·진단용: 잠긴 동안 닫은 메뉴 수
     private(set) var cancelledMenuCount = 0
 
-    /// 자동화 실행은 시작 잠금을 하지 않는다 (테스트가 명시적으로 건다). `--locked` 는 스크린샷용 강제 시작 잠금
-    static var isAutomationRun: Bool {
-        SelfTest.enabled || SelfTest.openEnabled || Bench.enabled || RealUse.enabled || LaunchOptions.has("--snapshot") || LaunchOptions.has("--quit-after-launch")
-    }
+    /// 스크립트가 모는 실행 — 정의는 AutomationRun.swift
+    static var isAutomationRun: Bool { AutomationRun.isScripted }
 
     init(model: AppModel, authenticator: Authenticator? = nil) {
         self.model = model
@@ -148,7 +146,8 @@ final class AppLockController: ObservableObject {
         subscribeMenuTracking()
         HyperTextView.refusesFirstResponder = { [weak self] in self?.isLocked ?? false }   // 잠긴 동안 편집기는 첫 응답자가 되지 않는다 (시작 잠금 포함)
         rearmIdle()
-        if LaunchOptions.has("--locked") || (requireOnLaunch && !Self.isAutomationRun && self.authenticator.isAvailable) {
+        // 스크립트가 모는 실행은 시작 잠금을 하지 않는다 (테스트가 명시적으로 건다 — AutomationRun.swift). `--locked` 는 스크린샷용 강제 시작 잠금
+        if LaunchOptions.has("--locked") || (requireOnLaunch && !AutomationRun.isScripted && self.authenticator.isAvailable) {
             lock(.launch)
         }
     }

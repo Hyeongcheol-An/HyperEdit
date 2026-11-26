@@ -161,9 +161,9 @@ enum SnippetRendering {
 }
 
 extension SnippetStore {
-    /// 자동화 실행(`--selftest` `--snapshot` `--ephemeral`)은 임시 폴더를 써 사용자의 snippets.json 을 건드리지 않는다
+    /// 사용자의 것과 떨어져 도는 실행(셀프테스트·스크린샷·벤치·하네스·`--ephemeral` — AutomationRun.isIsolated)은 임시 폴더를 써 사용자의 snippets.json 을 건드리지 않는다
     static var launchDirectory: URL {
-        if LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--snapshot") || LaunchOptions.has("--ephemeral") {
+        if AutomationRun.isIsolated {
             return FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-ephemeral-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
         }
         return storeDirectory

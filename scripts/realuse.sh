@@ -28,7 +28,9 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/hyperedit-realuse-start.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 printf '# real-use start\n\nsmall start file\n' > "$TMP/start.md"
-ARGS=(--ephemeral --ephemeral-suite "$SUITE" --file "$TMP/start.md" --realuse --realuse-out "$OUT" --window-width 1280 --window-height "$HEIGHT" --quit)
+# `-ApplePersistenceIgnoreState YES`: 저장된 창 상태(번들 ID 공용 — 설치된 HyperEdit 과 같이 쓴다)를 읽지도 쓰지도 않는다. 앱도 같은 값을 기본값으로 등록하지만
+# 등록 도메인은 우선순위가 가장 낮다 → 인자로도 넘긴다. `-키 값` 쌍으로 읽히도록 맨 앞에 둔다 (값 없는 `--옵션` 바로 뒤에 두면 그 옵션의 값으로 짝지어진다)
+ARGS=(-ApplePersistenceIgnoreState YES --ephemeral --ephemeral-suite "$SUITE" --file "$TMP/start.md" --realuse --realuse-out "$OUT" --window-width 1280 --window-height "$HEIGHT" --quit)
 [ -n "$ONLY" ] && ARGS+=(--realuse-only "$ONLY")
 [ ${#EXTRA[@]} -gt 0 ] && ARGS+=("${EXTRA[@]}")
 "$BIN" "${ARGS[@]}" > "$OUT/stderr.txt" 2>&1 &

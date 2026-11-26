@@ -20,9 +20,9 @@ struct GrammarCommands: Commands {
 }
 
 extension UserGrammarStore {
-    /// 자동화 실행(`--selftest` `--snapshot` `--ephemeral`)은 임시 폴더를 써 사용자의 grammars 폴더를 건드리지 않는다 (SnippetStore.launchDirectory 와 같은 규칙)
+    /// 사용자의 것과 떨어져 도는 실행(AutomationRun.isIsolated)은 임시 폴더를 써 사용자의 grammars 폴더를 건드리지 않는다 (SnippetStore.launchDirectory 와 같은 규칙)
     static var launchDirectory: URL {
-        if LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--snapshot") || LaunchOptions.has("--ephemeral") {
+        if AutomationRun.isIsolated {
             return FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-ephemeral-\(ProcessInfo.processInfo.processIdentifier)/grammars", isDirectory: true)
         }
         return defaultDirectory

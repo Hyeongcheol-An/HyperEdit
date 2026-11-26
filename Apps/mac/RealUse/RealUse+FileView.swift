@@ -418,11 +418,35 @@ extension RealUseContext {
                            context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1)
     }
 
-    private func noteIfActivated() {
-        guard NSApp.isActive else { return }   // 일어나면 안 되는 일 — 바로 물러나고 더는 클릭하지 않는다
-        Self.fileClickActivatedApp = true
+    /// 클릭 뒤 앱이 활성 상태인가. `wasActive`: 클릭을 보내기 전에 이미 활성이었는가 — 그랬다면 이 클릭 탓은 아니다(실행 중에 사용자가 이 앱의 창이나 Dock 아이콘을
+    /// 눌렀거나, 하네스의 앞 걸음이 활성화했다) → 물러나고 클릭은 계속 보내되 **문제로 남긴다**: 어느 쪽이든 하네스가 사용자의 포커스를 쥔 채 돌았다는 뜻이라
+    /// 드러나야 한다 (시나리오마다 한 번). 클릭이 활성화한 것이면 일어나면 안 되는 일 — 물러나고 더는 클릭하지 않는다
+    private func noteIfActivated(wasActive: Bool = false) {
+        guard NSApp.isActive else { return }
         NSApp.deactivate()
+        if wasActive {
+            if Self.activeBeforeClickNoted != scenario {
+                Self.activeBeforeClickNoted = scenario
+                issue("focus", "the app was already active before a synthetic click on the file view probe — activated by the user or by an earlier step; deactivated and went on", snap: false)
+            }
+            return
+        }
+        Self.fileClickActivatedApp = true
         log("  a synthetic click on the file view probe activated the app — deactivated; no more clicks will be sent")
+    }
+    /// 위의 문제를 이미 남긴 시나리오 (같은 시나리오의 클릭마다 되풀이하지 않는다)
+    private static var activeBeforeClickNoted = ""
+
+    /// 마지막 화살표 클릭이 어떻게 지나갔나 (누른 시간 · 그 사이 앱 큐에서 나간 마우스 이벤트 · 활성 상태) — 클릭이 무시됐을 때 시나리오가 적는다.
+    /// 펼침 화살표는 NSButton 이고, macOS 27 의 버튼은 mouseDown 에서 중첩 추적 루프를 돌지 않고 바로 돌아와 mouseUp 때 동작한다. 그 사이에 앱의 이벤트 큐에서
+    /// **다른 leftMouseUp 이 나가면**(누르기 전부터 큐에 있었든 그 사이에 들어왔든) 버튼의 누름이 거기서 끝나고, 뒤이은 진짜 mouseUp 은 버튼이 아니라 목록으로 가
+    /// 아무 일도 일어나지 않는다 — 그 클릭만 무시되고 다음 클릭은 정상이다. 실측 2026-11-25 (큐에 leftMouseUp 을 일부러 하나 남기고 누름): 바로 앞에 행 이름 클릭이나
+    /// expandItem/collapseItem 이 있었으면 12번 중 11번 무시, 앞에 아무것도 없었으면 15번 모두 정상. 그리고 그렇게 한 번 취소된 뒤에는, 다른 마우스 이벤트가 전혀
+    /// 없는 다음 누름이 무시된 적이 한 번 있다(3번 중) — AppKit 의 누름 추적은 누름 사이에 상태를 가져간다. 사람의 마우스 하나로는 만들 수 없는 순서들이다
+    private(set) static var lastArrowPress = ""
+
+    private static func describe(_ e: NSEvent) -> String {
+        "type \(e.type.rawValue) window \(e.windowNumber) made \(Int((ProcessInfo.processInfo.systemUptime - e.timestamp) * 1000)) ms ago"
     }
 
     enum FileRowSpot { case name, disclosure }
@@ -453,24 +477,41 @@ extension RealUseContext {
         guard let down = probeMouseEvent(.leftMouseDown, w, in: panel), let up = probeMouseEvent(.leftMouseUp, w, in: panel) else { return false }
         FileViewTally.clicks += 1
         // 누르고 40 ms 뒤에 뗀다. 목록의 행은 mouseDown 안에서 추적 루프를 돌며 mouseUp 을 기다리므로(큐에 없으면 영영 돌아오지 않는다) 다른 스레드가 40 ms 뒤에
-        // 큐에 넣어 준다. 펼침 화살표는 추적 루프 없이 바로 돌아오고 mouseUp 이 와야 펼친다(실측) — 그때는 여기서 직접 보낸다
-        // 화살표는 추적 루프가 없으니 다른 스레드의 mouseUp 은 mouseDown 이 돌아오지 않을 때의 안전망일 뿐이다 — 0.4 s 뒤로 미룬다 (40 ms 로 두면 mouseDown 이
-        // 그보다 오래 걸린 날 안전망이 먼저 떼어 그 mouseUp 이 이벤트 큐에서 기다린다). 다만 전체 묶음의 끝에서만 나오는 '첫 화살표 클릭 무시'의 원인은 이것이
-        // 아니었다 (실측: 안전망을 미룬 뒤에도 재현, mouseDown 은 30 ms 안에 돌아왔다) — mouseDown 이 걸린 시간은 계속 기록해 둔다
+        // 큐에 넣어 준다(목록의 루프가 그것을 꺼내 쓴다 — 실측: 돌아온 뒤 큐는 비어 있다). 펼침 화살표(NSButton)는 추적 루프 없이 0.5 ms 에 돌아오고 mouseUp 이
+        // 와야 펼친다(실측) — 그때는 여기서 직접 보낸다. 화살표에서 다른 스레드의 mouseUp 은 mouseDown 이 돌아오지 않을 때의 안전망일 뿐이라 0.4 s 뒤로 미룬다.
+        // 어느 쪽이 떼는지는 ClickRelease 가 하나로 정하므로 이 도우미가 mouseUp 을 둘 보내는 일은 없다
         let release = ClickRelease(up)
         DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(spot == .disclosure ? 400 : 40)) { if release.claim() { NSApp.postEvent(release.up, atStart: false) } }
+        // 화살표를 누르고 있는 동안 앱 큐에서 나가는 마우스 이벤트를 적어 둔다 (우리가 패널에 직접 보내는 down·up 은 여기를 지나지 않는다) — `lastArrowPress` 의 주석
+        let wasActive = NSApp.isActive
+        var strays: [String] = []
+        var watch: Any?
+        if spot == .disclosure {
+            if let e = NSApp.nextEvent(matching: [.leftMouseDown, .leftMouseUp, .leftMouseDragged], until: nil, inMode: .default, dequeue: false) { strays.append("already waiting in the queue: " + Self.describe(e)) }
+            watch = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp, .leftMouseDragged, .rightMouseDown, .rightMouseUp, .otherMouseDown, .otherMouseUp]) { e in
+                strays.append("left the queue during the press: " + Self.describe(e))
+                return e
+            }
+        }
         let t0 = CFAbsoluteTimeGetCurrent()
         panel.sendEvent(down)
         let downMs = elapsedMs(since: t0)
+        var how = "released by the harness"
         if release.claim() {
             try? await Task.sleep(nanoseconds: 30_000_000)
             panel.sendEvent(up)
         } else if spot == .disclosure {
+            how = "released by the safety net"
             try? await Task.sleep(nanoseconds: 200_000_000)   // 안전망이 큐에 넣은 mouseUp 이 처리될 시간
         }
-        if spot == .disclosure, downMs > 30 { note(String(format: "the mouseDown on the arrow of '%@' took %.0f ms to return", item.entry.name, downMs)) }
+        if let watch { NSEvent.removeMonitor(watch) }
+        if spot == .disclosure {
+            Self.lastArrowPress = String(format: "held %.0f ms (mouseDown returned after %.1f ms), %@, app active before %@ / after %@, other mouse events: %@",
+                                         elapsedMs(since: t0), downMs, how, "\(wasActive)", "\(NSApp.isActive)", strays.isEmpty ? "none" : strays.joined(separator: "; "))
+            if downMs > 30 { note(String(format: "the mouseDown on the arrow of '%@' took %.0f ms to return", item.entry.name, downMs)) }
+        }
         await settleProbe(20)
-        noteIfActivated()
+        noteIfActivated(wasActive: wasActive)
         return true
     }
 
@@ -647,10 +688,12 @@ extension RealUse {
             } else { ctx.issue("fileview", "could not click the folder row src") }
             ctx.at("expand and collapse with the arrow")
             for round in 1...4 {
-                // 같은 화살표를 다시 누르기까지 사람은 수백 ms 가 걸린다. 0.1 s 안에 다시 누르면 NSOutlineView 가 펼치는 애니메이션 중이라 두 번째 클릭을 받지 않는다
-                // (실측 2026-11-24: 0.3 s 간격은 매번 반응, 바로 이어 누르면 무시) — 그것은 AppKit 의 동작이라 여기서는 사람의 간격으로 누른다.
-                // 미해결: 전체 묶음의 끝에서는 첫 번째 화살표 클릭(바로 앞 걸음이 같은 행의 이름을 눌렀다)이 통째로 무시되는 일이 있다 (다섯 번 중 세 번. 1초를 기다려도
-                // 반영되지 않고 다음 클릭부터는 정상, 단독 실행에서는 안 나온다). 원인을 모르는 채 기다림을 넣어 가리지 않는다 — 아래의 진단 기록을 볼 것
+                // 같은 화살표를 다시 누르기까지 사람은 수백 ms 가 걸린다 — 사람의 간격으로 누른다.
+                // 미해결: 전체 묶음의 끝에서는 첫 번째 화살표 클릭이 통째로 무시되는 일이 있다 (2026-11-24: 다섯 번 중 세 번. 1초를 기다려도 반영되지 않고 다음 클릭부터는
+                // 정상). 2026-11-25 에 밝힌 것: 누르고 있는 30 ms 사이에 앱 큐에서 다른 leftMouseUp 이 나가면 정확히 이 모양이 된다(`lastArrowPress` 의 주석). 기각한 것:
+                // 같은 행의 이름을 누른 뒤의 간격(0~1500 ms 모두 반응), 연달아 누르기(간격 0 도 반응), 기계 부하, 앞 시나리오가 큐에 남긴 이벤트(남긴 mouseUp 은 2~16 ms 안에
+                // 큐를 떠난다). 전체 묶음에서 무엇이 그 상태를 만드는지는 재현하지 못해 모른다 — 다시 나오면 아래 기록(누르는 동안 큐를 떠난 마우스 이벤트가 있었는가)이
+                // 갈래를 가른다. 기다림을 넣어 가리지 않는다
                 if round > 1 { try? await Task.sleep(nanoseconds: 400_000_000) }
                 guard await ctx.clickFileRow("src", level: 0, spot: .disclosure) else { ctx.issue("fileview", "could not click the disclosure arrow of src"); break }
                 await ctx.waitFileView()
@@ -662,6 +705,7 @@ extension RealUse {
                     var late: Double?
                     for _ in 0..<20 { try? await Task.sleep(nanoseconds: 50_000_000); if ctx.isExpanded("src", level: 0, in: po) == want { late = ctx.elapsedMs(since: t); break } }
                     ctx.note(late.map { String(format: "the arrow click took effect %.0f ms after the check", $0) } ?? "the arrow click had no effect within 1 s of the check")
+                    ctx.note("that press: \(RealUseContext.lastArrowPress)")
                 }
                 if (ctx.fileRow("main.swift", level: 1, in: po) != nil) != want { ctx.issue("fileview", "src is \(want ? "expanded but its files are not listed" : "collapsed but its files are still listed")") }
                 if m.document.url.lastPathComponent != "alpha.md" { ctx.issue("fileview", "clicking a disclosure arrow changed the document") }

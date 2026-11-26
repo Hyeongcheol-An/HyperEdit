@@ -25,20 +25,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 사용자가 다른 앱에 치던 키 입력을 받는다 (2026-11-24 실측: 10번 중 9번이 활성 상태로 돌았다). `--selftest-foreground` 를 주면 예전처럼 앞에서 돈다
     static var selfTestStaysInBackground: Bool { (SelfTest.enabled || SelfTest.openEnabled) && !LaunchOptions.has("--selftest-foreground") }
 
-    func applicationDidBecomeActive(_ notification: Notification) {
-        guard Self.selfTestStaysInBackground else { return }
-        NSApp.deactivate()
-        for w in NSApp.windows where w.isVisible { w.orderBack(nil) }
+    /// 벤치(`--bench`)와 실행 시간 계측(`--bench-launch-log`·`--quit-after-launch` — scripts/bench.sh 가 여섯 번 띄운다)도 같은 방식으로 뒤에서 돈다:
+    /// 사용자가 Mac 을 쓰는 동안에도 성능을 잴 수 있게. `--bench-foreground` 를 주면 예전처럼 앞에서 돈다.
+    /// 벤치는 키 창·첫 응답자·이벤트에 기대지 않는다(모델과 텍스트 뷰를 직접 부른다). 다만 창이 완전히 가려지면 그리기가 빠지므로 어떻게 돌았는지를
+    /// 결과에 적는다(Bench.RunMode) — 뒤에서 잰 수치는 뒤에서 잰 수치끼리만 견준다
+    static var benchStaysInBackground: Bool {
+        (Bench.enabled || LaunchOptions.has("--quit-after-launch") || LaunchOptions.value("--bench-launch-log") != nil) && !LaunchOptions.has("--bench-foreground")
     }
 
-    /// 뒤에서 도는 셀프테스트가 App Nap 에 걸리지 않게 실행 내내 잡아 두는 활동 토큰. 비활성 + 가려진 창이면 2~3분 뒤 타이머가 늦게 깨고 CPU 우선순위가
+    /// 앞으로 나오지 않는 자동화 실행: 스크립트가 모는 실행 전부 (AutomationRun.isScripted — 셀프테스트·벤치·실사용 하네스·스크린샷). 앞에서 돌라고 한 것만
+    /// 예외다: `--selftest-foreground` · `--bench-foreground` · `--snapshot-activate`
+    static var automationStaysInBackground: Bool {
+        AutomationRun.isScripted && !LaunchOptions.has("--selftest-foreground") && !LaunchOptions.has("--bench-foreground") && !LaunchOptions.has("--snapshot-activate")
+    }
+
+    /// 이 실행이 활성화되어 물러난 횟수. 물러난 뒤에는 활성이었는지 알 수 없으므로 세어 두고 하네스·셀프테스트의 로그에 적는다
+    nonisolated(unsafe) private(set) static var stepBacks = 0
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if Self.stepBackIfAutomated() { Self.stepBacks += 1 }
+    }
+
+    /// 뒤에서 도는 자동화 실행이 활성화됐다 → 바로 물러나고 창을 맨 뒤로. 시작할 때만의 일이 아니다: 도는 중에도 Launch Services 가 같은 번들 ID 의
+    /// 이 인스턴스를 앞으로 가져올 수 있다 (Finder 에서 연 파일이 이리 올 때, 스크립트가 몇 분 뒤 두 번째 실행을 띄울 때). 반환: 물러나는 실행인가
+    @MainActor @discardableResult
+    static func stepBackIfAutomated() -> Bool {
+        guard automationStaysInBackground else { return false }
+        NSApp.deactivate()
+        for w in NSApp.windows where w.isVisible { w.orderBack(nil) }
+        return true
+    }
+
+    /// 뒤에서 도는 자동화 실행(셀프테스트·벤치·하네스)이 App Nap 에 걸리지 않게 실행 내내 잡아 두는 활동 토큰. 비활성 + 가려진 창이면 2~3분 뒤 타이머가 늦게 깨고 CPU 우선순위가
     /// 깎여, 시간을 재는 검사(매크로 100회·타이핑 지연·유휴 잠금)가 몇 배 느리게 재진다 (2026-11-24 실측: 막지 않은 실행에서 8건 실패)
     private var backgroundActivity: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
-        if Self.selfTestStaysInBackground {
-            backgroundActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical], reason: "background self-test")
+        if Self.automationStaysInBackground {
+            backgroundActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical], reason: "background automated run")
         }
         Bench.launchMilestone("didFinishLaunching")   // perf bench (계측이 꺼져 있으면 비용 0)
         if Perf.enabled { PerfProbe.log = { Perf.log($0) } }
@@ -76,7 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             for i in 1...4 { DispatchQueue.main.asyncAfter(deadline: .now() + Double(i)) { dump("+\(i)s") } }
         }
         // 개발용: `--window-width <pt>` 로 첫 창 폭을 바꿔 좁은 창(리본 접힘) 상태를 스크린샷한다.
-        // 스냅샷 실행은 폭을 주지 않으면 1280 으로 고정한다 (AppKit 의 창 프레임 자동 저장이 이전 실행 크기를 되살리므로).
+        // 스냅샷 실행은 폭을 주지 않으면 1280 으로 고정한다 (자동화 실행은 저장된 창 프레임을 읽지 않아 기본 크기로 뜨지만, 그 기본이 바뀌어도 그림이 같게).
         // 개발용: `--snapshot-activate` 는 캡처 전에 앱을 앞으로 가져와 창이 활성(색 신호등) 상태로 찍히게 한다 (README 용; 다른 앱의 포커스를 잠시 뺏는다)
         if args.contains("--snapshot-activate") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.activate(ignoringOtherApps: true) }
@@ -168,8 +193,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let copy = doc.writeEmergencyCopy()
         AppModel.current?.log(copy.map { String(localized: "Save failed on quit — emergency copy written to \($0.path)") }
                               ?? String(localized: "Save failed on quit — no emergency copy could be written"), isError: true)
-        // 자동화 실행(셀프테스트·벤치·스크린샷)은 묻지 않고 종료한다
-        if SelfTest.enabled || Bench.enabled || RealUse.enabled || LaunchOptions.has("--snapshot") { return .terminateNow }
+        // 스크립트가 모는 실행(셀프테스트·벤치·하네스·스크린샷)은 묻지 않고 종료한다 — 대답할 사람이 없다
+        if AutomationRun.isScripted { return .terminateNow }
         let alert = NSAlert()
         alert.alertStyle = .critical
         alert.messageText = String(localized: "The document could not be saved")
