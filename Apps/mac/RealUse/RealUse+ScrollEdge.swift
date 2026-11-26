@@ -573,6 +573,7 @@ extension RealUse {
                 _ = await run("toggle comment back, view \(place)", budget: 900) { ctx.model.textTool(.toggleComment) }
                 if ctx.text.length != (lines as NSString).length { ctx.issue("text", "toggle comment back (view \(place)): length \(ctx.text.length), expected \((lines as NSString).length)") }
                 ctx.checkLayout("toggle comment back, view \(place)")
+                if place == "at the top" { ctx.expectTop("toggle comment and back, view at the top") }   // 문서 처음에서 쓴 도구는 화면을 옮기지 않는다
                 await ctx.press(.left); await ctx.settle(100)
             }
             // 1.7 MB JSON · 12,002 줄 → 정리하면 180,002 줄 (캐럿은 문서 처음에 놓인다)
@@ -581,7 +582,7 @@ extension RealUse {
             await ctx.withRelaxedStalls(20_000) { await ctx.open(text: json, name: "big-tools.json") }
             for place in ["at the end", "at the top", "in the middle"] {
                 ctx.at("format JSON, view \(place)")
-                if place == "at the top" { await ctx.key(.up, [.command]); await ctx.settle(300) }
+                if place == "at the top" { await ctx.key(.up, [.command]); await ctx.settle(300); ctx.expectTop("⌘↑ before format JSON") }
                 if place == "in the middle" { ctx.model.jump(toLine: 6_000); await ctx.settle(500) }
                 // 실측: 문서 처음에서 150~200 ms
                 _ = await run("format JSON on 1.7 MB (12,002 → 180,002 lines), view \(place)", budget: 900) { ctx.model.textTool(.formatJSON) }
@@ -594,10 +595,10 @@ extension RealUse {
             ctx.snap("end")
         },
 
-        // 문서 전체를 바꾼 도구의 되돌리기·다시 실행(⌘Z · ⇧⌘Z)을 화면이 문서 끝일 때: 입력과 다른 길이다 (shouldChangeText 를 거치지 않고, 끝난 뒤 따로 캐럿을
-        // 보이게 한다) — 문서 전체가 바뀐 직후 문서 끝에서의 배치가 문서를 처음부터 훑지 않는가. 편집 자체의 시간과 그 뒤 화면이 가라앉는 시간을 따로 잰다:
-        // 되돌리기의 편집은 AppKit 의 몫이라(NSUndoTyping 이 속성 문자열을 다시 넣는다 — 실측: 1.3 MB 주석 토글의 되돌리기·다시 실행 5.3 s, JSON 정리 0.85 s;
-        // 속성 런 배열의 memmove 이고 화면 위치와 무관하다) 여기서는 기록만 하고, 스크롤·배치의 몫인 '그 뒤'를 판정한다
+        // 문서 전체를 바꾼 도구의 되돌리기·다시 실행(⌘Z · ⇧⌘Z)을 화면이 문서 끝일 때 — 문서 전체가 바뀐 직후 문서 끝에서의 배치가 문서를 처음부터 훑지 않는가.
+        // 편집 자체의 시간과 그 뒤 화면이 가라앉는 시간을 따로 잰다. 되돌리기의 편집도 판정한다: 도구가 입력 길(insertText)로 글을 넣던 때에는 AppKit 의
+        // 입력 되돌리기(NSUndoTyping)가 속성 문자열을 다시 넣느라 1.3 MB 주석 토글의 되돌리기·다시 실행이 5.3 s, JSON 정리가 0.85 s 였다 (속성 런 배열의
+        // memmove). 큰 범위는 일괄 편집으로 넣는다 (HyperTextView.replaceForTool) — 되돌리면 도구를 쓰기 전의 선택이 돌아와야 한다
         Scenario(name: "typing-big-tools-redo") { ctx in
             RealUse.keepAwakeForTiming()
             /// 동작 하나(편집)의 시간과 그 뒤 화면이 가라앉을 때까지의 시간. `judgeEdit`: 편집 시간도 예산으로 본다 (도구 자체)
@@ -626,14 +627,28 @@ extension RealUse {
             await ctx.selectAll(); await ctx.settle(100)
             await timed("toggle comment on 1.3 MB, view at the end", judgeEdit: true) { ctx.model.textTool(.toggleComment); await ctx.pumpEvent() }
             await ctx.press(.down, [.command]); await ctx.settle(400)
-            await timed("undo of toggle comment, view at the end", judgeEdit: false) { await ctx.undo() }
+            await timed("undo of toggle comment, view at the end", judgeEdit: true) { await ctx.undo() }
             if ctx.text.length != (lines as NSString).length { ctx.issue("text", "undo of toggle comment left \(ctx.text.length) units, expected \((lines as NSString).length)") }
+            if ctx.tv.selectedRange() != NSRange(location: 0, length: (lines as NSString).length) {
+                ctx.issue("selection", "undo of toggle comment: the selection from before the tool (the whole document) should be back, it is \(ctx.tv.selectedRange())")
+            }
             ctx.checkLayout("undo of toggle comment")
             await ctx.press(.down, [.command]); await ctx.settle(400)
             ctx.expectBottom("before the redo")
-            await timed("redo of toggle comment, view at the end", judgeEdit: false) { await ctx.redo() }
+            await timed("redo of toggle comment, view at the end", judgeEdit: true) { await ctx.redo() }
             if !ctx.text.hasPrefix("// 2026-01-01") { ctx.issue("text", "redo of toggle comment: the first line is not commented") }
             ctx.checkAll("redo of toggle comment"); ctx.checkInk("redo of toggle comment")
+            // 문턱(HyperTextView.toolBatchLength) 아래의 범위는 입력 길 그대로다 — 큰 문서의 처음에서 그 되돌리기가 얼마인지 (문턱을 정한 근거)
+            ctx.at("toggle comment on 12,000 characters at the start: the typing path")
+            await ctx.press(.up, [.command]); await ctx.settle(300)
+            let whole = ctx.text.length
+            let head = ctx.text.lineRange(for: NSRange(location: 0, length: 12_000))
+            if head.length + 4 * 200 >= HyperTextView.toolBatchLength { ctx.issue("other", "the range at the start (\(head.length) units) is not below the batch threshold", snap: false) }
+            ctx.tv.setSelectedRange(head); await ctx.settle(100)
+            await timed("toggle comment on \(head.length) characters at the start of 1.3 MB", judgeEdit: true) { ctx.model.textTool(.toggleComment); await ctx.pumpEvent() }
+            if ctx.text.length == whole { ctx.issue("text", "toggle comment at the start changed nothing") }
+            await timed("undo of toggle comment at the start (typing path)", judgeEdit: true) { await ctx.undo() }
+            if ctx.text.length != whole { ctx.issue("text", "undo of the toggle at the start left \(ctx.text.length) units, expected \(whole)") }
             // JSON 정리: 12,002 줄 → 180,002 줄
             func element(_ i: Int) -> String { "{\"id\":\(i),\"name\":\"항목 \(i) 한글 이름\",\"tags\":[\"a\",\"b\",\"c\"],\"score\":\(Double(i) / 7),\"nested\":{\"ok\":true,\"none\":null,\"note\":\"line\\nbreak\"}}" }
             let json = "[\n" + (0..<12_000).map(element).joined(separator: ",\n") + "\n]"
@@ -643,12 +658,12 @@ extension RealUse {
             await timed("format JSON on 1.7 MB, view at the end", judgeEdit: true) { ctx.model.textTool(.formatJSON); await ctx.pumpEvent() }
             let formatted = ctx.text.length
             await ctx.press(.down, [.command]); await ctx.settle(400)
-            await timed("undo of format JSON, view at the end of the formatted text", judgeEdit: false) { await ctx.undo() }
+            await timed("undo of format JSON, view at the end of the formatted text", judgeEdit: true) { await ctx.undo() }
             if ctx.text.length != (json as NSString).length { ctx.issue("text", "undo of format JSON left \(ctx.text.length) units, expected \((json as NSString).length)") }
             ctx.checkLayout("undo of format JSON")
             await ctx.press(.down, [.command]); await ctx.settle(400)
             ctx.expectBottom("before the redo of format JSON")
-            await timed("redo of format JSON, view at the end", judgeEdit: false) { await ctx.redo() }
+            await timed("redo of format JSON, view at the end", judgeEdit: true) { await ctx.redo() }
             if ctx.text.length != formatted { ctx.issue("text", "redo of format JSON left \(ctx.text.length) units, expected \(formatted)") }
             ctx.checkAll("redo of format JSON"); ctx.checkInk("redo of format JSON")
             ctx.snap("end")

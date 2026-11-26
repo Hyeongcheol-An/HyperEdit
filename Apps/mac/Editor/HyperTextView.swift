@@ -207,7 +207,7 @@ final class HyperTextView: NSTextView {
         if let cell = noWrapRevealRect { noWrapRevealRect = nil; scrollToVisible(cell) }   // 줄바꿈 끔의 열 블록: 범위(짧은 줄에서는 줄 끝) 대신 머리 칸을 보이게
         else {
             stepped = (afterEdit || caretStepDepth > 0) && revealCaretStep(range, afterEdit: afterEdit)
-            if !stepped { super.scrollRangeToVisible(range); revealDocumentEndIfMissed(range) }
+            if !stepped { super.scrollRangeToVisible(range); revealDocumentEndIfMissed(range); revealTopInsetWithDocumentStart(range) }
         }
         editRevealStart = nil; editRevealWholesale = false
         // 줄바꿈 끔의 가로: 세로를 직접 밀었으면 가로도 여기서 맞춘다 — 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)이 보이는 열에 오게 (revealNoWrapColumn).
@@ -231,6 +231,16 @@ final class HyperTextView: NSTextView {
         // 다시 그려지는 줄마다 지워졌다(실사용 하네스 2026-11-24). 이번 표시 주기에 뷰포트를 다시 배치하게 한다 (조각은 이미 배치돼 있어 값싸다)
         if viewportNeedsLayout { needsLayout = true }
         constrainScrollToDocumentEnd()
+    }
+
+    /// 문서의 맨 처음을 보이라고 했으면 위 여백까지 보인다. AppKit 은 첫 줄의 상자가 화면에 들어오는 데서 멈춘다 — 아직 배치되지 않은 곳에서 올라올 때
+    /// (문서를 통째로 바꾼 편집을 되돌린 뒤의 ⌘↑) 첫 줄이 위 가장자리에 붙고 여백 12 pt 가 잘린 채 남았다
+    private func revealTopInsetWithDocumentStart(_ range: NSRange) {
+        guard range.location == 0, range.length == 0, let sv = enclosingScrollView, sv.documentView === self else { return }
+        let clip = sv.contentView
+        guard clip.bounds.minY > 0.5, clip.bounds.minY <= textContainerInset.height + 0.5 else { return }
+        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: 0))
+        sv.reflectScrolledClipView(clip)
     }
 
     /// AppKit 이 문서의 마지막 문단을 "이미 화면에 있다"고 잘못 본 경우를 바로잡는다 (scrollRangeToVisible 이 AppKit 에 맡긴 직후에 부른다).
@@ -281,7 +291,7 @@ final class HyperTextView: NSTextView {
     // MARK: - 방향키로 화면 가장자리를 넘을 때: 필요한 만큼만 민다
     // AppKit(TextKit 2)의 scrollRangeToVisible 은 대상이 화면 밖이면 그 줄을 화면 가운데쯤으로 데려간다 — 방향키로 맨 아랫줄을 넘는 순간마다 화면이 반 화면씩 튀고
     // (실측: 460 pt 화면에서 약 220 pt), 아직 배치하지 않은 위쪽으로 올라갈 때는 추정 높이 때문에 착지 높이도 걸음마다 달랐다(y 25…268). 캐럿을 한 줄·한 글자·한 단어·
-    // 줄 끝으로 옮기는 키 명령에서는 캐럿 줄이 화면에 다 들어올 만큼만 직접 민다. 문서 처음·끝으로 가기, Page Up/Down, 줄로 이동, 입력 중의 따라가기는 AppKit 그대로다.
+    // 줄 끝으로 옮기는 키 명령에서는 캐럿 줄이 화면에 다 들어올 만큼만 직접 민다. 문서 처음·끝으로 가기, Page Up/Down, 줄로 이동은 AppKit 그대로다 (입력 중의 따라가기는 아래 revealCaretStep(afterEdit:)).
     private static let caretStepCommands: Set<Selector> = {
         let moves = ["moveUp", "moveDown", "moveLeft", "moveRight", "moveForward", "moveBackward", "moveWordLeft", "moveWordRight", "moveWordForward", "moveWordBackward",
                      "moveToLeftEndOfLine", "moveToRightEndOfLine", "moveToBeginningOfLine", "moveToEndOfLine", "moveToBeginningOfParagraph", "moveToEndOfParagraph"]
@@ -1112,7 +1122,7 @@ final class HyperTextView: NSTextView {
                 guard let caret = self.caretRect(at: sel.location) else { return }
                 let visible = self.visibleRect
                 guard caret.minY < visible.minY || caret.maxY > visible.maxY else { return }
-                self.scrollRangeToVisible(sel)
+                self.scrollRangeToVisible(sel.length >= Self.longRevealLength ? NSRange(location: sel.location, length: 0) : sel)
             }
         }
     }
@@ -1800,8 +1810,19 @@ final class HyperTextView: NSTextView {
             let responder = window?.firstResponder
             if responder === self || !(responder is HyperTextView) {
                 followed = true
-                scrollRangeToVisible(selectedRange())
-                revealCaretAfterRelayout()   // 통째로 되살아난 텍스트는 아직 배치되지 않아 위 스크롤이 추정 위치로 간다
+                // 긴 선택(되돌린 범위 전체가 다시 골라진다)을 통째로 보이라고 하면 AppKit 이 그 범위를 전부 배치한다 (실측: 1.3 MB 문서 전체가 골라진 채 7.5 s).
+                // 문서 전체이거나 화면이 이미 그 범위 안이면 그대로 두고, 아니면 범위의 처음만 보인다
+                let sel = selectedRange()
+                if sel.length >= Self.longRevealLength {
+                    let whole = sel.location == 0 && sel.length >= (textStorage?.length ?? 0)
+                    if !whole, firstVisibleParagraphOffset().map({ NSLocationInRange($0, sel) }) != true {
+                        scrollRangeToVisible(NSRange(location: sel.location, length: 0))
+                        revealCaretAfterRelayout()
+                    }
+                } else {
+                    scrollRangeToVisible(sel)
+                    revealCaretAfterRelayout()   // 통째로 되살아난 텍스트는 아직 배치되지 않아 위 스크롤이 추정 위치로 간다
+                }
             }
         }
         // 분할 보기의 다른 편집기: 문서가 통째로 되돌려졌으면 보던 줄로 되돌린다 (captureReadingPlace)
@@ -1876,9 +1897,27 @@ final class HyperTextView: NSTextView {
 
     // MARK: - 멀티 편집
 
-    /// 여러 범위를 한 번에 교체 (undo 1그룹). 반환: 각 치환 문자열 끝의 새 캐럿 위치 (문서 순서)
+    /// 텍스트 도구(주석 토글·JSON 정리·열 맞춤·줄/선택 변환)가 한 범위를 통째로 바꾼다. 작은 편집은 입력과 같은 길(insertText)로, 큰 편집은 일괄 편집
+    /// (performReplacements — 되돌리기를 직접 등록한다)으로 한다. AppKit 의 입력 되돌리기는 지운 글을 속성 문자열로 되넣는데, 그 속성 런을 저장소의 런 배열에
+    /// 끼워 넣는 비용이 넣는 런 수 × 그 뒤에 있는 런 수다 (실측: 1.3 MB·24,000줄 문서 전체 주석 토글의 ⌘Z 5.3 s · ⇧⌘Z 5.3 s, 1.7 MB JSON 정리의 ⌘Z 0.85 s —
+    /// 표본의 거의 전부가 NSMutableRLEArray 의 memmove). 일괄 편집의 되돌리기는 글자만 한 번에 갈아 끼운다 (같은 문서에서 0.26 s · 0.26 s · 0.21 s).
+    /// 일괄 길에는 AppKit 의 '캐럿 보이기'가 없다(입력 길은 넣은 글의 끝으로 화면을 옮긴다) — 화면은 제자리에 남고, 되돌리면 도구를 쓰기 전의 선택이 돌아온다.
+    /// 문턱 아래의 편집은 예전 그대로다 (실측: 24,000줄 문서의 처음 12,000자 — 185줄 — 의 주석 토글을 입력 길로 되돌리는 데 60~72 ms)
+    func replaceForTool(_ range: NSRange, with string: String) {
+        guard max(range.length, (string as NSString).length) >= Self.toolBatchLength else { insertText(string, replacementRange: range); return }
+        let before = selectedRange()
+        clearMulti()
+        performReplacements([(range, string)], selectionOnUndo: before)
+    }
+    /// 이 길이(UTF-16 단위)부터 도구의 편집을 일괄 편집으로 한다 (replaceForTool)
+    static let toolBatchLength = 16_384
+    /// 이 길이부터의 선택은 '보이게 스크롤'에 통째로 넘기지 않는다 — AppKit 이 범위 전체를 배치한다 (undoDidChange · revealCaretAfterRelayout)
+    static let longRevealLength = 16_384
+
+    /// 여러 범위를 한 번에 교체 (undo 1그룹). 반환: 각 치환 문자열 끝의 새 캐럿 위치 (문서 순서).
+    /// `selectionOnUndo`: 되돌린 뒤 놓을 선택(편집 전의 것) — 없으면 첫 범위의 처음에 캐럿을 둔다
     @discardableResult
-    func performReplacements(_ pairs: [(range: NSRange, string: String)]) -> [NSRange] {
+    func performReplacements(_ pairs: [(range: NSRange, string: String)], selectionOnUndo: NSRange? = nil) -> [NSRange] {
         guard !pairs.isEmpty, let ts = textStorage else { return [] }
         let sorted = pairs.sorted { $0.range.location < $1.range.location }
         let ns = ts.string as NSString
@@ -1911,7 +1950,8 @@ final class HyperTextView: NSTextView {
             um.registerUndo(withTarget: self) { tv in
                 tv.clearMulti()
                 let carets = tv.performReplacements(inverse)
-                if let first = carets.first { tv.setSelectedRange(NSRange(location: first.location - (inverse[0].string as NSString).length, length: 0)) }
+                if let sel = selectionOnUndo, NSMaxRange(sel) <= (tv.string as NSString).length { tv.setSelectedRange(sel) }
+                else if let first = carets.first { tv.setSelectedRange(NSRange(location: first.location - (inverse[0].string as NSString).length, length: 0)) }
             }
             um.setActionName(String(localized: "Replace"))
             breakUndoCoalescing()
