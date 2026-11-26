@@ -1147,6 +1147,7 @@ final class HyperTextView: NSTextView {
         var bracketReset = false
         for pass in 0..<20 {
             // 뷰포트 배치가 문서 높이를 줄여 클립 뷰가 스크롤 위치를 끌어당기면(줄바꿈 끄기·모두 접기) 방금 배치한 것은 옛 위치의 것이다 — 위치가 그대로일 때까지 다시
+            if pass == 0 { enterDocumentBeforeViewportLayout() }   // 높이 어림이 줄어 스크롤 위치가 문서 끝 너머면 먼저 문서 안으로 — 아래의 배치가 문서 전체를 훑지 않게
             for _ in 0..<3 {
                 let before = clip.bounds.minY
                 vlc.layoutViewport()
@@ -1203,6 +1204,25 @@ final class HyperTextView: NSTextView {
             }
             scroll(to: target)
         }
+    }
+
+    /// 스크롤 위치가 레이아웃 매니저가 지금 보는 문서 끝 너머에 있으면 문서 안으로 옮긴다. 반환: 옮겼는가.
+    /// 문서 전체의 레이아웃이 무효가 된 뒤(글자 크기·폭·줄바꿈·접기) 높이 어림이 줄면 스크롤 위치는 옛 높이의 것이라 새 문서의 끝을 넘어 있다. 그 자리에서
+    /// `layoutViewport()` 를 부르면 TextKit 2 는 그 높이의 문단을 찾지 못해 문서 처음부터 그 높이에 닿을 때까지 — 닿지 못하므로 끝까지 — 문단을 차례로 배치한다
+    /// (macOS 27 실측, 2026-11-25: 문서 끝에서 글자를 줄이거나 사이드바를 닫으면 1.3 MB 메모에서 그 한 번이 457~694 ms, 4 MB 로그에서 5 s; 문단마다 구문 색
+    /// 렌더링 속성을 얹는 비용이 대부분이고, 끝난 뒤의 문서 높이는 전부 배치한 실제 높이다. 높이가 늘어나는 변화는 같은 자리에서 5~7 ms).
+    /// 끝의 자리는 마지막 문단 하나만 배치해 묻는다. 그 값과 레이아웃 매니저가 위치를 찾을 때 쓰는 높이 어림은 수백 pt 어긋날 수 있어(실측 ±560 pt) 끝에 바짝 붙이지
+    /// 않고 화면 아래 가장자리가 끝에서 두 화면 위에 오게 한다 — 부르는 쪽(restoreReadingAnchor)이 거기서 뷰포트를 배치한 뒤 닻으로 다시 맞춘다
+    @discardableResult
+    private func enterDocumentBeforeViewportLayout() -> Bool {
+        guard let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
+        var end: CGFloat?
+        lm.enumerateTextLayoutFragments(from: lm.documentRange.endLocation, options: [.reverse, .ensuresLayout]) { f in end = f.layoutFragmentFrame.maxY; return false }
+        let clip = sv.contentView
+        guard let end, clip.bounds.minY > end + textContainerOrigin.y - 1 else { return false }
+        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: max(0, end + textContainerOrigin.y - 3 * clip.bounds.height)))
+        sv.reflectScrolledClipView(clip)
+        return true
     }
 
     /// 끝에 붙인 뒤에도 이어지는 배치가 문서 높이를 조금씩 늘린다(추정 → 실측, 거터 폭이 바뀌며 한 번 더 감김) — 잠깐 동안(다음 턴, 그리고 60 ms 간격으로
