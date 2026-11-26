@@ -60,7 +60,9 @@ final class QuickAppendController: ObservableObject {
     /// 셀프테스트용: 패널이 키 창인가(앱이 활성일 때만 의미 있음) / 입력 뷰가 첫 응답자인가
     var isKeyWindow: Bool { panel?.isKeyWindow ?? false }
     var isTextViewFocused: Bool { textView != nil && panel?.firstResponder === textView }
-    /// 셀프테스트용: 전역 단축키가 실제로 등록돼 있는가 (Carbon 이 noErr 를 돌려줌)
+    /// 셀프테스트·하네스용: 패널이 다른 창들 위에 떠 있는 수준인가 (뒤에서 도는 자동화 실행에서는 아니어야 한다)
+    var floatsAboveOtherWindows: Bool { panel?.level == .floating }
+    /// 셀프테스트용: 전역 단축키가 등록돼 있는가 (Carbon 이 noErr 를 돌려줌 — 스크립트가 모는 실행은 시스템에 등록하지 않고 장부에만 적는다, GlobalHotKey)
     var isHotKeyRegistered: Bool { hotkey != nil }
 
     func show() {
@@ -68,9 +70,10 @@ final class QuickAppendController: ObservableObject {
         let p = panel ?? makePanel()
         p.contentView?.layoutSubtreeIfNeeded()   // 처음 열 때 SwiftUI 가 텍스트 뷰를 만들도록 (makeNSView → textView 등록)
         // nonactivating 패널: 앱이 비활성이어도 윈도 서버가 키 입력을 이 창에 보낸다 (이때 isKeyWindow/NSApp.keyWindow 는 문서대로 false/nil — 활성화하지 않는다)
-        if SelfTest.enabled && !NSApp.isActive {
-            // 셀프테스트가 뒤에서 도는 동안에는 키 입력을 가져오지도, 다른 앱 위에 뜨지도 않는다 — 떠 있는 키 패널은 사용자가 다른 앱에 치던 글자를 받아 간다
-            // (2026-11-24 실측: 검사의 초안이 'panel noteL' 이 됐다). 패널은 맨 뒤에 보이기만 하고, 검사는 텍스트 뷰에 직접 넣는다
+        if (SelfTest.enabled || AppDelegate.automationStaysInBackground) && !NSApp.isActive {
+            // 뒤에서 도는 자동화 실행(셀프테스트·하네스·벤치·스크린샷 — AppDelegate.automationStaysInBackground)과 비활성인 셀프테스트는 키 입력을 가져오지도,
+            // 다른 앱 위에 뜨지도 않는다 — 떠 있는 키 패널은 사용자가 다른 앱에 치던 글자를 받아 간다 (실측: 검사의 초안에 그 글자가 섞였다). 패널은 맨 뒤에
+            // 보이기만 하고, 검사는 텍스트 뷰에 직접 넣는다. `--snapshot-activate` 로 띄운 스크린샷 실행의 패널은 보통 실행처럼 뜬다
             p.level = .normal
             p.orderBack(nil)
         } else {
@@ -183,7 +186,8 @@ extension AppModel {
         return true
     }
 
-    /// `--quick-append`: 창이 뜬 뒤 입력 창을 연다 (스크린샷용). 전역 단축키는 컨트롤러가 만들어지며 등록되므로 여기서 한 번 만든다.
+    /// `--quick-append`: 창이 뜬 뒤 입력 창을 연다 (스크린샷용). 전역 단축키는 컨트롤러가 만들어지며 등록되므로 여기서 한 번 만든다
+    /// (스크립트가 모는 실행은 시스템에 등록하지 않는다 — GlobalHotKey.registersWithSystem).
     func applyQuickAppendLaunchOptions() {
         _ = quickAppend
         guard LaunchOptions.has("--quick-append") else { return }

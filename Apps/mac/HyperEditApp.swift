@@ -7,11 +7,23 @@ struct HyperEditApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = AppModel()
 
+    /// 사용자의 것과 떨어져 도는 실행 — 정의는 AutomationRun.swift
+    static var isAutomationRun: Bool { AutomationRun.isIsolated }
+
     init() {
-        // 스크린샷·셀프테스트 실행은 사용자 설정(테마·패널·마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다 (`--ephemeral` 은 수동 테스트 실행용)
+        // 사용자의 것과 떨어져 도는 실행(스크린샷·셀프테스트·벤치·실사용 하네스, 손으로 시험하는 `--ephemeral` — AutomationRun.swift)은 사용자 설정(테마·패널·
+        // 마지막 파일)을 건드리지 않도록 휘발성 저장소를 쓴다.
         // `--ephemeral-suite <name>` 은 여러 자동화 인스턴스를 동시에 띄울 때 서로의 설정·스냅샷·기본 문서 폴더가 섞이지 않게 한다
-        if LaunchOptions.has("--snapshot") || LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--ephemeral") || Bench.enabled || RealUse.enabled {
+        if Self.isAutomationRun {
             AppDefaults.useEphemeral(suiteName: LaunchOptions.value("--ephemeral-suite") ?? "hyperedit.automation")
+            // macOS 의 '저장된 창 상태'는 번들 ID 별이라 설치된 HyperEdit 과 모든 자동화 실행이 한 폴더를 같이 쓴다. 자동화 실행이 거기에 자기 창을 적으면
+            // (실측: 시작 30초쯤 뒤 windows.plist · window_N.data · data.data) 사용자 앱의 상태를 덮어쓰고, 그 실행이 강제 종료되면 남은 상태를 다음에 뜨는
+            // 인스턴스가 — 사용자의 앱도 — 복원한다 (실측: 강제 종료된 실행 하나가 남긴 창 47개를 그 뒤에 뜬 실행들이 모두 복원했다).
+            // 이 값을 켜면 시작할 때 저장된 상태를 읽지 않고, 실행 중에도 적지 않는다(실측 macOS 27). 창도 복원 대상에서 뺀다(아래 restorationBehavior).
+            // 등록 도메인은 우선순위가 가장 낮아 같은 키가 이미 저장돼 있으면 진다 — 실행 스크립트들은 인자로도 넘긴다 (`-ApplePersistenceIgnoreState YES`)
+            UserDefaults.standard.register(defaults: ["ApplePersistenceIgnoreState": true])
+            // 창 프레임 저장값(`NSWindow Frame …` — 이것도 번들 ID 의 설정에 적힌다)은 위의 둘로 막히지 않는다 → 따로 막는다
+            AutomationRun.keepWindowFramesOutOfDefaults()
         }
     }
 
@@ -23,6 +35,7 @@ struct HyperEditApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 820)
+        .restorationBehavior(Self.isAutomationRun ? .disabled : .automatic)   // 자동화 실행의 창은 저장된 창 상태에 넣지 않는다 (init 의 주석)
         .commands { EditorCommands(model: model) }
 
         Settings {

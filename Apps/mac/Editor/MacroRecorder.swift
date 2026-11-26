@@ -42,8 +42,8 @@ final class MacroRecorder: ObservableObject {
     var hasLast: Bool { !(store.lastRecorded?.steps.isEmpty ?? true) }
 
     init() {
-        // 자동화 실행(셀프테스트·스냅샷·--ephemeral)은 사용자의 매크로 파일을 건드리지 않는다
-        if LaunchOptions.has("--selftest") || LaunchOptions.has("--selftest-open") || LaunchOptions.has("--snapshot") || LaunchOptions.has("--ephemeral") {
+        // 사용자의 것과 떨어져 도는 실행(셀프테스트·스크린샷·벤치·하네스·--ephemeral)은 사용자의 매크로 파일을 건드리지 않는다
+        if AutomationRun.isIsolated {
             let dir = FileManager.default.temporaryDirectory
                 .appendingPathComponent("hyperedit-macros-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
             store = MacroStore(directory: dir)

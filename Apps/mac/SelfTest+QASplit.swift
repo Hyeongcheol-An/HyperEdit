@@ -455,6 +455,16 @@ extension SelfTest {
             qa.hotkeyID = "ctrl-opt-space"; await wait(100)
             log("O: ⌃⌥Space → registered=\(qa.isHotKeyRegistered) failed=\(qa.hotkeyFailed) status='\(qa.hotkeyStatus)'")
             check(GlobalHotKey.registeredCount <= 1 && (qa.isHotKeyRegistered != qa.hotkeyFailed), "O: ⌃⌥Space attempt leaves at most one registration and a consistent status")
+            // 다른 앱이 이미 쓰는 조합: 등록이 거절되면 실패로 알리고 아무것도 걸려 있지 않다. 셀프테스트는 시스템에 등록하지 않으므로(스크립트가 모는 실행)
+            // 그 거절을 장부에서 일으킨다 — 실제 Carbon 의 거절은 그 조합을 쓰는 앱이 떠 있을 때만 볼 수 있다
+            if !GlobalHotKey.registersWithSystem, let taken = QuickAppendController.hotkeyOptions.first(where: { $0.id == "ctrl-shift-space" })?.shortcut {
+                GlobalHotKey.takenElsewhere = [taken]
+                let errors = model.output.filter(\.isError).count
+                qa.hotkeyID = "ctrl-shift-space"; await wait(100)
+                check(!qa.isHotKeyRegistered && qa.hotkeyFailed && GlobalHotKey.registeredCount == 0 && model.output.filter(\.isError).count == errors + 1,
+                      "O: a shortcut another app holds is reported as failed and nothing stays registered ('\(qa.hotkeyStatus)')")
+                GlobalHotKey.takenElsewhere = []
+            }
             qa.hotkeyID = "ctrl-opt-cmd-n"; await wait(100)
             qa.hotkeyID = "ctrl-opt-cmd-n"; await wait(100)
             check(GlobalHotKey.registeredCount == (qa.isHotKeyRegistered ? 1 : 0) && GlobalHotKey.registeredCount <= 1, "O: re-selecting the same shortcut does not double-register (\(GlobalHotKey.registeredCount))")

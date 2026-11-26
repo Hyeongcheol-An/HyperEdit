@@ -92,8 +92,13 @@ enum SelfTest {
         if CommandLine.arguments.contains("--quit") { NSApp.terminate(nil) }
     }
 
+    /// 한 번만 돈다 — ContentView 가 `.task` 로 부르므로 창이 하나 더 생기면 그 창이 셀프테스트를 또 시작한다 (RealUse.run 과 같은 이유)
+    @MainActor private static var started = false
+
     @MainActor
     static func run(model: AppModel) async {
+        guard !started else { return }
+        started = true
         var lines: [String] = []
         var failures = 0
         func log(_ s: String) { lines.append(s); model.log("[selftest] " + s) }
@@ -335,6 +340,7 @@ enum SelfTest {
         await runAppearance(model: model, check: check, log: log)   // appearance: 커서 스타일·배경 투명도·블러
         await runAppLock(model: model, check: check, log: log)   // applock: 잠금·오버레이·입력 차단·가짜 인증기·유휴 타이머
         await runSearchHighlight(model: model, check: check, log: log)   // search: 찾기 결과 강조가 편집·재검색에 뷰포트를 흔들지 않는지 (SelfTest+Search.swift)
+        await runIsolation(model: model, check: check, log: log)   // isolation: 이 실행이 사용자의 설정·단축키·포커스를 건드리지 않는가 — 맨 끝에 (SelfTest+Isolation.swift)
 
         // 화면용 상태: 타임라인 탭 + 찾기 결과 + 열 블록
         model.searchQuery = "NEEDLE"; model.runSearch()

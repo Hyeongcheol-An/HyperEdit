@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# 성능 벤치마크. 사용: scripts/bench.sh [--compare <baseline.json>] [--skip-build] [--strict] [--launch-runs N] [--only <phases>]
+# 성능 벤치마크. 사용: scripts/bench.sh [--compare <baseline.json>] [--skip-build] [--strict] [--launch-runs N] [--only <phases>] [--foreground]
+#   앱을 앞으로 가져오지 않고 뒤에서 돈다 (활성화되면 바로 물러나고 창을 맨 뒤로 — 쓰고 있는 다른 앱의 포커스를 뺏지 않는다). `--foreground` 는 예전처럼 앞에서.
+#   어느 쪽으로 돌았는지는 표의 `Run:` 줄과 JSON 의 `mode` 에 남는다 — 뒤에서 잰 수치는 뒤에서 잰 기준선과만 견준다 (창이 완전히 가려지면 그리기가 빠진다).
 #   Release 빌드 → 콜드 실행 시간 N회(기본 5, 첫 창까지) → `--bench` 하네스(Apps/mac/Bench.swift) → 번들/바이너리 크기
 #   결과: build/bench/<git-sha>.json + .md (표는 stdout 에도 출력). --compare 는 기준 JSON 대비 변화율(%)을 표시하고 15 % 넘는 퇴행을 표시한다.
 #   벤치는 임시 폴더의 자체 말뭉치와 휘발성 UserDefaults 만 쓴다 — 사용자의 문서·설정은 건드리지 않는다.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BASELINE=""; SKIP_BUILD=0; STRICT=0; LAUNCH_RUNS=5; ONLY=""
+BASELINE=""; SKIP_BUILD=0; STRICT=0; LAUNCH_RUNS=5; ONLY=""; FOREGROUND=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --compare) BASELINE="$2"; shift 2 ;;
@@ -14,6 +16,7 @@ while [ $# -gt 0 ]; do
     --strict) STRICT=1; shift ;;
     --launch-runs) LAUNCH_RUNS="$2"; shift 2 ;;
     --only) ONLY="$2"; shift 2 ;;
+    --foreground) FOREGROUND=(--bench-foreground); shift ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -34,14 +37,17 @@ LAUNCH_LOG="$TMP/launch.log"
 # 1. 콜드 실행 시간: 프로세스 시작(커널) → didFinishLaunching → 첫 ContentView → 첫 창. 첫 번째 실행은 캐시 워밍이라 버린다.
 echo "launch ×$LAUNCH_RUNS …" >&2
 for i in $(seq 0 "$LAUNCH_RUNS"); do
-  "$BIN" --ephemeral --file "$TMP/start.md" --bench-launch-log "$LAUNCH_LOG" --quit-after-launch >/dev/null 2>&1 || true
+  "$BIN" -ApplePersistenceIgnoreState YES --ephemeral --file "$TMP/start.md" --bench-launch-log "$LAUNCH_LOG" --quit-after-launch ${FOREGROUND[@]+"${FOREGROUND[@]}"} >/dev/null 2>&1 || true
   sleep 0.5
 done
 
 # 2. 벤치 하네스
 echo "bench …" >&2
-BENCH_ARGS=(--ephemeral --file "$TMP/start.md" --bench --bench-out "$OUT" --bench-commit "$SHA" --quit)
+# `-ApplePersistenceIgnoreState YES`: 저장된 창 상태(번들 ID 공용)를 읽지도 쓰지도 않는다 — 앱이 등록하는 기본값은 우선순위가 가장 낮아 인자로도 넘긴다.
+# `-키 값` 쌍으로 읽히도록 맨 앞에 둔다 (위의 실행 시간 계측도 같다)
+BENCH_ARGS=(-ApplePersistenceIgnoreState YES --ephemeral --file "$TMP/start.md" --bench --bench-out "$OUT" --bench-commit "$SHA" --quit)
 [ -n "$ONLY" ] && BENCH_ARGS+=(--bench-only "$ONLY")
+[ ${#FOREGROUND[@]} -gt 0 ] && BENCH_ARGS+=("${FOREGROUND[@]}")
 "$BIN" "${BENCH_ARGS[@]}" 2> "$TMP/bench.stderr" || true
 [ -f "$OUT" ] || { echo "bench produced no output; stderr:" >&2; tail -20 "$TMP/bench.stderr" >&2; exit 1; }
 
@@ -101,6 +107,12 @@ ld = r.get("load", {})
 if ld:
     under = max(ld["before"], ld["after"]) > ld["cores"]
     print(f"Load average (1 min) before/after: {ld['before']:.1f} / {ld['after']:.1f}" + (" — **measured under load, not a baseline**" if under else "") + "  ")
+md = r.get("mode")
+if md:
+    note = "background (app inactive, window behind the others)" if md["background"] else "foreground"
+    if md["background"] and md.get("wasActive"): note += " — the app became active during the run"
+    if md.get("occluded"): note += " — **the window was fully covered, drawing may have been skipped: not a baseline**"
+    print(f"Run: {note}  ")
 c = r["corpus"]
 print("Corpus: " + " · ".join(f"{k} {v['bytes']//1024} KB / {v['lines']} lines" for k, v in sorted(c.items(), key=lambda kv: kv[1]["bytes"])) + "\n")
 hdr = "| Metric | median | p95 | n | budget | result |" + (" Δ vs baseline |" if base else "")
@@ -141,6 +153,12 @@ ld = r.get("load", {})
 if ld:
     under = max(ld["before"], ld["after"]) > ld["cores"]
     print(f"Load average (1 min) before/after: {ld['before']:.1f} / {ld['after']:.1f}" + (" — **measured under load, not a baseline**" if under else "") + "  ")
+md = r.get("mode")
+if md:
+    note = "background (app inactive, window behind the others)" if md["background"] else "foreground"
+    if md["background"] and md.get("wasActive"): note += " — the app became active during the run"
+    if md.get("occluded"): note += " — **the window was fully covered, drawing may have been skipped: not a baseline**"
+    print(f"Run: {note}  ")
 c = r["corpus"]
 print("Corpus: " + " · ".join(f"{k} {v['bytes']//1024} KB / {v['lines']} lines" for k, v in sorted(c.items(), key=lambda kv: kv[1]["bytes"])) + "\n")
 print("| Metric | median | p95 | n | budget | result |"); print("|---|---:|---:|---:|---|---|")

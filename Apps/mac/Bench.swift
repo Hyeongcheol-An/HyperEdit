@@ -3,7 +3,10 @@ import AppKit
 import HyperCore
 import Darwin
 
-/// 성능 벤치마크 하네스 (개발용): `--bench [--bench-out <path.json>] [--bench-strict] [--bench-commit <sha>] [--quit]`
+/// 성능 벤치마크 하네스 (개발용): `--bench [--bench-out <path.json>] [--bench-strict] [--bench-commit <sha>] [--bench-foreground] [--quit]`
+///
+/// 셀프테스트처럼 **뒤에서 돈다**: 앱이 활성화되면 바로 물러나고 창을 맨 뒤로 보낸다(AppDelegate.benchStaysInBackground) — 사용자가 Mac 을 쓰는 동안에도
+/// 잴 수 있다. `--bench-foreground` 는 예전처럼 앞에서 돈다. 어느 쪽으로 돌았는지는 결과(JSON `mode`, 표의 `Run:` 줄)에 남는다 — 같은 방식끼리만 견준다.
 ///
 /// 임시 폴더에 자체 말뭉치(small 2 KB · medium 200 KB · large 1.3 MB · huge 8 MB · log 28 MB)를 만들어 그 위에서만 측정한다 — 사용자 문서·설정은
 /// 건드리지 않는다 (`HyperEditApp.init` 이 `--bench` 에 휘발성 UserDefaults 를 쓴다). 실행 시 `--file <임시 .md>` 를 함께 주면 기본 문서를
@@ -56,6 +59,21 @@ enum Bench {
     /// 측정 전후 1분 부하 평균 — 코어 수를 넘으면 표에 "measured under load" 를 표시한다 (다른 빌드가 돌 때의 수치는 기준선으로 쓰지 말 것)
     struct Load: Codable { let before: Double; let after: Double; let cores: Int; var underLoad: Bool { max(before, after) > Double(cores) } }
     struct CorpusInfo: Codable { let bytes: Int; let lines: Int }
+    /// 어떻게 돌았나: 뒤에서(앱이 비활성, 창은 다른 창들 뒤 — 기본) 또는 앞에서(`--bench-foreground`). 창이 완전히 가려진 적이 있으면 그리기가 빠졌을 수 있다.
+    /// 뒤에서 잰 수치는 뒤에서 잰 수치끼리만 견준다 (앞에서 잰 옛 기준선과 섞지 않는다)
+    struct RunMode: Codable {
+        let background: Bool
+        /// 측정 중 앱이 활성 상태였던 적이 있는가 (뒤에서 도는 실행이면 없어야 한다 — 사용자의 포커스를 뺏지 않았다는 기록)
+        let wasActive: Bool
+        /// 측정 시작·끝에 창이 완전히 가려져 있었는가
+        let occluded: Bool
+        var note: String {
+            var s = background ? "background (app inactive, window behind the others)" : "foreground"
+            if background && wasActive { s += " — the app became active during the run" }
+            if occluded { s += " — **the window was fully covered, drawing may have been skipped: not a baseline**" }
+            return s
+        }
+    }
     struct Result: Codable {
         let version: String
         let commit: String
@@ -63,6 +81,8 @@ enum Bench {
         let machine: Machine
         let corpus: [String: CorpusInfo]
         let load: Load
+        /// 옛 결과 파일에는 없다 (앞에서 돌았다)
+        var mode: RunMode?
         var metrics: [Metric]
         var allPass: Bool
     }
@@ -315,8 +335,13 @@ enum Bench {
 
     // MARK: - 실행
 
+    /// 한 번만 돈다 — ContentView 가 `.task` 로 부르므로 창이 하나 더 생기면 그 창이 벤치를 또 시작한다 (RealUse.run 과 같은 이유)
+    @MainActor private static var started = false
+
     @MainActor
     static func run(model: AppModel) async {
+        guard !started else { return }
+        started = true
         var metrics: [Metric] = []
         var corpus: [String: CorpusInfo] = [:]
         func log(_ s: String) {
@@ -329,6 +354,13 @@ enum Bench {
         }
         await wait(1200)
         let loadBefore = loadAverage()
+        // 실행 방식 기록: 뒤에서 도는가(AppDelegate.benchStaysInBackground — 활성화되면 물러나고 창을 뒤로 보낸다), 그동안 활성화된 적·창이 가려진 적이 있는가
+        func windowOccluded() -> Bool { model.session.primary?.textView?.window.map { !$0.occlusionState.contains(.visible) } ?? false }
+        var wasActive = NSApp.isActive
+        let occludedAtStart = windowOccluded()
+        let activeWatch = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in wasActive = true }
+        defer { NotificationCenter.default.removeObserver(activeWatch) }
+        log("mode: \(AppDelegate.benchStaysInBackground ? "background" : "foreground") · app active \(NSApp.isActive) · window occluded \(occludedAtStart)")
 
         // 0. 말뭉치
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("hyperedit-bench-\(UUID().uuidString.prefix(8))", isDirectory: true)
@@ -814,6 +846,7 @@ enum Bench {
         let strictFail = metrics.contains { !$0.pass && !$0.informational }
         let result = Result(version: version, commit: LaunchOptions.value("--bench-commit") ?? "unknown", date: f.string(from: Date()),
                             machine: machine(), corpus: corpus, load: Load(before: loadBefore, after: loadAverage(), cores: ProcessInfo.processInfo.activeProcessorCount),
+                            mode: RunMode(background: AppDelegate.benchStaysInBackground, wasActive: wasActive || NSApp.isActive, occluded: occludedAtStart || windowOccluded()),
                             metrics: metrics, allPass: !strictFail)
         let table = markdownTable(result)
         FileHandle.standardError.write((table + "\n").data(using: .utf8)!)
@@ -836,6 +869,7 @@ enum Bench {
         var out = "## HyperEdit bench · v\(r.version) · \(r.commit) · \(r.date)\n\n"
         out += "Machine: \(r.machine.model) · \(r.machine.cores) cores · \(r.machine.memoryGB) GB · \(r.machine.os)  \n"
         out += String(format: "Load average (1 min) before/after: %.1f / %.1f%@  \n", r.load.before, r.load.after, r.load.underLoad ? " — **measured under load, not a baseline**" : "")
+        if let mode = r.mode { out += "Run: \(mode.note)  \n" }
         out += "Corpus: " + r.corpus.sorted { $0.value.bytes < $1.value.bytes }.map { "\($0.key) \($0.value.bytes / 1024) KB / \($0.value.lines) lines" }.joined(separator: " · ") + "\n\n"
         out += "| Metric | median | p95 | n | budget | result |\n|---|---:|---:|---:|---|---|\n"
         for m in r.metrics {

@@ -35,10 +35,17 @@ enum RealUse {
     /// 모든 시나리오 (영역 파일들이 채운다)
     @MainActor static var scenarios: [Scenario] {
         coreScenarios + scrollScenarios + typingScenarios + mouseScenarios + tabsScenarios + findScenarios + layoutScenarios + fileViewScenarios
+            + isolationScenarios
     }
+
+    /// 한 번만 돈다. ContentView 가 `.task` 로 부르므로 창이 하나 더 생기면 그 창이 하네스를 또 시작한다 — 시나리오가 창을 만드는 동작을 하면
+    /// 창마다 하네스가 돌며 창을 더 만든다 (실측: 열기 이벤트마다 창이 생기던 빌드에서 80여 개)
+    @MainActor private static var started = false
 
     @MainActor
     static func run(model: AppModel) async {
+        guard !started else { return }
+        started = true
         // 앱을 활성화하지 않고 창을 맨 뒤에 두므로 2~3분쯤 지나면 App Nap 이 걸려 타이머가 늦게 깨고 CPU 우선순위가 깎인다 — 그 뒤로는 같은 동작이 3~5배
         // 느리게 재지고 가만히 기다리는 걸음에서도 '정지'가 기록된다(시나리오 순서를 바꾸면 느려지는 시나리오도 바뀐다). 실행 내내 막아 둔다
         let activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical], reason: "real-use harness")
@@ -51,10 +58,14 @@ enum RealUse {
             if CommandLine.arguments.contains("--quit") { NSApp.terminate(nil) }
             return
         }
-        // 사용자가 쓰고 있는 앱의 포커스를 뺏지 않는다: 활성화됐으면 물러나고 창은 맨 뒤로
+        // 사용자가 쓰고 있는 앱의 포커스를 뺏지 않는다: 활성화되면 그때마다 AppDelegate 가 물러난다 (stepBackIfAutomated — 시작할 때도, 도는 중에도).
+        // 물러난 뒤에는 활성이었는지 알 수 없으므로 횟수를 먼저 적는다
+        ctx.log("launch: activated \(AppDelegate.stepBacks) times since launch (stepped back each time) · active now=\(NSApp.isActive)")
         if NSApp.isActive { NSApp.deactivate() }
         ctx.window.orderBack(nil)
         ctx.log("launch: app active=\(NSApp.isActive) window key=\(ctx.window.isKeyWindow) visible=\(ctx.window.isVisible) occluded=\(!ctx.window.occlusionState.contains(.visible)) frame=\(ctx.window.frame)")
+        // 저장된 창 상태(번들 ID 공용)를 건드리지 않는 실행인가 — 앱이 등록한 기본값에 더해 scripts/realuse.sh 가 인자로도 넘긴다
+        ctx.log("launch: saved window state ignored=\(UserDefaults.standard.bool(forKey: "ApplePersistenceIgnoreState")) (given as an argument: \(UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)["ApplePersistenceIgnoreState"] != nil))")
         GutterView.captureRows = true
         ctx.startStallMonitor()
         await ctx.calibrate()
@@ -70,6 +81,7 @@ enum RealUse {
             await ctx.settle(300)
         }
         ctx.stopStallMonitor()
+        ctx.log("end: activated \(AppDelegate.stepBacks) times during the whole run (stepped back each time) · active now=\(NSApp.isActive)")
         ctx.writeReport()
         try? FileManager.default.removeItem(at: ctx.dir)
         if CommandLine.arguments.contains("--quit") { try? await Task.sleep(nanoseconds: 200_000_000); NSApp.terminate(nil) }
