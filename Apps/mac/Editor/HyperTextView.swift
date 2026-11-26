@@ -84,6 +84,8 @@ final class HyperTextView: NSTextView {
     /// 매크로 기록 싱크(MacroRecorder.install). 재생·텍스트 도구·doCommand 내부 편집 중에는 depth > 0 으로 기록을 끈다 — 구현은 MacroRecorder.swift   // macro
     var macroSink: ((MacroStep) -> Void)?   // macro
     var macroSuppressDepth = 0   // macro
+    /// 매크로를 재생하는 중인가 (MacroRecorder.play). 재생 중에는 걸음마다의 '보이게 스크롤'을 미룬다 — `revealCaretAfterReplaySteps`
+    var isReplayingMacro = false   // macro
 
     // 스니펫 (SnippetSession.swift): 트리거 단어 → 펼침 결과 (nil 이면 일반 Tab). 저장소는 뷰가 모른다 — Coordinator 가 공급자를 꽂는다
     var snippetProvider: ((String) -> SnippetExpansion?)?
@@ -155,11 +157,70 @@ final class HyperTextView: NSTextView {
         return true
     }
 
+    /// 트랙패드 제스처(관성) 중에 캐럿을 '보이게 스크롤'하라는 요청이 있었는가 — 입력·방향키가 화면을 캐럿으로 데려와도 남은 관성이 다시 끌고 간다(실측: 관성 중에
+    /// 친 글자가 제스처가 끝났을 때 화면 밖 1,375 pt). AppKit 의 관성을 멈출 공개 수단이 없으므로 제스처가 끝난 뒤 캐럿이 안 보이면 한 번 더 데려온다 (liveScrollDidEnd).
+    /// 그 제스처 안에서만 산다: 다음 스크롤이 시작되거나(liveScrollWillStart) 문서가 통째로 바뀌면(storageDidProcessEditing) 버린다
+    private var revealAfterLiveScroll = false
+
+    /// 스크롤이 시작됐다 (Coordinator 가 live scroll 시작 알림에서 부른다). `gesture`: 위상이 있는 트랙패드 제스처인가.
+    /// 앞선 제스처에서 남은 '캐럿 보이기' 요청은 버린다 — 그 제스처의 끝 알림이 오지 않은 것이다. 남겨 두면 나중의 아무 스크롤의 끝에서(손잡이 끌기도 끝 알림을
+    /// 낸다) 화면이 캐럿으로 튄다 (실측: 손잡이를 40 pt 끌고 놓자 끌기 전의 캐럿 줄로 돌아갔다)
+    func liveScrollWillStart(gesture: Bool) {
+        liveScrollTick = gesture ? CFAbsoluteTimeGetCurrent() : 0
+        revealAfterLiveScroll = false
+    }
+
+    /// 스크롤 제스처가 끝났다 (Coordinator 가 live scroll 끝 알림에서 부른다): 끝을 넘긴 채 끝났으면 되돌리고, 제스처 중에 요청된 '보이게 스크롤'을 마저 한다
+    func liveScrollDidEnd() {
+        liveScrollTick = 0
+        constrainScrollToDocumentEnd()
+        guard revealAfterLiveScroll else { return }
+        revealAfterLiveScroll = false
+        let sel = selectedRange()
+        guard let caret = caretRect(at: sel.location) else { return }
+        let visible = visibleRect
+        if caret.minY < visible.minY - 0.5 || caret.maxY > visible.maxY + 0.5 { scrollRangeToVisible(sel) }
+    }
+
+    /// 읽던 곳을 되살리는 스크롤 (탭으로 돌아왔을 때 — EditorView.restoreViewStateIfNeeded): 그 근처를 배치하게 하려는 것이지 캐럿을 보이려는 요청이 아니다.
+    /// 대상이 캐럿 자리와 같아도(캐럿이 읽던 곳의 맨 위 문단 머리에 있는 탭 — 문서 처음을 보던 탭이 그렇다) 제스처가 끝난 뒤 캐럿으로 데려올 요청으로 적지 않는다.
+    /// 범위만으로 가리던 때에는 관성 중에 그런 탭으로 바꾸면 남은 관성이 새 탭을 굴린 뒤(실측 2,839 pt) 제스처 끝에 화면이 캐럿으로 되돌아갔다
+    func scrollToReadingPlace(_ range: NSRange) {
+        restoringReadingPlace = true
+        defer { restoringReadingPlace = false }
+        scrollRangeToVisible(range)
+    }
+    private var restoringReadingPlace = false
+
     override func scrollRangeToVisible(_ range: NSRange) {
+        // 매크로 재생 중에는 걸음마다 따라가지 않는다 — 재생하는 쪽이 화면을 갱신할 때와 끝에서 한 번씩 한다 (revealCaretAfterReplaySteps)
+        if isReplayingMacro { editRevealStart = nil; editRevealWholesale = false; noWrapRevealRect = nil; return }
+        // 제스처(관성) 중의 요청 가운데 캐럿을 보이게 하려던 것만 적어 둔다 (입력·방향키·찾기 점프). 탭으로 돌아와 읽던 곳을 되살리는 스크롤은 맨 위 문단을
+        // 향한 것이라 캐럿과 상관없다 — 그것까지 적으면 관성 중에 탭을 바꿨을 때 돌아간 탭의 화면이 (화면 밖에 둔) 캐럿으로 튄다
+        if isLiveScrolling, !restoringReadingPlace,
+           editRevealDepth > 0 || caretStepDepth > 0 || NSLocationInRange(range.location, NSRange(location: selectedRange().location, length: selectedRange().length + 1)) {
+            revealAfterLiveScroll = true
+        }
         if isNoWrap { widenNoWrap(toShow: range) }   // 줄바꿈 끔: 대상이 지금의 폭 밖이면 먼저 넓힌다
+        let afterEdit = editRevealDepth > 0
+        var stepped = false   // 캐럿 줄이 들어올 만큼만 직접 밀었다 (AppKit 의 '보이게 스크롤'은 부르지 않았다)
         if let cell = noWrapRevealRect { noWrapRevealRect = nil; scrollToVisible(cell) }   // 줄바꿈 끔의 열 블록: 범위(짧은 줄에서는 줄 끝) 대신 머리 칸을 보이게
-        else if !(caretStepDepth > 0 && revealCaretStep(range)) { super.scrollRangeToVisible(range) }
-        if isNoWrap { revealNoWrapCaretColumn(range) }   // AppKit 이 가장자리에서 한 걸음 늦게 따라올 때 캐럿이 가려지지 않게
+        else {
+            stepped = (afterEdit || caretStepDepth > 0) && revealCaretStep(range, afterEdit: afterEdit)
+            if !stepped { super.scrollRangeToVisible(range) }
+        }
+        editRevealStart = nil; editRevealWholesale = false
+        // 줄바꿈 끔의 가로: 세로를 직접 밀었으면 가로도 여기서 맞춘다 — 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)이 보이는 열에 오게 (revealNoWrapColumn).
+        // AppKit 이 스크롤했으면 가장자리에서 한 걸음 늦게 따라올 때 캐럿이 가려지지 않게만 한다
+        if isNoWrap {
+            if !stepped { revealNoWrapCaretColumn(range) }
+            else if caretStepDepth == 0, range.length > 0 {
+                // 편집이 남긴 선택 (스니펫의 자리표시자, 입력기의 절): 범위 전체가 보이는 열에 오게 한다 — 끝을 보이고, 다 들어오지 않으면 시작이 이긴다.
+                // 한쪽 끝만 보이면 시작은 보이는데 끝이 가장자리 밖에 남았다 (실측: 선택 x 697…878, 보이는 x 0…757)
+                revealNoWrapColumn(at: NSMaxRange(range))
+                revealNoWrapColumn(at: range.location)
+            } else { revealNoWrapColumn(at: movedSelectionEnd() ?? selectedRange().location) }
+        }
         blockLayoutAnchor(dropRecord: false)   // 보이게 스크롤은 글을 옮기는 것이 목적이다 — AppKit 이 다음 배치 패스 안으로 미뤄 수행할 수도 있다
         // 멀리 뛰는 스크롤은 추정 좌표로 간다. 뒤따르는 배치 패스가 그 자리의 문단을 실측하며 문서 높이와 스크롤 위치를 다시 맞추는 사이, 조각은 맞추기 전의
         // 자리에 놓인 채 패스가 끝날 수 있다 (실측: 9,997줄 파일을 끝에서 열자 조각이 화면 위 −230…178 pt 에만 놓여 아래 204 pt 가 다음 스크롤까지 비었다 —
@@ -173,6 +234,7 @@ final class HyperTextView: NSTextView {
     }
 
     override func layout() {
+        if contentReplacedBeforeLayout { enterDocumentBeforeViewportLayout() }   // 다시 읽은 내용이 짧아졌으면 스크롤 위치가 문서 끝 너머다
         let anchor = captureLayoutAnchor()
         let cache = fragmentCacheState()
         if let cache { trimFragmentCacheLimit(cache) }
@@ -188,6 +250,7 @@ final class HyperTextView: NSTextView {
         layoutAnchorBlocked = false
         layoutRecord = makeLayoutRecord()
         if cache != nil { fragmentCountAfterLayout = fragmentCacheState()?.count }
+        (enclosingScrollView as? EditorScrollView)?.syncLineScroller()   // 손잡이는 배치된 화면의 줄로 놓는다 — 큰 점프 뒤에는 여기서야 알 수 있다
     }
 
     /// 배치 패스 안에서 옮긴 위치는 다시 배치되지 않는다(needsLayout 이 서지 않는다) — 되돌렸으면 그 자리의 뷰포트를 한 번 더 배치한다.
@@ -213,31 +276,150 @@ final class HyperTextView: NSTextView {
     /// 캐럿 걸음 밖에서 선택이 놓이면(마우스·찾기·편집·프로그램) 버린다 (setSelectedRanges)
     var caretStepHead: (selection: NSRange, head: Int)?
 
-    /// 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)의 줄이 화면에 다 들어오게 가장 적게 스크롤한다. 반환: 처리했는가 (false 면 AppKit 에 맡긴다)
-    private func revealCaretStep(_ range: NSRange) -> Bool {
-        // 조합 중인 글자는 입력기가 다룬다 · 줄바꿈 끔은 가로 스크롤까지 AppKit 이 맡는다
-        guard !hasMarkedText(), !isNoWrap, let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
+    // 입력·삭제·조합도 같다: 화면 맨 아랫줄에서 Enter 를 치거나 글자를 쳐서 줄이 감기면 AppKit 이 캐럿 줄을 화면 가운데로 데려가 반 화면이 밀렸다
+    // (실측: 382 pt 화면에서 Enter 213 pt, 줄이 감길 때 192 pt — `-[NSTextView _insertText:replacementRange:]` 가 편집 직후 scrollRangeToVisible 을 부른다).
+    // 편집이 부른 '보이게 스크롤'도 캐럿 줄이 들어올 만큼만 민다. 캐럿이 한 화면 넘게 떨어진 곳으로 간 편집(큰 붙여넣기)과 문서의 마지막 줄(편집으로 문서가
+    // 자라는 중이라 텍스트 뷰의 높이가 아직 옛 값이다)은 AppKit 에 맡긴다. 되돌리기·찾기 점프·줄로 이동은 이 경로가 아니다(전과 같이 가운데로)
+    /// 0 보다 크면 지금의 '보이게 스크롤'은 입력·삭제·조합이 부른 것이다 (insertText · setMarkedText · doCommand 의 insert…/delete… 명령)
+    private var editRevealDepth = 0
+    /// 이번 편집이 건드린 가장 앞 오프셋 (trackedEdits 가 적고, 보이게 스크롤이 끝나면 지운다). 캐럿 문단보다 앞이면(Enter·여러 줄 붙여넣기) 그 사이의 문단이
+    /// 아직 추정 높이라 캐럿 줄의 자리를 한 번 배치한 뒤에야 믿을 수 있다 (실측: Enter 직후 캐럿 줄이 실제보다 24 pt 아래로 나왔다)
+    private var editRevealStart: Int?
+    /// 이번 편집이 문서를 통째로(절반 넘게) 바꾸는가 — 문서 전체를 바꾸는 도구 (trackedEdits 가 적고, 보이게 스크롤이 끝나면 지운다)
+    private var editRevealWholesale = false
+
+    private static func isEditCommand(_ selector: Selector) -> Bool {
+        let name = NSStringFromSelector(selector)
+        return name.hasPrefix("insert") || name.hasPrefix("delete")
+    }
+
+    /// 편집 직후의 캐럿 줄 상자 (텍스트 뷰 좌표; y 와 높이만 쓴다). 편집된 문단의 위 가장자리(그 위는 배치돼 있어 그대로다)에서부터 캐럿 문단까지의 **실제 높이**를
+    /// 더해 구한다. 편집 직후 TextKit 2 는 고쳐진 문단의 높이를 추정값으로 되돌려 두므로 그 아래 조각의 자리(캐럿 사각형)는 다음 뷰포트 배치까지 어긋나 있다
+    /// (실측: 한 줄 문단 끝에서 Enter — 새 줄의 캐럿이 24 pt 아래로 나와, 새 줄이 화면에 들어가는데도 넘은 것으로 보였다. 조각을 배치만 해서는(ensuresLayout)
+    /// 아래 조각의 자리가 고쳐지지 않는다). 뷰포트를 통째로 배치하면 정확해지지만 Enter 마다 0.3 ms 남짓 든다 — 한 턴에 되풀이하는 매크로에서 쌓인다.
+    /// 구할 수 없으면(문단이 너무 많다 — 큰 붙여넣기, 캐럿 문단에 제 조각이 없다 — 문서 끝의 빈 줄) nil. 문단이 너무 많아서였으면 `tooFar` 를 켠다 —
+    /// 그런 편집(큰 붙여넣기, 문서 전체를 바꾸는 도구)은 캐럿이 한 화면 넘게 간 것이므로 재지 말고 AppKit 에 맡긴다. 대신 뷰포트를 배치해 재면, 문서 전체가
+    /// 바뀐 직후의 문서 끝에서는 그 배치가 문서를 처음부터 훑는다 (실측 2026-11-25, 1.3 MB 전체 주석 토글: 배치 한 번 430~520 ms — 편집 전체가 150 ms 에서 1.4 s 로)
+    private func caretLineAfterEdit(head: Int, editStart: Int, in lm: NSTextLayoutManager, tooFar: inout Bool) -> NSRect? {
+        guard let cs = textContentStorage else { return nil }
+        let ns = string as NSString
+        let caretParagraph = ns.paragraphRange(for: NSRange(location: head, length: 0))
+        let editParagraph = ns.paragraphRange(for: NSRange(location: min(editStart, ns.length), length: 0)).location
+        guard caretParagraph.location > editParagraph, caretParagraph.length <= Self.hugeParagraphLength,
+              let from = cs.location(cs.documentRange.location, offsetBy: editParagraph),
+              let to = cs.location(cs.documentRange.location, offsetBy: caretParagraph.location) else { return nil }
+        // 문서를 통째로 바꾼 편집은 문서 처음에서 시작하므로 아래의 열거가 아무도 보지 않을 문단을 배치한다. 그 가운데 거대 문단은 배치하지 않는다 — 높이를
+        // 알려면 문단 전체를 배치해야 한다 (실측: 26,000자 문단 하나에 26 ms; 첫 64줄이 그런 파일의 끝을 보며 전체 주석 토글 0.5 s → 2.1 s). 길이만 훑어(문단 경계
+        // 탐색은 memchr 수준이다) 가린다: 거대 문단이 있으면 재지 않고 AppKit 에 맡기고, 미리 배치해 두는 것(revealCaretStep 의 주석)은 거대 문단을 건너뛴
+        // 첫 보통 문단 묶음으로 한다. 64개가 전부 거대 문단이면 아무것도 배치하지 않는다 — 그래도 다음 배치 패스가 문서를 훑지 않았다 (실측: 편집 392~403 ms, 가라앉기까지 24~28 ms 더, 조각 표 +11~15).
+        // 화면에서 시작한 편집에는 하지 않는다: 그 문단은 화면에 그리려고 어차피 배치하는 것이고, 건너뛰면 화면에 보이는 거대 문단 바로 뒤의 Enter 가
+        // AppKit 의 가운데 맞춤으로 넘어가 화면이 튄다 (실측: 맨 아랫줄에 걸친 26,000자 줄 끝의 Enter 한 번에 202 pt, 한 줄은 24 pt)
+        var scan = editParagraph, firstPlain: Int?, plainRun = 0, huge = false
+        for _ in 0..<64 where editRevealWholesale && scan < caretParagraph.location {
+            let r = ns.paragraphRange(for: NSRange(location: scan, length: 0))
+            if r.length > Self.hugeParagraphLength { huge = true; if firstPlain != nil { break } }
+            else { if firstPlain == nil { firstPlain = r.location }; plainRun += 1 }
+            scan = NSMaxRange(r)
+        }
+        if huge {
+            tooFar = true
+            if let firstPlain, let start = cs.location(cs.documentRange.location, offsetBy: firstPlain) {
+                lm.enumerateTextLayoutFragments(from: start, options: [.ensuresLayout]) { _ in plainRun -= 1; return plainRun > 0 }
+            }
+            return nil
+        }
+        let originY = textContainerOrigin.y
+        var y: CGFloat?, rect: NSRect?, budget = 64
+        lm.enumerateTextLayoutFragments(from: from, options: [.ensuresLayout]) { f in
+            let frame = f.layoutFragmentFrame
+            var top = y ?? frame.minY
+            switch f.rangeInElement.location.compare(to) {
+            case .orderedAscending:
+                top += frame.height
+                y = top
+                budget -= 1
+                if budget == 0 { tooFar = true }
+                return budget > 0
+            case .orderedSame:
+                let offset = head - caretParagraph.location
+                if let line = f.textLineFragments.first(where: { NSLocationInRange(offset, $0.characterRange) }) ?? f.textLineFragments.last {
+                    rect = NSRect(x: 0, y: top + line.typographicBounds.minY + originY, width: 1, height: line.typographicBounds.height)
+                }
+                return false
+            default:
+                return false
+            }
+        }
+        return rect
+    }
+
+    /// 편집이 건드린 가장 앞 문단이 화면에 그려 둔 범위(뷰포트) 안에서 시작하는가 — 그래야 그 문단의 위 가장자리가 화면에 보이는 자리 그대로다.
+    /// 뷰포트 범위는 편집 직후에도 살아 있다 (실측: 비지 않고, 편집으로 밀린 오프셋도 반영돼 있다)
+    private func editStartsOnScreen(_ editStart: Int, in lm: NSTextLayoutManager) -> Bool {
+        guard let cs = textContentStorage, let vr = lm.textViewportLayoutController.viewportRange, !vr.isEmpty else { return false }
+        let ns = string as NSString
+        let paragraph = ns.paragraphRange(for: NSRange(location: min(editStart, ns.length), length: 0)).location
+        return paragraph >= cs.offset(from: cs.documentRange.location, to: vr.location) && paragraph <= cs.offset(from: cs.documentRange.location, to: vr.endLocation)
+    }
+
+    /// 선택이 있으면 방금의 걸음이 옮긴 쪽 끝 (선택을 늘리는 중 — 걸음 전의 선택과 견준다), 없으면 nil
+    private func movedSelectionEnd() -> Int? {
+        guard caretStepDepth > 0 else { return nil }   // 걸음 전의 선택은 방향키 명령만 적는다 — 편집이 부른 보이기에서 견주면 낡은 값이라 고르는 끝이 임의가 된다
+        let sel = selectedRange()
+        return sel.length > 0 ? (sel.location != selectionBeforeCaretStep.location ? sel.location : NSMaxRange(sel)) : nil
+    }
+
+    /// 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)의 줄이 화면에 다 들어오게 가장 적게 스크롤한다. 반환: 처리했는가 (false 면 AppKit 에 맡긴다).
+    /// 세로만 옮긴다 (가로 위치는 그대로 둔다) — 줄바꿈 끔의 가로는 부르는 쪽(scrollRangeToVisible)이 이어서 맞춘다
+    private func revealCaretStep(_ range: NSRange, afterEdit: Bool = false) -> Bool {
+        // 방향키: 조합 중인 글자는 입력기가 다룬다 (조합 중의 입력은 여기서 민다 — 조합 글자가 줄 끝을 넘겨 감길 때)
+        guard afterEdit || !hasMarkedText(), let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
         let clip = sv.contentView
         guard abs(clip.constrainBoundsRect(clip.bounds).minY - clip.bounds.minY) < 0.5 else { return false }   // 끝을 넘겨 당기는 중
-        let sel = selectedRange()
-        var head = range.location
-        if sel.length > 0 { head = sel.location != selectionBeforeCaretStep.location ? sel.location : NSMaxRange(sel) }
-        let height = clip.bounds.height
+        let head = movedSelectionEnd() ?? range.location
+        // 편집이 캐럿 문단보다 앞을 건드렸으면(Enter·여러 줄 붙여넣기) 그 사이의 문단들이 아직 추정 높이라 캐럿 줄의 자리가 어긋나 있다 — 첫 측정은 따로 한다
+        // (caretLineAfterEdit). 같은 문단 안의 입력은 캐럿 줄을 재는 질의가 그 문단을 배치하므로 그대로 정확하다 — 글자마다 일을 더 하지 않는다
+        var first: NSRect?
+        if afterEdit, let start = editRevealStart, head <= (textStorage?.length ?? 0),
+           (string as NSString).paragraphRange(for: NSRange(location: head, length: 0)).location > start {
+            // 편집이 화면에 그려 둔 범위 밖(위)에서 시작했으면 — 멀티 캐럿 가운데 화면 밖의 것, 화면 위에서 시작한 선택을 여러 줄로 바꾼 경우 — 재지 않고 AppKit 에
+            // 맡긴다. 그 문단의 자리는 어림이라 거기서부터 실제 높이를 더하면 캐럿 줄의 자리가 틀리고(실측: 화면에 보이는 캐럿 줄이 −295 … −1,900 pt 에 있는
+            // 것으로 나왔다), 그 사이의 문단을 배치하는 것만으로 화면의 글이 그만큼 밀린다 (편집 뒤의 패스라 스크롤 닻이 쉰다 — 실측: 키 하나에 192 … 2,052 pt).
+            // 이 자리에서는 레이아웃 매니저에 조각을 묻지도 않는다 — 편집 트랜잭션 안의 읽기 열거도 좌표를 옮겼다(실측: 같은 시나리오에서 450 … 3,084 pt).
+            // 문서를 통째로 바꾼 편집은 예외다: 화면의 배치가 남아 있지 않아 밀릴 글이 없고, 아래의 측정이 편집 시작의 문단 64개를 배치해 두어야(재지는 못하고
+            // tooFar 로 끝난다) AppKit 이 캐럿으로 데려간 자리가 문서 끝 너머가 되지 않는다 — 배치된 조각이 하나도 없으면 높이 어림이 없어 다음 배치 패스가
+            // 문서를 처음부터 끝까지 배치한다 (실측: 1.3 MB 전체 주석 토글 뒤의 패스 1.1 s, 그 상태에서의 다음 큰 편집은 +0.9 s)
+            guard editRevealWholesale || editStartsOnScreen(start, in: lm) else { return false }
+            var tooFar = false
+            first = caretLineAfterEdit(head: head, editStart: start, in: lm, tooFar: &tooFar)
+            if tooFar {
+                // 캐럿이 편집 시작에서 수십 문단 넘게 떨어졌다 — 큰 편집은 AppKit 이 데려간다 (caretLineAfterEdit 의 주석). 그런데 AppKit 은 그 사이 문단들의
+                // 추정 높이로 잡은 자리로 가므로, 뒤따르는 배치가 실측으로 바꾸면 캐럿 줄이 화면 밖에 남을 수 있다 (실측: 문서 끝을 본 적이 있는 1.3 MB 메모의
+                // 가운데에 600줄을 붙여넣자 캐럿이 화면 아래 182 pt). 다음 턴에 캐럿이 정말 보이는지 한 번 본다. 문서를 통째로 바꾼 편집은 빼 둔다 — 거기서 다시 재면 배치가 문서 전체를 훑는다 (실측: 전체 주석 토글 1.5~2.2 s)
+                if !editRevealWholesale, selectedRange().length == 0, multi == nil { revealCaretAfterRelayout() }
+                return false
+            }
+            if first == nil { lm.textViewportLayoutController.layoutViewport() }
+        }
         // 위쪽의 아직 배치하지 않은 문단으로 올라갈 때, 캐럿 줄을 재는 질의는 그 문단을 배치하지만 조각의 자리는 추정 높이로 잡아 둔 채다(다음 뷰포트 배치에서야
         // 아래 조각들과 맞물린다 — 실측: 두 줄로 추정된 한 줄 문단의 캐럿 줄이 실제보다 25.9 pt 위로 나왔다). 그래서 밀고 → 뷰포트를 배치하고 → 다시 재서
         // 캐럿 줄이 넘어온 쪽 가장자리에 정확히 붙을 때까지 맞춘다 (보통 한 번, 추정이 틀렸으면 두 번)
         var edge = 0   // -1: 위 가장자리로 넘어왔다, 1: 아래
         for pass in 0..<3 {
-            guard let line = caretRect(at: head) else { return pass > 0 }   // 거대 문단
-            let top = clip.bounds.minY
+            guard let line = (pass == 0 ? first : nil) ?? caretRect(at: head) else { return pass > 0 }   // 거대 문단
+            // 보이는 높이는 패스마다 읽는다: 줄바꿈 끔에서는 아래의 뷰포트 배치가 화면보다 넓은 줄을 처음 만나 텍스트 뷰를 넓히면 가로 막대가 생기고(항상 보이는
+            // 스크롤 막대) 그만큼 낮아진다 — 처음 높이로 맞추면 캐럿 줄이 새 가로 막대 밑에 잘린다 (실측: 382 → 365 pt, 캐럿 줄 17 pt 가 가려짐)
+            let top = clip.bounds.minY, height = clip.bounds.height
             if pass == 0 {
                 edge = line.minY < top - 0.25 ? -1 : (line.maxY > top + height + 0.25 ? 1 : 0)
                 if edge == 0 { return true }   // 이미 다 보인다
+                // 문서의 마지막 줄에서의 입력: 문서가 자라는 중이다 — AppKit 이 끝까지 내린다 (가운데로 갈 자리가 없어 튀지 않는다)
+                if afterEdit, edge > 0, line.maxY >= bounds.height - textContainerInset.height - 4 { return false }
             }
             var y = edge < 0 ? line.minY : line.maxY - height
             if edge < 0, line.minY <= textContainerOrigin.y + 0.5 { y = 0 }   // 첫 줄이면 위 여백까지
             if edge > 0, line.maxY >= bounds.height - textContainerInset.height - 4 { y = bounds.height - height }   // 마지막 줄이면 아래 여백까지
-            if pass == 0, abs(y - top) > height { return false }   // 한 화면 넘게 떨어진 곳(휠로 멀리 보던 중의 방향키)은 AppKit 이 데려간다
+            if pass == 0, abs(y - top) > height { return false }   // 한 화면 넘게 떨어진 곳(휠로 멀리 보던 중의 방향키·입력, 큰 붙여넣기)은 AppKit 이 데려간다
             let legal = clip.constrainBoundsRect(NSRect(x: clip.bounds.minX, y: y, width: clip.bounds.width, height: height))
             guard abs(legal.minY - top) > 0.25 else { break }
             clip.scroll(to: legal.origin)
@@ -245,6 +427,25 @@ final class HyperTextView: NSTextView {
             lm.textViewportLayoutController.layoutViewport()
         }
         return true
+    }
+
+    /// 매크로 재생이 미뤄 둔 '캐럿 보이기'를 한 번에 한다 (MacroRecorder.play 가 런루프에 양보하기 전과 재생이 끝났을 때 부른다).
+    /// 재생은 한 턴 안에서 편집과 캐럿 이동을 되풀이한다. 그 사이에는 배치 패스가 없어 앞서 고친 문단들의 높이가 어림으로 돌아가 있고, 캐럿 줄의 자리가
+    /// 실제보다 아래로 재어진다 (실측: 여덟 줄을 고친 뒤 +192 pt). 걸음마다 따라가면 그 자리로 화면을 밀고 뷰포트를 배치한 뒤 다시 재서 되돌린다 —
+    /// 10단계 매크로 100회에 그런 걸음이 13~16번(뷰포트 배치 두 번씩), 방향키의 한 줄 밀기가 86번: 재생 844 ms, 걸음마다 따르지 않으면 645 ms.
+    /// 여기서는 뷰포트를 먼저 배치해 자리를 실측으로 바꾼 뒤, 방향키와 같은 규칙으로 캐럿 줄이 들어올 만큼만 민다 (한 화면 넘게 갔으면 AppKit 이 데려간다)
+    func revealCaretAfterReplaySteps() {
+        guard let lm = textLayoutManager else { return }
+        let replaying = isReplayingMacro
+        isReplayingMacro = false
+        defer { isReplayingMacro = replaying }
+        enterDocumentBeforeViewportLayout()   // 문서를 통째로 바꾼 걸음이 있었으면 스크롤 위치가 문서 끝 너머일 수 있다 — 거기서의 배치는 문서 전체를 훑는다
+        lm.textViewportLayoutController.layoutViewport()
+        let sel = selectedRange()
+        guard sel.length == 0 else { scrollRangeToVisible(sel); return }   // 선택으로 끝났으면 AppKit 이 그 범위를 보인다
+        caretStepDepth += 1
+        defer { caretStepDepth -= 1 }
+        scrollRangeToVisible(sel)
     }
 
     // MARK: - 배치 패스가 화면의 글을 옮기지 않게 (스크롤 닻)
@@ -942,6 +1143,11 @@ final class HyperTextView: NSTextView {
     override func didChangeText() {
         super.didChangeText()
         restartBlink()   // appearance
+        if !siblingPlaces.isEmpty {   // 문서를 통째로 바꿨다: 분할 보기의 다른 편집기를 보던 줄로 되돌린다 (captureReadingPlace)
+            let places = siblingPlaces
+            siblingPlaces = []
+            for p in places { p.view.settleReadingPlace(p.place) }
+        }
     }
 
     var charWidth: CGFloat {
@@ -1222,6 +1428,7 @@ final class HyperTextView: NSTextView {
     /// 않고 화면 아래 가장자리가 끝에서 두 화면 위에 오게 한다 — 부르는 쪽(restoreReadingAnchor)이 거기서 뷰포트를 배치한 뒤 닻으로 다시 맞춘다
     @discardableResult
     private func enterDocumentBeforeViewportLayout() -> Bool {
+        contentReplacedBeforeLayout = false
         guard let sv = enclosingScrollView, sv.documentView === self, let lm = textLayoutManager else { return false }
         var end: CGFloat?
         lm.enumerateTextLayoutFragments(from: lm.documentRange.endLocation, options: [.reverse, .ensuresLayout]) { f in end = f.layoutFragmentFrame.maxY; return false }
@@ -1230,6 +1437,28 @@ final class HyperTextView: NSTextView {
         clip.scroll(to: NSPoint(x: clip.bounds.minX, y: max(0, end + textContainerOrigin.y - 3 * clip.bounds.height)))
         sv.reflectScrolledClipView(clip)
         return true
+    }
+
+    /// 내용이 통째로 바뀐 뒤 아직 배치 패스가 돌지 않았다 (같은 파일을 다시 읽었다 — 밖에서 바뀐 파일, 저장본으로 되돌리기, 열려 있는 파일을 다시 열기).
+    /// 다른 문서로 바뀔 때와 달리 스크롤 위치를 처음으로 돌리지 않으므로, 내용이 짧아졌으면 그 위치가 새 문서의 끝 너머다. 다시 읽기의 첫 배치 패스는
+    /// 보던 곳을 되살리기(EditorView.handleReload) 전에 돈다 — 줄 인덱스 발행을 받은 첫 줄 발행이 밀린 배치를 끝낸다 — 그 패스 앞에서 한 번 본다 (layout).
+    /// 실측: 24,002줄 JSON 의 끝을 보는 중에 파일이 12,002줄로 다시 쓰이자 다시 읽기 16.2 s(문서 전체 배치, 조각 표 +11,901), 그 뒤 JSON 정리 3.2 s →
+    /// 0.27 s / 0.15 s. 문서 처음에 있으면(다른 문서로 바뀔 때도 그렇다) 볼 것이 없다. 덧붙여진 파일은 끝 너머가 아니라 자리가 그대로다
+    private var contentReplacedBeforeLayout = false
+
+    /// 다른 문서로 바뀌기 직전(탭 전환·파일 열기 — Coordinator 가 문서의 주소가 바뀔 때 부른다)에 스크롤 위치를 문서 처음으로 돌린다. 내용은 같은 저장소에서
+    /// 통째로 바뀌는데 스크롤 위치는 앞 문서의 것이라, 새 문서가 더 짧으면 문서 끝 너머다 — 보던 곳을 되살리기(EditorView.restoreViewStateIfNeeded) 전에 배치
+    /// 패스가 한 번 돌면 그 자리에서 뷰포트를 배치하고, TextKit 2 는 문서를 처음부터 끝까지 배치한다 (enterDocumentBeforeViewportLayout 의 주석과 같은 일이
+    /// 문서 전환에서 일어난다. 실측: 24,000줄 문서의 끝을 보다가 12,002줄 JSON 을 열자 그 패스 한 번이 17.5 s — 문단마다 얹는 구문 색 렌더링 속성의
+    /// 런 배열이 문단 수의 제곱으로 든다. 그 뒤로는 문서 전체에 렌더링 속성이 깔려 있어 큰 편집마다 맞춤법 검사기가 그것을 훑는다: JSON 정리 150 ms → 3.1 s).
+    /// 문서 처음은 어느 내용에서나 문서 안이다. 밖에서 바뀐 같은 파일을 다시 읽을 때는 부르지 않는다 — 그때의 위치는 대개 새 내용에서도 맞고, 덧붙여지는 로그를
+    /// 읽는 중에 다시 읽을 때마다 화면이 문서 처음을 스치면 안 된다
+    func leaveScrollPositionForNewDocument() {
+        guard let sv = enclosingScrollView, sv.documentView === self else { return }
+        let clip = sv.contentView
+        guard clip.bounds.minY > 0.5 else { return }
+        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: 0))
+        sv.reflectScrolledClipView(clip)
     }
 
     /// 끝에 붙인 뒤에도 이어지는 배치가 문서 높이를 조금씩 늘린다(추정 → 실측, 거터 폭이 바뀌며 한 번 더 감김) — 잠깐 동안(다음 턴, 그리고 60 ms 간격으로
@@ -1274,6 +1503,48 @@ final class HyperTextView: NSTextView {
     private var siblingViews: [HyperTextView] {
         (textContentStorage?.textLayoutManagers ?? []).compactMap { $0.textContainer?.textView as? HyperTextView }.filter { $0 !== self }
     }
+
+    // 분할 보기에서 한 편집기가 문서를 통째로 바꾸면(모두 선택 + 도구·붙여넣기, 그 되돌리기) 다른 편집기는 스크롤 좌표는 그대로인데 높이 어림이 통째로 바뀌어
+    // 다른 줄을 보게 된다 (실측: 24,000줄 문서의 12,002번 줄을 보던 편집기가 11,541번 줄로, 끝을 보던 편집기는 끝에서 2,275줄 위로). 문자 오프셋은 그런 편집을 넘기지 못하므로 보던 곳을 줄(문단 번호)로 잡아 두었다가 같은 줄을 같은 높이에
+    // 되돌린다 — 줄 수를 지키는 도구(주석·들여쓰기·대소문자·공백 정리)에서는 같은 줄이고, 문서 끝을 보고 있었으면 끝에 붙인다. 되돌리는 길(restoreReadingAnchor)이
+    // 문서 끝 너머인지도 먼저 본다 — 그 편집기에는 다시 읽기처럼 뒤에서 자리를 되살려 줄 것이 따로 없다
+    private struct ReadingPlace { let anchor: ReadingAnchor; let paragraph: Int; let column: Int }
+
+    private func captureReadingPlace() -> ReadingPlace? {
+        guard window != nil, let anchor = captureReadingAnchor() else { return nil }
+        let ns = string as NSString
+        let offset = min(anchor.offset, ns.length)
+        let start = ns.paragraphRange(for: NSRange(location: offset, length: 0)).location
+        return ReadingPlace(anchor: anchor, paragraph: LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: start)), column: offset - start)
+    }
+
+    private func restoreReadingPlace(_ place: ReadingPlace) {
+        let ns = string as NSString
+        guard window != nil, ns.length > 0 else { return }
+        let index = LineIndex(nsString: ns)
+        let line = index.range(ofLine: min(place.paragraph + 1, index.lineCount))
+        let a = place.anchor
+        restoreReadingAnchor(.init(offset: min(line.location + min(place.column, line.length), ns.length), delta: a.delta, lineHeight: a.lineHeight,
+                                   pinnedToEnd: a.pinnedToEnd, fraction: a.fraction))
+    }
+
+    /// 보던 곳으로 되돌리고 다음 턴에 한 번 더 맞춘다. 통째 편집 뒤에는 구문 색 재검증이 다음 턴에 문서 전체의 배치를 한 번 더 무효화할 수 있고
+    /// (EditorView.flushParagraphRevalidation — 주 편집기의 뷰포트가 아직 배치되기 전이면 범위를 줄이지 못한다) 그 뒤의 배치 패스는 방금 맞춘 자리에서
+    /// 다시 어림으로 돈다 (실측: 끝에 붙여 둔 편집기가 그 패스에서 문서 전체를 배치 — 조각 +23,895, 가라앉기까지 1.8 s)
+    private func settleReadingPlace(_ place: ReadingPlace) {
+        restoreReadingPlace(place)
+        let length = textStorage?.length
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.textStorage?.length == length else { return }   // 그 사이에 또 편집됐으면 줄 번호가 낡았다
+            self.restoreReadingPlace(place)
+        }
+    }
+
+    /// 이 뷰가 문서를 통째로 바꾸기 직전에 잡아 둔 다른 편집기들의 보던 곳 (trackedEdits 가 잡고 didChangeText 가 되돌린다)
+    private var siblingPlaces: [(view: HyperTextView, place: ReadingPlace)] = []
+    /// 되돌리기·다시 실행 직전의 이 뷰의 보던 곳 (분할 보기에서만 잡는다). 그것이 문서를 통째로 바꿨고 이 뷰가 캐럿을 따라가지 않았으면 되돌린다
+    private var placeBeforeUndo: ReadingPlace?
+    private var undoReplacedDocument = false
 
     struct ReflowToken { fileprivate let views: [HyperTextView]; fileprivate let anchors: [ReadingAnchor?] }
 
@@ -1427,8 +1698,13 @@ final class HyperTextView: NSTextView {
         expectingTrackedEdit = true
         let storageID = textStorage.map { ObjectIdentifier($0) }
         if let id = storageID { Self.storagesWithTrackedEdit.insert(id) }
+        if let first = edits.map(\.0.location).filter({ $0 != NSNotFound }).min() { editRevealStart = min(editRevealStart ?? first, first) }   // revealCaretStep(afterEdit:)
+        if let length = textStorage?.length, edits.contains(where: { $0.0.location != NSNotFound && $0.0.length > 0 && $0.0.length * 2 >= length }) { editRevealWholesale = true }
+        if editRevealWholesale, siblingPlaces.isEmpty { siblingPlaces = siblingViews.compactMap { view in view.captureReadingPlace().map { (view, $0) } } }   // 분할 보기의 다른 편집기
         DispatchQueue.main.async { [weak self] in   // 편집이 취소돼 저장소 알림이 안 오면 다음 턴에 해제
             self?.expectingTrackedEdit = false
+            self?.siblingPlaces = []
+            self?.editRevealStart = nil; self?.editRevealWholesale = false
             if let id = storageID { Self.storagesWithTrackedEdit.remove(id) }
         }
         onTextWillChange?(edits, false)   // fold
@@ -1485,6 +1761,8 @@ final class HyperTextView: NSTextView {
         guard (n.object as? UndoManager) === undoManager else { return }
         undoInProgress = true
         selectionMovedByUndo = false
+        undoReplacedDocument = false
+        placeBeforeUndo = siblingViews.isEmpty ? nil : captureReadingPlace()   // 분할 보기: 통째로 되돌리면 보던 줄을 잃는다 (undoDidChange)
         guard onLinesWillChange != nil, needsLineTracking?() ?? true else { undoNewlineCount = nil; return }
         let ns = string as NSString
         undoNewlineCount = LineIndex.countNewlines(in: ns, range: NSRange(location: 0, length: ns.length))
@@ -1498,14 +1776,20 @@ final class HyperTextView: NSTextView {
         // 되돌린 자리를 보여 준다. AppKit(TextKit 2)의 undo/redo 는 선택만 그 자리로 옮기고 스크롤하지 않는다 — 화면 밖의 편집(큰 붙여넣기, 모두 선택 뒤 입력,
         // 스크롤해 둔 채 ⌘Z)을 되돌리면 캐럿은 그 자리로 갔는데 화면은 상관없는 곳을 보여 줬다. 분할 보기에서는 포커스를 가진 뷰만 따라간다
         // (다른 뷰의 선택도 편집에 맞춰 옮겨지지만 그 뷰가 보던 자리는 그대로 둔다); 포커스가 편집기 밖(찾기 입력창 + 리본의 되돌리기)이면 선택이 옮겨진 뷰가 따라간다
+        var followed = false
         if selectionMovedByUndo {
             selectionMovedByUndo = false
             let responder = window?.firstResponder
             if responder === self || !(responder is HyperTextView) {
+                followed = true
                 scrollRangeToVisible(selectedRange())
                 revealCaretAfterRelayout()   // 통째로 되살아난 텍스트는 아직 배치되지 않아 위 스크롤이 추정 위치로 간다
             }
         }
+        // 분할 보기의 다른 편집기: 문서가 통째로 되돌려졌으면 보던 줄로 되돌린다 (captureReadingPlace)
+        if undoReplacedDocument, !followed, let place = placeBeforeUndo { settleReadingPlace(place) }
+        placeBeforeUndo = nil
+        undoReplacedDocument = false
     }
 
     /// shouldChangeText 를 거치지 않은 문자 편집(undo/redo)을 사후에 통지한다. editedRange 는 편집 후 범위, changeInLength 로 편집 전 범위를 되짚는다.
@@ -1515,6 +1799,13 @@ final class HyperTextView: NSTextView {
         blockLayoutAnchor(dropRecord: true)   // 편집 뒤의 배치는 글을 옮긴다 (스크롤 닻)
         guard ts.editedMask.contains(.editedCharacters) else { return }
         if expectingTrackedEdit { expectingTrackedEdit = false; return }
+        // 내용이 통째로 바뀌었다 (탭 전환·파일 열기·다시 읽기): 앞 문서에서 제스처 중에 요청된 '캐럿 보이기'는 이 문서의 것이 아니다 (revealAfterLiveScroll)
+        if ts.editedRange.location == 0, ts.editedRange.length == ts.length {
+            if undoInProgress { undoReplacedDocument = true } else { revealAfterLiveScroll = false }
+            // layout 이 문서 끝 너머인지 본다. 분할 보기의 다른 편집기가 한 통째 편집과 통째 되돌리기도 여기로 온다 — 이 뷰가 스크롤해 둔 자리가 줄어든
+            // 문서의 끝 너머면 그 자리의 배치가 문서 전체를 훑는다 (실측: 끝을 보던 다른 편집기가 통째 되돌리기 뒤 조각 23,878개를 배치 — 되돌리기 5.6 s → 7.2 s)
+            if let sv = enclosingScrollView, sv.documentView === self, sv.contentView.bounds.minY > 0.5 { contentReplacedBeforeLayout = true }
+        }
         // search: 추적되지 않은 문자 편집(undo/redo·파일 열기의 전체 교체·다른 뷰의 편집)만 저장소 범위로 옮긴다 — 입력은 trackedEdits 가 정확히 옮겼다
         if !matchHighlights.isEmpty, ts.editedRange.location != NSNotFound { shiftMatchHighlights(edited: ts.editedRange, delta: ts.changeInLength) }
         // 추적되지 않은 편집은 undo/redo 이거나 프로그램적 전체 교체(파일 열기·다시 읽기)다. 접힘이 없고 undo 도 아니면 할 일이 없다 —
@@ -1647,6 +1938,7 @@ final class HyperTextView: NSTextView {
 
     override func insertText(_ string: Any, replacementRange: NSRange) {
         macroRecordInsert(string, replacementRange: replacementRange)   // macro
+        editRevealDepth += 1; defer { editRevealDepth -= 1 }   // 입력이 캐럿을 가장자리 밖으로 밀면 넘은 만큼만 스크롤한다 (revealCaretStep)
         guard let m = multi, m.ranges.count > 1 || m.isColumn else {
             super.insertText(string, replacementRange: replacementRange); return
         }
@@ -1667,11 +1959,15 @@ final class HyperTextView: NSTextView {
     /// 한글 등 조합 입력(IME)은 머리 캐럿에서만 이뤄진다 — 멀티 캐럿·열 블록은 명시적으로 머리 위치로 접는다
     override func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
         if multi != nil { collapseToHead() }
+        editRevealDepth += 1; defer { editRevealDepth -= 1 }   // 조합 중인 글자가 줄 끝을 넘겨 감길 때도 넘은 만큼만 (revealCaretStep)
         super.setMarkedText(string, selectedRange: selectedRange, replacementRange: replacementRange)
     }
 
     override func doCommand(by selector: Selector) {
         macroRecordCommand(selector); macroSuppressDepth += 1; defer { macroSuppressDepth -= 1 }   // macro
+        let editCommand = Self.isEditCommand(selector)   // Enter·Tab·지우기: 캐럿이 가장자리를 넘으면 넘은 만큼만 민다 (revealCaretStep)
+        if editCommand { editRevealDepth += 1 }
+        defer { if editCommand { editRevealDepth -= 1 } }
         let hasMulti = multi != nil
         let columnish = columnModeEnabled || multi?.isColumn == true
         // fold: ↑/↓ 가 접힌 줄에 닿으면 접힌 구간을 건너뛴다 (그 밖의 이동은 선택 변경 감시가 자동으로 펼친다)

@@ -1277,7 +1277,12 @@ extension RealUse {
                 let lines = LineIndex(nsString: ctx.text).lineCount
                 let wantWide = lines >= 10_000
                 if wantWide != (g.thickness > narrow + 0.5) { ctx.issue("gutter", "\(why): \(lines) lines but the gutter is \(Int(g.thickness)) pt wide (4-digit width is \(Int(narrow)) pt)") }
-                if abs(g.frame.width - g.thickness) > 0.5 { ctx.issue("gutter", "\(why): gutter frame is \(Int(g.frame.width)) pt wide but it needs \(Int(g.thickness)) pt") }
+                if abs(g.frame.width - g.thickness) > 0.5 {
+                    // 폭(thickness)은 바뀌었는데 틀이 옛 폭이다: 컨테이너의 배치가 예약돼 있는지, 한 번 더 배치하면 따라오는지 함께 적는다 (한 패스 늦은 것과 빠진 것을 가른다)
+                    let width = g.frame.width, pending = g.superview?.needsLayout ?? false
+                    ctx.window.layoutIfNeeded()
+                    ctx.issue("gutter", "\(why): gutter frame is \(Int(width)) pt wide but it needs \(Int(g.thickness)) pt (container layout pending: \(pending); after one more layout pass the frame is \(Int(g.frame.width)) pt)")
+                }
                 if abs(ctx.scroll.frame.minX - g.frame.maxX) > 0.5 { ctx.issue("gutter", "\(why): the editor starts at x \(Int(ctx.scroll.frame.minX)) but the gutter ends at \(Int(g.frame.maxX))") }
             }
             ctx.at("up to 10,000 lines")
@@ -1308,6 +1313,20 @@ extension RealUse {
             expect.deleteCharacters(in: NSRange(location: expect.length - 3, length: 3))
             ctx.checkTyped(expect, caret: expect.length, "9,999 lines, 0.5 s after typing stopped"); ctx.checkCaretLineWhole("9,999 lines, 0.5 s after typing stopped"); gutterFits("9,999 lines, 0.5 s after typing stopped")
             ctx.snap("paused-under")
+            // 줄 수의 자릿수가 바뀌는 편집 바로 뒤, 그리기 전: 거터의 폭이 이미 새 자릿수여야 하고 이어지는 배치 패스 하나로 틀이 따라와야 한다. 폭이 그릴 때에야
+            // 바뀌면 컨테이너의 배치는 그다음 패스다 — 보이는 창에서는 한 프레임 늦고, 가려진 창(표시 주기가 없다)에서는 누가 배치를 시킬 때까지 틀이 옛 폭으로 남는다
+            // (실측: 가려진 창에서 "틀 69 pt, 폭 62 pt"). 창이 보이는지에 기대지 않게 키를 보낸 그 턴 안에서 본다
+            ctx.at("the gutter follows the line count with the edit")
+            for (command, grows) in [(#selector(NSResponder.insertNewline(_:)), true), (#selector(NSResponder.deleteBackward(_:)), false)] {
+                ctx.tv.doCommand(by: command)
+                let lines = LineIndex(nsString: ctx.text).lineCount, wide = g.thickness > narrow + 0.5
+                if wide != (lines >= 10_000) { ctx.issue("gutter", "right after the edit that makes \(lines) lines, before anything is drawn, the gutter is \(Int(g.thickness)) pt wide (4-digit width is \(Int(narrow)) pt)") }
+                ctx.window.layoutIfNeeded()
+                if abs(g.frame.width - g.thickness) > 0.5 { ctx.issue("gutter", "\(lines) lines: after the layout pass that follows the edit the gutter frame is \(Int(g.frame.width)) pt wide but it needs \(Int(g.thickness)) pt") }
+                await ctx.pumpEvent(); await ctx.quiesce()
+                if grows { expect.append("\n") } else { expect.deleteCharacters(in: NSRange(location: expect.length - 1, length: 1)) }
+                ctx.checkTyped(expect, caret: expect.length, "\(lines) lines, the gutter width with the edit"); gutterFits("\(lines) lines, the gutter width with the edit")
+            }
             ctx.at("cross in the middle")
             // 가운데(긴 줄 근처)에서 넘는다 — 본문이 좁아지며 긴 줄이 다시 감긴다
             ctx.model.jump(toLine: 5_000); await ctx.settle(500)

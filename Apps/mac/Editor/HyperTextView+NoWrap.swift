@@ -128,12 +128,28 @@ extension HyperTextView {
     /// AppKit 이 보이게 스크롤한 뒤에도 캐럿이 보이는 열 밖에 있으면 캐럿이 들어올 만큼만 가로로 민다. AppKit 은 왼쪽으로 한 글자씩 가다 가장자리를 넘는 걸음에서
     /// 한 번 늦는다 (실측: 캐럿이 왼쪽 가장자리 밖 6.3 pt 에 가려진 채 한 걸음을 보내고, 다음 걸음에 반 화면을 민다)
     func revealNoWrapCaretColumn(_ range: NSRange) {
-        guard isNoWrap, range.length == 0, multi == nil, let sv = enclosingScrollView, sv.documentView === self, let caret = caretRect(at: range.location) else { return }
+        guard range.length == 0, multi == nil else { return }
+        revealNoWrapColumn(at: range.location)
+    }
+
+    /// `offset` 의 캐럿이 보이는 열에 오게 가로로 민다 (세로 위치는 그대로): 왼쪽 가장자리를 넘었으면 넘은 만큼, 오른쪽이면 보이는 폭의 가운데로.
+    /// 그 자리가 지금의 폭 밖이면 먼저 넓힌다.
+    /// 캐럿 줄이 들어올 만큼만 세로로 직접 민 걸음(HyperTextView.revealCaretStep)은 AppKit 의 '보이게 스크롤'을 부르지 않으므로 가로를 여기서 맞춘다 —
+    /// 선택을 늘리는 중이면 움직인 쪽 끝, 멀티 캐럿이면 머리 캐럿의 자리로
+    func revealNoWrapColumn(at offset: Int) {
+        guard isNoWrap, let sv = enclosingScrollView, sv.documentView === self, let caret = caretRect(at: offset) else { return }
+        noteNoWrapContent(maxX: caret.maxX - textContainerOrigin.x)
         let clip = sv.contentView
         let margin = (textContainer?.lineFragmentPadding ?? 0) + 2   // 캐럿이 가장자리에 붙지 않게
         var x = clip.bounds.minX
-        if caret.minX < clip.bounds.minX { x = caret.minX - margin } else if caret.maxX > clip.bounds.maxX { x = caret.maxX + margin - clip.bounds.width }
-        if x < textContainerOrigin.x + margin { x = 0 }   // 줄 머리 근처면 왼쪽 여백까지
+        if caret.minX < clip.bounds.minX {
+            x = caret.minX - margin
+            if x < textContainerOrigin.x + margin { x = 0 }   // 줄 머리 근처면 왼쪽 여백까지
+        } else if caret.maxX > clip.bounds.maxX {
+            // 오른쪽 가장자리를 넘으면 AppKit 이 하던 대로 캐럿을 보이는 폭의 가운데로 데려간다. 넘은 만큼만(한 글자씩) 밀면 긴 줄의 끝에서 치는 동안 키마다
+            // 화면 전체가 옆으로 밀려 다시 그려진다 (실측: 긴 문단이 많은 문서에서 키당 14.1 → 17.5~18.2 ms)
+            x = caret.maxX - clip.bounds.width / 2
+        }
         x = min(max(0, x), max(0, frame.width - clip.bounds.width))
         guard abs(x - clip.bounds.minX) > 0.5 else { return }
         clip.scroll(to: NSPoint(x: x, y: clip.bounds.minY))
