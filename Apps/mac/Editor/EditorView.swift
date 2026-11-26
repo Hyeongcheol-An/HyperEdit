@@ -23,7 +23,8 @@ struct EditorView: NSViewRepresentable {
     func makeNSView(context: Context) -> EditorContainerView {
         let c = context.coordinator
         Perf.log("EditorView.makeNSView role=\(role)")   // split: 분할 토글이 주 편집기를 다시 만들지 않는지 --debug-perf 로 확인
-        let scroll = NSScrollView()
+        let scroll = EditorScrollView()   // 세로 손잡이를 줄 기준으로 놓는다 (EditorScrollView.swift)
+        scroll.lineIndex = { [weak c] in c?.document.liveLineIndex }
         scroll.hasVerticalScroller = true
         scroll.hasHorizontalScroller = false
         scroll.autohidesScrollers = true
@@ -310,6 +311,9 @@ struct EditorView: NSViewRepresentable {
             }
         }
 
+        /// 지금의 live scroll 이 위상이 있는 트랙패드 제스처인가 (시작 알림에서 정하고 끝 알림에서 푼다 — attach 의 구독)
+        private var liveScrollIsGesture = false
+
         func attach(container: EditorContainerView, scrollView: NSScrollView, textView: HyperTextView, gutter: GutterView) {
             self.container = container
             self.scrollView = scrollView
@@ -327,13 +331,23 @@ struct EditorView: NSViewRepresentable {
             for name in [NSScrollView.willStartLiveScrollNotification, NSScrollView.didLiveScrollNotification, NSScrollView.didEndLiveScrollNotification] {
                 NotificationCenter.default.publisher(for: name, object: scrollView)
                     .sink { [weak self] n in
-                        guard let tv = self?.textView else { return }
-                        // 끝을 넘겨 당길 수 있는 것은 위상이 있는 트랙패드 제스처(와 그 관성)뿐이다 — 딸깍 휠·스크롤 막대 끌기도 live scroll 알림을 내지만 탄성이 없다
-                        let e = NSApp.currentEvent
-                        let gesture = e?.type == .scrollWheel && !((e?.phase.isEmpty ?? true) && (e?.momentumPhase.isEmpty ?? true))
-                        let ended = n.name == NSScrollView.didEndLiveScrollNotification
-                        tv.liveScrollTick = (ended || !gesture) ? 0 : CFAbsoluteTimeGetCurrent()
-                        if ended { tv.constrainScrollToDocumentEnd() }   // 제스처가 끝을 넘긴 채 끝났으면 이제 되돌린다
+                        guard let self, let tv = self.textView else { return }
+                        // 끝을 넘겨 당길 수 있는 것은 위상이 있는 트랙패드 제스처(와 그 관성)뿐이다 — 딸깍 휠·스크롤 막대 끌기도 live scroll 알림을 내지만 탄성이 없다.
+                        // 제스처인지는 **시작 알림에서만** 가린다: 그 알림은 began 이벤트를 처리하는 중에 오지만(currentEvent 가 그 이벤트다), 뒤따르는 움직임은
+                        // 반응형 스크롤이 화면 주사율마다 main 스레드에 동기화하는 블록에서 와서 currentEvent 가 없다(macOS 27 실측). 알림마다 다시 가리면 첫 움직임에서
+                        // '제스처 아님'이 되어, 끝을 넘겨 당기는 내내 텍스트 뷰가 위치를 되돌린다 — 탄성과 싸워 프레임마다 16~82 pt 씩 거꾸로 튀고, 손을 뗀 뒤
+                        // 문서 끝에서 5~71 pt 못 미친 곳(맨 위에서는 5~19 pt 아래)에 멈췄다 (실사용 하네스 scroll-trackpad-ends, 2026-11-25)
+                        switch n.name {
+                        case NSScrollView.willStartLiveScrollNotification:
+                            let e = NSApp.currentEvent
+                            self.liveScrollIsGesture = e?.type == .scrollWheel && !((e?.phase.isEmpty ?? true) && (e?.momentumPhase.isEmpty ?? true))
+                            tv.liveScrollWillStart(gesture: self.liveScrollIsGesture)   // 앞선 제스처에서 남은 '캐럿 보이기' 요청도 여기서 버린다
+                        case NSScrollView.didLiveScrollNotification:
+                            if self.liveScrollIsGesture { tv.liveScrollTick = CFAbsoluteTimeGetCurrent() }
+                        default:
+                            self.liveScrollIsGesture = false
+                            tv.liveScrollDidEnd()   // 제스처가 끝을 넘긴 채 끝났으면 이제 되돌린다 · 관성 중에 친 글자의 캐럿이 밀려났으면 데려온다
+                        }
                     }
                     .store(in: &cancellables)
             }
@@ -399,6 +413,8 @@ struct EditorView: NSViewRepresentable {
                     self.saveStateTask?.cancel()
                     self.session.clearUndo()
                     self.textView?.endSnippetSession()
+                    self.textView?.resetNoWrapWidth()   // 줄바꿈 끔: 앞 파일에서 잰 폭을 버린다 (새 내용은 이 발행 바로 뒤에 들어온다)
+                    self.textView?.leaveScrollPositionForNewDocument()   // 앞 파일의 스크롤 위치는 새 내용의 끝 너머일 수 있다 — 되살리기 전의 배치가 문서 전체를 훑지 않게
                     self.restored = false
                     self.lastTopAnchor = nil
                     self.lastCaretRect = nil
@@ -423,6 +439,7 @@ struct EditorView: NSViewRepresentable {
 
         func rebind(document newDoc: MemoDocument) {
             saveViewStateNow()
+            textView?.resetNoWrapWidth()   // 줄바꿈 끔: 앞 문서에서 잰 폭을 버린다
             document = newDoc
             Perf.measure("  rebind.swapStorage") { session.bind(textStorage: newDoc.textStorage) }   // 두 번째 편집기는 이미 연결돼 있어 건너뛴다
             session.clearUndo()
@@ -444,6 +461,7 @@ struct EditorView: NSViewRepresentable {
             guard let tv = textView, !DebugFlags.noApply else { return }
             let changed = force || appliedThemeID != theme.id || appliedFont != font
             guard changed else { return }
+            let fontBefore = appliedFont
             appliedThemeID = theme.id
             appliedFont = font
             lastTheme = theme
@@ -452,6 +470,15 @@ struct EditorView: NSViewRepresentable {
             let readingViews = force ? [] : session.coordinators.compactMap(\.textView)
             let readingAnchors = readingViews.map { $0.captureReadingAnchor() }
             defer { for (view, anchor) in zip(readingViews, readingAnchors) { if let anchor { view.restoreReadingAnchor(anchor) } } }
+            // 줄바꿈 끔: 글꼴이 바뀌면 모든 줄의 폭이 달라진다 — 잰 폭과 가로 위치를 글자 폭의 비율만큼 고친다 (HyperTextView.rescaleNoWrapWidth). 보던 곳을 잡은 뒤에 한다:
+            // 폭이 편집기보다 넓어지면 가로 막대가 생기며 보이는 높이가 줄어, 그 뒤에 잡으면 '문서 끝을 보고 있었다'를 놓친다.
+            // 세션의 모든 편집기를 주 편집기가 한 번에 고친다 — 새 글꼴을 입히는(모든 편집기를 다시 배치하게 하는) 바로 앞에서. 편집기마다 자기 apply 에서 고치면 분할
+            // 보기에서 어긋난다: 보조 편집기의 apply 가 먼저 불리면 비율로 고친 폭을 그 apply 의 '보던 곳 되돌리기'가 옛 글꼴의 배치로 다시 넓혀 놓고, 주 편집기가
+            // 먼저면 새 글꼴로 이미 넓어진 폭에 한 번 더 곱한다 (실측: 글자를 줄였다 키우자 보조 편집기에 775 … 989 pt 의 빈 가로 스크롤 범위)
+            if role == .primary, let old = fontBefore, old != font {
+                let ratio = FontCascade.advance(of: FontCascade.baseFont(font)) / max(0.1, FontCascade.advance(of: FontCascade.baseFont(old)))
+                for view in session.coordinators.compactMap(\.textView) { view.rescaleNoWrapWidth(by: ratio) }
+            }
 
             let base = FontCascade.baseFont(font)
             let hangul = FontCascade.hangulFont(font)
@@ -640,7 +667,7 @@ struct EditorView: NSViewRepresentable {
                 if let top = st.topOffset, top <= len, !tv.isInHugeParagraph(top) {
                     // 탭을 오가도 읽던 곳 그대로: 캐럿은 제자리에(화면 밖이었으면 밖에), 화면은 떠날 때 맨 위에 걸쳐 있던 문단이 같은 높이에 오게
                     tv.setSelectedRange(caret)
-                    tv.scrollRangeToVisible(NSRange(location: top, length: 0))   // 그 근처를 먼저 배치하게 한다 (정확한 높이는 아래에서)
+                    tv.scrollToReadingPlace(NSRange(location: top, length: 0))   // 그 근처를 먼저 배치하게 한다 (정확한 높이는 아래에서)
                     tv.window?.makeFirstResponder(tv)
                     let inset = CGFloat(st.topInset ?? 0)
                     scrollToTop(offset: top, inset: inset)
@@ -799,12 +826,14 @@ struct EditorView: NSViewRepresentable {
                 container.widthTracksTextView = true
                 container.size = NSSize(width: sv.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
                 tv.isHorizontallyResizable = false
+                tv.endNoWrap(in: sv)   // 가로로 밀어 둔 위치를 처음 열로 되돌리고, 폭을 다시 AppKit(autoresizing)에 맡긴다
                 tv.frame.size.width = sv.contentSize.width
                 sv.hasHorizontalScroller = false
             } else {
+                tv.beginNoWrap()       // 텍스트 뷰의 폭은 이제 뷰가 내용에 맞춰 직접 정한다 (HyperTextView+NoWrap.swift)
                 container.widthTracksTextView = false
                 container.size = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-                tv.isHorizontallyResizable = true
+                tv.isHorizontallyResizable = false   // AppKit 의 가로 자동 크기는 쓰지 않는다 (TextKit 2 에서 문서에 따라 폭을 넓히지 않거나 엉뚱한 폭을 준다)
                 sv.hasHorizontalScroller = true
             }
             tv.endReflow(reflow)
@@ -946,7 +975,7 @@ struct EditorView: NSViewRepresentable {
             var result = TextTools.alignColumns(lines, separator: sep).joined(separator: "\n")
             if hadNewline { result += "\n" }
             guard result != original else { return }
-            tv.insertText(result, replacementRange: range)
+            tv.replaceForTool(range, with: result)
             tv.setSelectedRange(NSRange(location: range.location, length: (result as NSString).length))
             model.log(String(localized: "Aligned \(lines.count) lines"))
         }
@@ -960,7 +989,7 @@ struct EditorView: NSViewRepresentable {
             let out = f(text.components(separatedBy: "\n"))
             var result = out.joined(separator: "\n")
             if hadNewline && !result.isEmpty { result += "\n" }
-            tv.insertText(result, replacementRange: range)
+            tv.replaceForTool(range, with: result)
             tv.setSelectedRange(NSRange(location: range.location, length: (result as NSString).length))
         }
 
@@ -973,7 +1002,7 @@ struct EditorView: NSViewRepresentable {
                 if ns.substring(with: r).hasSuffix("\n") { r.length -= 1 }
             }
             let result = f(ns.substring(with: r))
-            tv.insertText(result, replacementRange: r)
+            tv.replaceForTool(r, with: result)
             tv.setSelectedRange(NSRange(location: r.location, length: (result as NSString).length))
         }
 
@@ -1035,6 +1064,9 @@ struct EditorView: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             document.textDidChange()
+            // 줄 수의 자릿수가 바뀌었으면 거터 폭을 여기서 맞춘다. 그릴 때에야 알면(GutterView.drawImpl) 컨테이너의 배치가 한 패스 늦는다 — 보이는 창에서는
+            // 한 프레임, 가려진 창에서는 다음 배치를 누가 시킬 때까지 거터의 틀이 옛 폭으로 남는다 (실측: 10,000 → 9,999 줄에서 폭 62 pt, 틀 69 pt)
+            gutter?.updateThickness()
             gutter?.needsDisplay = true
             session.didEdit(from: self)   // split: 다른 편집기의 거터 갱신
         }

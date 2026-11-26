@@ -1,7 +1,8 @@
 import AppKit
 import HyperCore
 
-// 주석 토글(⌘/) · JSON 정리(⌃⌘J) · 스니펫 공급자 — EditorView.Coordinator.applyTextTool / attach 에서 호출. 모두 insertText 경유라 ⌘Z 한 번.
+// 주석 토글(⌘/) · JSON 정리(⌃⌘J) · 스니펫 공급자 — EditorView.Coordinator.applyTextTool / attach 에서 호출. 편집 한 번이라 ⌘Z 한 번
+// (범위를 통째로 바꾸는 도구는 HyperTextView.replaceForTool — 큰 범위는 일괄 편집으로 넣어 되돌리기가 빠르다).
 extension EditorView.Coordinator {
     /// 주석 토글: 선택한 줄들(없으면 현재 줄)에 파일 종류의 주석 기호를 넣거나 뺀다. 선택이 있으면 결과를 다시 선택하고,
     /// 없으면 캐럿을 같은 줄의 같은 글자 뒤에 둔다 (기호 삽입·제거만큼 열을 옮김).
@@ -18,7 +19,7 @@ extension EditorView.Coordinator {
         var result = out.joined(separator: "\n")
         if hadNewline { result += "\n" }
         // 문서 전체(1.3 MB) 교체는 여기(TextKit 2 재배치·구문 색)가 거의 전부다 — --debug-perf 로 core 와 따로 본다
-        Perf.measure("toggleComment.insertText len=\((result as NSString).length)") { tv.insertText(result, replacementRange: lineRange) }
+        Perf.measure("toggleComment.insertText len=\((result as NSString).length)") { tv.replaceForTool(lineRange, with: result) }
         if sel.length > 0 {
             tv.setSelectedRange(NSRange(location: lineRange.location, length: (result as NSString).length))
         } else {
@@ -52,7 +53,7 @@ extension EditorView.Coordinator {
         do {
             let result = try Perf.measure("formatJSON.core len=\(range.length)") { minify ? try JSONFormatter.minify(input) : try JSONFormatter.format(input) }
             let len = (result as NSString).length
-            if result != input { Perf.measure("formatJSON.insertText len=\(len)") { tv.insertText(result, replacementRange: range) } }
+            if result != input { Perf.measure("formatJSON.insertText len=\(len)") { tv.replaceForTool(range, with: result) } }
             if sel.length > 0 {
                 tv.setSelectedRange(NSRange(location: range.location, length: len))
             } else {

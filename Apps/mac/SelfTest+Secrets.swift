@@ -24,10 +24,10 @@ extension SelfTest {
         }
         func activeTV() -> HyperTextView? { model.session.active?.textView }
         func masked(_ line: Int, in tv: HyperTextView? = nil) -> Bool { (tv ?? activeTV())?.isOffsetMasked?(lineStart(line)) ?? false }
-        /// 줄의 레이아웃 프래그먼트 종류: masked / folded / plain
+        /// 줄에 실제로 놓인 레이아웃 프래그먼트: masked / folded(열거에 남긴 마지막 문단의 높이 0 조각) / plain / none(조각이 없다 — 숨은 문단은 열거에서 빠진다) / error
         func fragmentKind(_ line: Int, in tv: HyperTextView? = nil) -> String {
             guard let tv = tv ?? activeTV(), let lm = tv.textLayoutManager, let cs = tv.textContentStorage,
-                  let loc = cs.location(cs.documentRange.location, offsetBy: lineStart(line)) else { return "none" }
+                  let loc = cs.location(cs.documentRange.location, offsetBy: lineStart(line)) else { return "error" }
             lm.ensureLayout(for: NSTextRange(location: loc))
             guard let f = lm.textLayoutFragment(for: loc) else { return "none" }
             if f is MaskedLayoutFragment { return "masked" }
@@ -189,8 +189,9 @@ extension SelfTest {
         // 8. 접기 공존: 펜스 영역을 접으면 높이 0 (접힘 우선), 펼치면 다시 가림
         model.jump(toLine: fence); await wait(300)
         model.send(.fold); await wait(300)
-        check((activeTV()?.isOffsetHidden?(lineStart(pin)) ?? false) && fragmentKind(pin) == "folded",
-              "secrets: a secret block folds like any fence (hidden fragment wins, \(fragmentKind(pin)))")
+        // 접힌 비밀 줄에는 가림막 조각도 보통 조각도 놓이지 않는다: 조각이 아예 없거나(none), 문서의 마지막 문단이면 높이 0 조각(folded)
+        check((activeTV()?.isOffsetHidden?(lineStart(pin)) ?? false) && ["none", "folded"].contains(fragmentKind(pin)),
+              "secrets: a secret block folds like any fence (the hidden line is laid out as: \(fragmentKind(pin)))")
         model.send(.unfoldAll); await wait(300)
         model.jump(toLine: 1); await wait(200)
         check(masked(pin) && fragmentKind(pin) == "masked", "secrets: unfolded block is masked again")

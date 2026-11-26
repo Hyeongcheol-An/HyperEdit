@@ -17,7 +17,7 @@ enum EditorRole { case primary, secondary }
 /// - 명령(`EditorCommand`)·캐럿 상태는 마지막으로 포커스/클릭된 '활성' 편집기 기준. 아직 없으면 주 편집기.
 @MainActor
 final class EditorSession: ObservableObject {
-    let contentStorage = NSTextContentStorage()
+    let contentStorage: NSTextContentStorage = FoldingContentStorage()   // fold: 접힌 구간을 건너뛰며 열거한다 (FoldController.swift)
     let undoManager = UndoManager()
     /// 마지막으로 포커스/클릭된 편집기 — 명령·캐럿 상태는 이 편집기 기준
     var activeEditorID: UUID?
@@ -85,7 +85,7 @@ final class EditorSession: ObservableObject {
 
     /// 어느 뷰에서든 편집이 일어나면 다른 뷰의 거터를 다시 그린다 (검색 강조는 뷰마다 저장소 알림으로 스스로 옮긴다 — HyperTextView.matchHighlights)
     func didEdit(from c: EditorView.Coordinator) {
-        for other in coordinators where other !== c { other.gutter?.needsDisplay = true }
+        for other in coordinators where other !== c { other.gutter?.updateThickness(); other.gutter?.needsDisplay = true }
     }
 
     /// 보조 편집기가 사라질 때. 그 뷰에서 한 편집의 undo 항목이 공유 스택에 남아 있을 수 있으므로 텍스트 뷰·레이아웃 매니저를 바로 버리지 않고
