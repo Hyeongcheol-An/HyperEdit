@@ -53,8 +53,11 @@ notarize() { # $1 파일 → Accepted 아니면 실패
 
 # ---------- 빌드 ----------
 set -o pipefail
-xcodebuild -project HyperEdit.xcodeproj -scheme HyperEdit-mac -configuration Release -destination 'platform=macOS' \
-  -derivedDataPath "$DERIVED" "${SIGN_ARGS[@]}" build 2>&1 | grep -E 'error:|BUILD' | tail -5
+# 두 아키텍처를 명령줄에서 못박는다. 프로젝트는 XcodeGen 이 그때그때 만들고(워크플로는 최신판을 설치한다), XcodeGen 2.47 부터 만들어지는 스킴의 기본값이
+# "Match Run Destination" 이다 — 목적지가 이 Mac(`platform=macOS`)이면 이 Mac 의 아키텍처만 빌드한다(러너에서는 arm64 만 나와 아래의 유니버설 검사에 걸렸다).
+# 목적지를 "Any Mac"(generic)으로 주고 ARCHS 도 적는다 — 스킴의 기본값이 다시 바뀌어도 같다
+xcodebuild -project HyperEdit.xcodeproj -scheme HyperEdit-mac -configuration Release -destination 'generic/platform=macOS' \
+  -derivedDataPath "$DERIVED" ONLY_ACTIVE_ARCH=NO ARCHS="arm64 x86_64" "${SIGN_ARGS[@]}" build 2>&1 | grep -E 'error:|BUILD' | tail -5
 APP="$DERIVED/Build/Products/Release/HyperEdit.app"
 [ -d "$APP" ] || { echo "app not built"; exit 1; }
 echo "app version: $(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.plist")"
