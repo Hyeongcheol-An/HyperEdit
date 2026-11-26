@@ -68,7 +68,13 @@ extension RealUseContext {
     /// 오프셋을 클릭해 캐럿을 놓는다. 화면에 없거나 다른 곳에 놓이면 문제로 남긴다 (조용히 건너뛰면 뒤의 검사가 엉뚱한 곳을 본다)
     @discardableResult
     func clickCaret(_ offset: Int, _ what: String) async -> Bool {
-        guard await click(offset: offset) else { issue("other", "\(what): offset \(offset) is not on screen, cannot click it (visible \(Int(visible.minY))…\(Int(visible.maxY)))"); return false }
+        guard await click(offset: offset) else {
+            // 어느 쪽으로 벗어났는지 남긴다 — 줄바꿈 끔에서는 줄 끝이 오른쪽 가장자리 밖일 수 있다
+            let v = visible
+            let at = tv.caretRect(at: offset).map { String(format: "its caret is at x %.0f, y %.0f; ", $0.minX, $0.midY) } ?? ""
+            issue("other", "\(what): offset \(offset) is not on screen, cannot click it (\(at)visible x \(Int(v.minX))…\(Int(v.maxX)), y \(Int(v.minY))…\(Int(v.maxY)))")
+            return false
+        }
         await settle(60)
         RealUse.typingChecks += 1
         if tv.selectedRange() != NSRange(location: offset, length: 0) { issue("selection", "\(what): clicked offset \(offset) but the selection is \(tv.selectedRange())"); return false }

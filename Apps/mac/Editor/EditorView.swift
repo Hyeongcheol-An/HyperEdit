@@ -399,6 +399,7 @@ struct EditorView: NSViewRepresentable {
                     self.saveStateTask?.cancel()
                     self.session.clearUndo()
                     self.textView?.endSnippetSession()
+                    self.textView?.resetNoWrapWidth()   // 줄바꿈 끔: 앞 파일에서 잰 폭을 버린다 (새 내용은 이 발행 바로 뒤에 들어온다)
                     self.restored = false
                     self.lastTopAnchor = nil
                     self.lastCaretRect = nil
@@ -423,6 +424,7 @@ struct EditorView: NSViewRepresentable {
 
         func rebind(document newDoc: MemoDocument) {
             saveViewStateNow()
+            textView?.resetNoWrapWidth()   // 줄바꿈 끔: 앞 문서에서 잰 폭을 버린다
             document = newDoc
             Perf.measure("  rebind.swapStorage") { session.bind(textStorage: newDoc.textStorage) }   // 두 번째 편집기는 이미 연결돼 있어 건너뛴다
             session.clearUndo()
@@ -444,6 +446,7 @@ struct EditorView: NSViewRepresentable {
             guard let tv = textView, !DebugFlags.noApply else { return }
             let changed = force || appliedThemeID != theme.id || appliedFont != font
             guard changed else { return }
+            let fontBefore = appliedFont
             appliedThemeID = theme.id
             appliedFont = font
             lastTheme = theme
@@ -452,6 +455,15 @@ struct EditorView: NSViewRepresentable {
             let readingViews = force ? [] : session.coordinators.compactMap(\.textView)
             let readingAnchors = readingViews.map { $0.captureReadingAnchor() }
             defer { for (view, anchor) in zip(readingViews, readingAnchors) { if let anchor { view.restoreReadingAnchor(anchor) } } }
+            // 줄바꿈 끔: 글꼴이 바뀌면 모든 줄의 폭이 달라진다 — 잰 폭과 가로 위치를 글자 폭의 비율만큼 고친다 (HyperTextView.rescaleNoWrapWidth). 보던 곳을 잡은 뒤에 한다:
+            // 폭이 편집기보다 넓어지면 가로 막대가 생기며 보이는 높이가 줄어, 그 뒤에 잡으면 '문서 끝을 보고 있었다'를 놓친다.
+            // 세션의 모든 편집기를 주 편집기가 한 번에 고친다 — 새 글꼴을 입히는(모든 편집기를 다시 배치하게 하는) 바로 앞에서. 편집기마다 자기 apply 에서 고치면 분할
+            // 보기에서 어긋난다: 보조 편집기의 apply 가 먼저 불리면 비율로 고친 폭을 그 apply 의 '보던 곳 되돌리기'가 옛 글꼴의 배치로 다시 넓혀 놓고, 주 편집기가
+            // 먼저면 새 글꼴로 이미 넓어진 폭에 한 번 더 곱한다 (실측: 글자를 줄였다 키우자 보조 편집기에 775 … 989 pt 의 빈 가로 스크롤 범위)
+            if role == .primary, let old = fontBefore, old != font {
+                let ratio = FontCascade.advance(of: FontCascade.baseFont(font)) / max(0.1, FontCascade.advance(of: FontCascade.baseFont(old)))
+                for view in session.coordinators.compactMap(\.textView) { view.rescaleNoWrapWidth(by: ratio) }
+            }
 
             let base = FontCascade.baseFont(font)
             let hangul = FontCascade.hangulFont(font)
@@ -799,12 +811,14 @@ struct EditorView: NSViewRepresentable {
                 container.widthTracksTextView = true
                 container.size = NSSize(width: sv.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
                 tv.isHorizontallyResizable = false
+                tv.endNoWrap(in: sv)   // 가로로 밀어 둔 위치를 처음 열로 되돌리고, 폭을 다시 AppKit(autoresizing)에 맡긴다
                 tv.frame.size.width = sv.contentSize.width
                 sv.hasHorizontalScroller = false
             } else {
+                tv.beginNoWrap()       // 텍스트 뷰의 폭은 이제 뷰가 내용에 맞춰 직접 정한다 (HyperTextView+NoWrap.swift)
                 container.widthTracksTextView = false
                 container.size = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-                tv.isHorizontallyResizable = true
+                tv.isHorizontallyResizable = false   // AppKit 의 가로 자동 크기는 쓰지 않는다 (TextKit 2 에서 문서에 따라 폭을 넓히지 않거나 엉뚱한 폭을 준다)
                 sv.hasHorizontalScroller = true
             }
             tv.endReflow(reflow)
