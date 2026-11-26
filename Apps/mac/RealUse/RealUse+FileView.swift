@@ -493,6 +493,12 @@ extension RealUseContext {
                 return e
             }
         }
+        // 화살표가 무시될 때 화면 쪽 조건이 어땠는가: 그 점이 화면에서 이 패널의 것인가(다른 앱의 창이 덮고 있는가), 진짜 마우스가 어디 있는가
+        let onScreen = panel.convertPoint(toScreen: w)
+        let topWindow = NSWindow.windowNumber(at: onScreen, belowWindowWithWindowNumber: 0)
+        let real = NSEvent.mouseLocation
+        let screenState = "panel visible \(panel.occlusionState.contains(.visible)) · topmost window at the click point is \(topWindow == panel.windowNumber ? "this panel" : "another window (\(topWindow))") · "
+            + "real pointer \(panel.frame.contains(real) ? "over the panel" : "elsewhere") (\(Int(real.x - onScreen.x)), \(Int(real.y - onScreen.y)) from the click) · buttons down \(NSEvent.pressedMouseButtons)"
         let t0 = CFAbsoluteTimeGetCurrent()
         panel.sendEvent(down)
         let downMs = elapsedMs(since: t0)
@@ -507,7 +513,7 @@ extension RealUseContext {
         if let watch { NSEvent.removeMonitor(watch) }
         if spot == .disclosure {
             Self.lastArrowPress = String(format: "held %.0f ms (mouseDown returned after %.1f ms), %@, app active before %@ / after %@, other mouse events: %@",
-                                         elapsedMs(since: t0), downMs, how, "\(wasActive)", "\(NSApp.isActive)", strays.isEmpty ? "none" : strays.joined(separator: "; "))
+                                         elapsedMs(since: t0), downMs, how, "\(wasActive)", "\(NSApp.isActive)", strays.isEmpty ? "none" : strays.joined(separator: "; ")) + " · " + screenState
             if downMs > 30 { note(String(format: "the mouseDown on the arrow of '%@' took %.0f ms to return", item.entry.name, downMs)) }
         }
         await settleProbe(20)
@@ -693,11 +699,15 @@ extension RealUse {
                 // 정상). 2026-11-25 에 밝힌 것: 누르고 있는 30 ms 사이에 앱 큐에서 다른 leftMouseUp 이 나가면 정확히 이 모양이 된다(`lastArrowPress` 의 주석). 기각한 것:
                 // 같은 행의 이름을 누른 뒤의 간격(0~1500 ms 모두 반응), 연달아 누르기(간격 0 도 반응), 기계 부하, 앞 시나리오가 큐에 남긴 이벤트(남긴 mouseUp 은 2~16 ms 안에
                 // 큐를 떠난다). 전체 묶음에서 무엇이 그 상태를 만드는지는 재현하지 못해 모른다 — 다시 나오면 아래 기록(누르는 동안 큐를 떠난 마우스 이벤트가 있었는가)이
-                // 갈래를 가른다. 기다림을 넣어 가리지 않는다
+                // 갈래를 가른다. 기다림을 넣어 가리지 않는다.
+                // 그 뒤에 본 것: `--only smoke,tabs-bar,tabs-click,fileview-click` 만으로도 실행의 절반쯤에서 네 번의 클릭이 모두 무시된다(나머지 실행에서는 모두 반응) —
+                // 그때 누르는 동안 큐를 떠난 마우스 이벤트는 없었다. 무시된 실행과 반응한 실행에서 같았던 것(= 원인이 아닌 것): 패널이 화면에 보이는가, 그 점의 맨 위 창,
+                // 진짜 포인터의 자리, 눌린 마우스 버튼. mouseUp 에 떼는 순간의 시각을 주어도 여섯 번 중 두 번 무시됐다. 실행 단위로 갈리는 까닭은 아직 모른다
                 if round > 1 { try? await Task.sleep(nanoseconds: 400_000_000) }
                 guard await ctx.clickFileRow("src", level: 0, spot: .disclosure) else { ctx.issue("fileview", "could not click the disclosure arrow of src"); break }
                 await ctx.waitFileView()
                 let want = round % 2 == 1
+                if round == 1 { ctx.note("arrow press #1: \(RealUseContext.lastArrowPress)") }
                 if ctx.isExpanded("src", level: 0, in: po) != want {
                     ctx.issue("fileview", "clicked the arrow of src (\(want ? "to expand" : "to collapse")) but it is \(want ? "collapsed" : "expanded")")
                     // 진단: 클릭이 무시된 것인가, 늦게 반영되는 것인가
