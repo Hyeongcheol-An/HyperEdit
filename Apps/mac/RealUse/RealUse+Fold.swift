@@ -572,6 +572,18 @@ extension RealUse {
             await ctx.key(.down, [.command]); await ctx.settle(400)
             ctx.expect(ctx.caret == ctx.length && !ctx.hidden(ctx.caret) && ctx.foldCount() == 0, "fold", "⌘↓ into a fold that reaches the end: caret \(ctx.place(ctx.caret)), hidden \(ctx.hidden(ctx.caret)), pills \(ctx.foldCount())")
             ctx.checkCaretVisible("⌘↓ into the giant fold"); ctx.checkAllD("⌘↓ into the giant fold"); ctx.checkInk("⌘↓ into the giant fold"); ctx.expectBottom("⌘↓ into the giant fold")
+            // 명령으로 편 직후의 ⌘↓ 도 끝에 닿아야 한다. 끝까지 닿는 접힘이 펴진 직후에는 마지막 문단의 조각이 접혀 있던 때의 자리(머리 줄 바로 아래)에 남아,
+            // AppKit 이 그 줄을 화면에 있다고 보고 스크롤하지 않았다 (HyperTextView.revealDocumentEndIfMissed). 높이 어림이 배치하는 동안 다시 잡히는 실행에서는
+            // 드러나지 않는다 — 앞에서 돈 시나리오에 달려 있어(다른 문서를 스크롤한 뒤에 났다) 전체 묶음과 `--only scroll-knob-state,fold-giant` 에서 본다
+            ctx.at("⌘↓ right after unfolding with the command")
+            await ctx.key(.up, [.command]); await ctx.settle(200)
+            await ctx.click(offset: 3); await ctx.settle(100)
+            ctx.model.send(.fold); await ctx.settle(300)
+            ctx.model.send(.unfold); await ctx.settle(300)
+            ctx.expect(ctx.foldCount() == 0 && !ctx.hidden(line: 2), "fold", "unfolding with the command left pills \(ctx.foldCount())")
+            await ctx.key(.down, [.command]); await ctx.settle(400)
+            ctx.expect(ctx.caret == ctx.length, "fold", "⌘↓ after unfolding: caret \(ctx.place(ctx.caret))")
+            ctx.checkAllD("⌘↓ after unfolding"); ctx.checkInk("⌘↓ after unfolding"); ctx.expectBottom("⌘↓ after unfolding")
 
             // 문서 전체를 거느리는 # 제목 (24,000줄; 끝의 빈 줄은 영역 밖이라 두 줄이 남는다)
             await ctx.withRelaxedStalls { await ctx.open(text: RealUse.foldDoc(h1: true, sections: 3000), name: "fold-giant.md") }

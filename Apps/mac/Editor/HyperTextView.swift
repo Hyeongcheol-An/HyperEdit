@@ -207,7 +207,7 @@ final class HyperTextView: NSTextView {
         if let cell = noWrapRevealRect { noWrapRevealRect = nil; scrollToVisible(cell) }   // 줄바꿈 끔의 열 블록: 범위(짧은 줄에서는 줄 끝) 대신 머리 칸을 보이게
         else {
             stepped = (afterEdit || caretStepDepth > 0) && revealCaretStep(range, afterEdit: afterEdit)
-            if !stepped { super.scrollRangeToVisible(range) }
+            if !stepped { super.scrollRangeToVisible(range); revealDocumentEndIfMissed(range) }
         }
         editRevealStart = nil; editRevealWholesale = false
         // 줄바꿈 끔의 가로: 세로를 직접 밀었으면 가로도 여기서 맞춘다 — 캐럿(선택을 늘리는 중이면 움직인 쪽 끝)이 보이는 열에 오게 (revealNoWrapColumn).
@@ -231,6 +231,24 @@ final class HyperTextView: NSTextView {
         // 다시 그려지는 줄마다 지워졌다(실사용 하네스 2026-11-24). 이번 표시 주기에 뷰포트를 다시 배치하게 한다 (조각은 이미 배치돼 있어 값싸다)
         if viewportNeedsLayout { needsLayout = true }
         constrainScrollToDocumentEnd()
+    }
+
+    /// AppKit 이 문서의 마지막 문단을 "이미 화면에 있다"고 잘못 본 경우를 바로잡는다 (scrollRangeToVisible 이 AppKit 에 맡긴 직후에 부른다).
+    /// 문서 끝까지 닿는 접힘이 펴진 직후, 마지막 문단의 조각은 접혀 있던 때의 자리(머리 줄 바로 아래)에 그대로 있다 — 접힘 안의 문단들은 열거된 적이 없어
+    /// TextKit 2 는 높이 어림을 다시 잡기 전까지 마지막 문단을 머리 줄 옆에 둔다. 그 자리는 화면 안이라 AppKit 은 스크롤하지 않는다 (실측: 12,001줄을 한 줄 아래로
+    /// 접고 ⌘↓ → 접힘은 펴지고 캐럿은 문서 끝인데 캐럿 상자의 y 가 36 pt, 화면은 맨 위 그대로. 높이 어림이 실제와 달라 배치하는 동안 다시 잡히는 문서에서는
+    /// 드러나지 않는다 — 짧은 줄로 된 문서가 어림이 맞는 쪽이다). 좌표는 믿을 수 없으니 그려 둔 뷰포트로 가린다: 대상이 마지막 문단인데 그려 둔 범위가 거기에
+    /// 닿지 않고 화면도 문서 끝이 아니면, 뷰포트를 배치해 가며 끝에 붙인다 (restoreReadingAnchor)
+    private func revealDocumentEndIfMissed(_ range: NSRange) {
+        guard let ts = textStorage, ts.length > 0, let clip = enclosingScrollView?.contentView, clip.bounds.maxY < frame.height - 1 else { return }
+        let length = ts.length
+        let lastParagraph = ts.mutableString.paragraphRange(for: NSRange(location: length, length: 0)).location
+        guard range.location >= lastParagraph else { return }
+        // AppKit 이 스크롤하지 않고 뷰포트 컨트롤러만 옮겨 놓았으면 그려 둔 범위가 비어 있다 — 그 자리를 배치해 묻는다 (조각은 이미 있어 값싸다)
+        var shown = laidOutViewport(firstBelow: clip.bounds.minY)
+        if shown == nil { textLayoutManager?.textViewportLayoutController.layoutViewport(); shown = laidOutViewport(firstBelow: clip.bounds.minY) }
+        guard let shown, shown.end <= lastParagraph, shown.end < length else { return }
+        restoreReadingAnchor(.init(offset: length, delta: 0, lineHeight: 0, pinnedToEnd: true))
     }
 
     override func layout() {
